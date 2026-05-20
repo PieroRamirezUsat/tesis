@@ -4,273 +4,529 @@
 
 {% block contenido %}
 
-<div class="flex flex-col gap-6">
+<!-- ENCABEZADO + FILTROS -->
+<div class="mb-5">
+  <p class="text-xs font-bold text-indigo-500 uppercase tracking-widest mb-0.5">Análisis Individual</p>
+  <h1 class="text-2xl font-black text-gray-900 dark:text-white leading-tight">Reporte de Progreso</h1>
+  <p class="text-sm text-gray-400 mt-0.5">Avance del estudiante por competencias e historial de actividades</p>
+</div>
 
-  <!-- CABECERA -->
-  <div class="flex flex-wrap justify-between gap-4 items-end">
-    <div>
-      <h1 class="text-3xl font-black tracking-[-0.03em]">
-        Reporte de Progreso del Estudiante
-      </h1>
-      <p class="text-sm text-gray-500 mt-1">
-        Visualiza el avance del estudiante por competencias y su historial de actividades.
+<!-- BARRA DE FILTROS -->
+<div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm px-5 py-4 mb-4">
+  <div class="flex flex-wrap items-end gap-3">
+    <div class="flex flex-col gap-1">
+      <label class="text-[11px] font-bold text-gray-400 uppercase tracking-widest" for="select-salon">Salón</label>
+      <select id="select-salon"
+        class="h-10 px-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/60 text-sm text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-400 min-w-[180px]">
+        {% for s in salones %}
+          <option value="{{ s.id_salon }}" {% if salon_seleccionado == s.id_salon %}selected{% endif %}>{{ s.nombre }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="flex flex-col gap-1">
+      <label class="text-[11px] font-bold text-gray-400 uppercase tracking-widest" for="select-estudiante">Estudiante</label>
+      <select id="select-estudiante"
+        class="h-10 px-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/60 text-sm text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-400 min-w-[220px]">
+        {% for e in estudiantes %}
+          <option value="{{ e.id_estudiante }}" {% if estudiante_seleccionado == e.id_estudiante %}selected{% endif %}>{{ e.nombre }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="flex gap-2 ml-auto flex-wrap">
+      <a href="{{ url_for('reportes.exportar_pdf', id_salon=salon_seleccionado, id_estudiante=estudiante_seleccionado) }}"
+         class="flex items-center gap-2 h-10 px-4 rounded-xl bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-sm font-bold shadow-sm transition-all">
+        <span class="material-symbols-outlined text-base">picture_as_pdf</span>
+        <span class="hidden sm:inline">Exportar reporte</span>
+      </a>
+      <a href="{{ url_for('reportes.exportar_desarrollos_pdf', id_salon=salon_seleccionado, id_estudiante=estudiante_seleccionado) }}"
+         class="flex items-center gap-2 h-10 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white text-sm font-bold shadow-sm transition-all">
+        <span class="material-symbols-outlined text-base">draw</span>
+        <span class="hidden sm:inline">Exportar desarrollos</span>
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- FILA: tarjeta estudiante + gráfico evolución -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+
+  <!-- Tarjeta del estudiante -->
+  <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
+    <div class="bg-gradient-to-br from-indigo-500 to-purple-600 px-5 py-5 flex items-center gap-4">
+      <div class="h-16 w-16 rounded-full overflow-hidden border-2 border-white/40 shadow-lg shrink-0">
+        <img src="{{ foto_url_estudiante }}"
+             onerror="this.src='{{ url_for('static', filename='fotos_perfil/user_4.jpg') }}';"
+             alt="Foto del estudiante" class="h-full w-full object-cover" />
+      </div>
+      <div class="min-w-0">
+        <p class="text-base font-black text-white truncate leading-tight">
+          {{ estudiante_actual.nombre if estudiante_actual else 'Sin estudiante' }}
+        </p>
+        <p class="text-indigo-200 text-xs mt-0.5">
+          {{ salon_actual.nombre if salon_actual else '—' }}
+        </p>
+      </div>
+    </div>
+    <div class="p-5">
+      <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-3">Progreso General</p>
+      <div class="flex items-end gap-3 mb-3">
+        <span class="text-5xl font-black leading-none tabular-nums
+          {% if progreso_general|default(0) >= 70 %}text-emerald-500
+          {% elif progreso_general|default(0) >= 40 %}text-amber-500
+          {% else %}text-red-500{% endif %}">
+          {{ progreso_general|default(0) }}</span>
+        <span class="text-xl font-bold text-gray-300 mb-1">%</span>
+      </div>
+      <div class="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
+        <div class="h-2.5 rounded-full
+          {% if progreso_general|default(0) >= 70 %}bg-gradient-to-r from-emerald-400 to-emerald-500
+          {% elif progreso_general|default(0) >= 40 %}bg-gradient-to-r from-amber-400 to-amber-500
+          {% else %}bg-gradient-to-r from-red-400 to-red-500{% endif %}"
+          style="width: {{ progreso_general|default(0) }}%;"></div>
+      </div>
+      <p class="text-xs text-gray-400 mt-2">
+        {% if progreso_general|default(0) >= 70 %}Rendimiento avanzado
+        {% elif progreso_general|default(0) >= 40 %}En progreso
+        {% else %}Requiere atención{% endif %}
       </p>
     </div>
+  </div>
 
-    <!-- Filtros: salón y estudiante -->
-    <div class="flex flex-wrap gap-4 items-end">
-      <div class="flex flex-col gap-1">
-        <label class="text-xs font-medium text-gray-600" for="select-salon">
-          Salón
-        </label>
-        <select
-          id="select-salon"
-          class="w-48 h-10 px-3 rounded-lg border border-gray-300 bg-white text-sm"
-        >
-          {% for s in salones %}
-            <option value="{{ s.id_salon }}"
-              {% if salon_seleccionado == s.id_salon %}selected{% endif %}>
-              {{ s.nombre }}
-            </option>
-          {% endfor %}
-        </select>
+  <!-- Gráfico de evolución -->
+  <div class="lg:col-span-2 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-5">
+    <div class="flex items-start justify-between mb-4">
+      <div>
+        <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Evolución del Aprendizaje</p>
+        <p class="text-xs text-gray-400">% correcto por hora · rueda del ratón para zoom</p>
       </div>
-
-      <div class="flex flex-col gap-1">
-        <label class="text-xs font-medium text-gray-600" for="select-estudiante">
-          Estudiante
-        </label>
-        <select
-          id="select-estudiante"
-          class="w-56 h-10 px-3 rounded-lg border border-gray-300 bg-white text-sm"
-        >
-          {% for e in estudiantes %}
-            <option value="{{ e.id_estudiante }}"
-              {% if estudiante_seleccionado == e.id_estudiante %}selected{% endif %}>
-              {{ e.nombre }}
-            </option>
-          {% endfor %}
-        </select>
+      {% if datos_chart %}
+      <button onclick="resetZoom()" title="Restablecer zoom"
+              class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+        <span class="material-symbols-outlined text-sm">zoom_out_map</span>Reset
+      </button>
+      {% endif %}
+    </div>
+    {% if datos_chart %}
+      <div class="relative h-52">
+        <canvas id="chartLinea"></canvas>
       </div>
+    {% else %}
+      <div class="flex flex-col items-center justify-center h-52 gap-2">
+        <span class="material-symbols-outlined text-4xl text-gray-200 dark:text-gray-600">show_chart</span>
+        <p class="text-sm text-gray-400">Sin actividad registrada aún.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
 
-      <!-- Exportar PDF: usa impresión del navegador -->
-      <button
-        type="button"
-        onclick="window.print()"
-        class="flex items-center gap-2 h-10 px-4 rounded-lg border border-gray-300 bg-white text-sm text-gray-700 hover:bg-gray-100"
-      >
-        <span class="material-symbols-outlined text-base">picture_as_pdf</span>
-        <span>Exportar PDF</span>
+<!-- BANNER DE ANÁLISIS (solo con foco desde dashboard) -->
+{% if foco and foco_etiqueta %}
+<div id="seccion-analisis" class="bg-white dark:bg-gray-800 rounded-2xl border-2 border-red-200 dark:border-red-800/60 shadow-sm overflow-hidden mb-4">
+  <div class="bg-gradient-to-r from-red-500 to-rose-600 px-5 py-4 flex items-center gap-3">
+    <span class="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+      <span class="material-symbols-outlined text-white text-xl">crisis_alert</span>
+    </span>
+    <div>
+      <h2 class="text-base font-black text-white">Análisis de dificultad detectada</h2>
+      <p class="text-red-200 text-xs mt-0.5">
+        <strong>{{ estudiante_actual.nombre if estudiante_actual else 'Este estudiante' }}</strong>
+        tiene el menor avance en: <strong>{{ foco_etiqueta }}</strong>
+      </p>
+    </div>
+  </div>
+
+  <div class="p-5">
+
+    <!-- Por qué aparece en Requiere Atención -->
+    {% set areas_etiquetas = {
+      'cantidad': 'Resuelve problemas de cantidad',
+      'regularidad_equivalencia_cambio': 'Regularidad, equiv. y cambio',
+      'forma_movimiento_localizacion': 'Forma, movimiento y localiz.',
+      'gestion_datos_incertidumbre': 'Gestión de datos e incert.'
+    } %}
+    {% set competencias_debiles = [] %}
+    {% for area, pct in progreso_competencias.items() %}
+      {% if pct < 40 %}{% set _ = competencias_debiles.append((area, pct)) %}{% endif %}
+    {% endfor %}
+    {% if competencias_debiles %}
+    <div class="mb-4 rounded-xl border border-red-100 dark:border-red-800/40 bg-red-50/60 dark:bg-red-900/10 px-4 py-3">
+      <p class="text-[11px] font-bold text-red-600 dark:text-red-400 uppercase tracking-widest mb-1.5">
+        Por qué aparece en &quot;Requiere Atención&quot;
+      </p>
+      <p class="text-xs text-red-500 dark:text-red-400 mb-2.5">
+        El sistema marca al estudiante porque tiene competencias por debajo del <strong>40%</strong> mínimo aceptable:
+      </p>
+      <div class="flex flex-wrap gap-2">
+        {% for area, pct in competencias_debiles %}
+        <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white dark:bg-gray-800 border border-red-200 dark:border-red-700 shadow-sm">
+          <span class="w-2 h-2 rounded-full bg-red-400 shrink-0"></span>
+          <span class="text-xs font-semibold text-gray-700 dark:text-gray-200">{{ areas_etiquetas.get(area, area) }}</span>
+          <span class="text-xs font-black text-red-500">{{ pct }}%</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if ejercicios_foco %}
+    <div class="rounded-xl border border-red-100 dark:border-red-800/40 overflow-hidden">
+      <div class="px-4 py-2.5 bg-red-50 dark:bg-red-900/20 border-b border-red-100 dark:border-red-800/40">
+        <p class="text-[11px] font-bold text-red-600 dark:text-red-400 uppercase tracking-widest">
+          Ejercicios en esta competencia — ordenados por dificultad
+        </p>
+      </div>
+      <div class="overflow-x-auto">
+        <div style="max-height: 352px; overflow-y: auto;">
+        <table class="w-full text-sm text-left">
+          <thead class="sticky top-0 z-10 bg-gray-50 dark:bg-gray-700/90">
+            <tr class="text-[11px] text-gray-400 uppercase tracking-widest">
+              <th class="px-4 py-2.5">Ejercicio</th>
+              <th class="px-4 py-2.5 text-center w-20">Intentos</th>
+              <th class="px-4 py-2.5 text-center w-28">Resultado</th>
+              <th class="px-4 py-2.5 text-center w-24">Desarrollo</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-50 dark:divide-gray-700/60">
+            {% for ej in ejercicios_foco %}
+            <tr class="hover:bg-red-50/40 dark:hover:bg-red-900/10 transition-colors">
+              <td class="px-4 py-3 font-medium text-gray-800 dark:text-gray-200 max-w-xs">
+                <span class="line-clamp-2 text-xs leading-snug">{{ ej.nombre }}</span>
+              </td>
+              <td class="px-4 py-3 text-center">
+                <span class="inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold
+                  {% if ej.intentos > 2 %}bg-red-100 text-red-700
+                  {% elif ej.intentos > 1 %}bg-amber-100 text-amber-700
+                  {% else %}bg-gray-100 text-gray-600{% endif %}">
+                  {{ ej.intentos }}
+                </span>
+              </td>
+              <td class="px-4 py-3 text-center">
+                {% if ej.correcta %}
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold">
+                    <span class="material-symbols-outlined text-xs">check_circle</span>Correcto
+                  </span>
+                {% else %}
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-100 text-red-700 text-xs font-bold">
+                    <span class="material-symbols-outlined text-xs">cancel</span>Incorrecto
+                  </span>
+                {% endif %}
+              </td>
+              <td class="px-4 py-3 text-center">
+                {% if ej.tiene_desarrollo %}
+                  <a href="{{ url_for('reportes.ver_imagen_respuesta', id_respuesta=ej.id_respuesta) }}"
+                     target="_blank"
+                     class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-blue-50 text-blue-600 border border-blue-200 text-xs font-bold hover:bg-blue-100 transition-colors">
+                    <span class="material-symbols-outlined text-sm">draw</span>Ver
+                  </a>
+                {% else %}
+                  <span class="text-gray-300 text-xs">—</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        </div>
+      </div>
+    </div>
+    {% else %}
+    <p class="text-sm text-red-500/70 italic">Este estudiante aún no ha intentado ejercicios de esta competencia.</p>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+<!-- PROGRESO POR COMPETENCIA -->
+<div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-5 mb-4">
+  <div class="flex items-center gap-2 mb-4">
+    <span class="w-7 h-7 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center shrink-0">
+      <span class="material-symbols-outlined text-indigo-600 dark:text-indigo-400 text-sm">radar</span>
+    </span>
+    <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Progreso por Competencia</p>
+  </div>
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+    {% if progreso_competencias %}
+      {% for area, porcentaje in progreso_competencias.items() %}
+        {% set etiqueta = area %}
+        {% if area == 'cantidad' %}{% set etiqueta = 'Resuelve problemas de cantidad' %}
+        {% elif area == 'regularidad_equivalencia_cambio' %}{% set etiqueta = 'Resuelve problemas de regularidad, equivalencia y cambio' %}
+        {% elif area == 'forma_movimiento_localizacion' %}{% set etiqueta = 'Resuelve problemas de forma, movimiento y localización' %}
+        {% elif area == 'gestion_datos_incertidumbre' %}{% set etiqueta = 'Resuelve problemas de gestión de datos e incertidumbre' %}
+        {% endif %}
+
+        <div id="comp-{{ area }}" class="rounded-2xl border-2 p-4 flex flex-col gap-3 transition-all
+          {% if foco == area %}ring-2 ring-red-400 ring-offset-2 border-red-300 bg-gradient-to-b from-red-50 to-white dark:from-red-900/20 dark:to-gray-800
+          {% elif porcentaje >= 70 %}border-emerald-100 dark:border-emerald-800/40 bg-gradient-to-b from-emerald-50 to-white dark:from-emerald-900/10 dark:to-gray-800
+          {% elif porcentaje >= 40 %}border-amber-100 dark:border-amber-800/40 bg-gradient-to-b from-amber-50 to-white dark:from-amber-900/10 dark:to-gray-800
+          {% else %}border-red-100 dark:border-red-800/40 bg-gradient-to-b from-red-50 to-white dark:from-red-900/10 dark:to-gray-800{% endif %}">
+
+          {% if foco == area %}
+          <span class="inline-flex self-start items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold text-red-600 bg-red-100 dark:bg-red-900/40 dark:text-red-300">
+            <span class="material-symbols-outlined text-[12px]">warning</span>Área débil
+          </span>
+          {% endif %}
+
+          <p class="text-xs font-bold text-gray-600 dark:text-gray-300 leading-snug">{{ etiqueta }}</p>
+
+          <div>
+            <div class="flex items-end justify-between mb-1.5">
+              <span class="text-2xl font-black tabular-nums
+                {% if porcentaje >= 70 %}text-emerald-600
+                {% elif porcentaje >= 40 %}text-amber-500
+                {% else %}text-red-500{% endif %}">{{ porcentaje }}</span>
+              <span class="text-sm font-bold text-gray-300 mb-0.5">%</span>
+            </div>
+            <div class="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+              <div class="h-2 rounded-full
+                {% if porcentaje >= 70 %}bg-gradient-to-r from-emerald-400 to-emerald-500
+                {% elif porcentaje >= 40 %}bg-gradient-to-r from-amber-400 to-amber-500
+                {% else %}bg-gradient-to-r from-red-400 to-red-500{% endif %}"
+                style="width: {{ porcentaje }}%;"></div>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <p class="text-sm text-gray-400 col-span-4 py-4 text-center">Aún no hay datos de progreso por competencia.</p>
+    {% endif %}
+  </div>
+</div>
+
+<!-- HISTORIAL DE ACTIVIDADES -->
+<div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
+  <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-gray-100 dark:border-gray-700">
+    <div class="flex items-center gap-2">
+      <span class="w-7 h-7 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center shrink-0">
+        <span class="material-symbols-outlined text-blue-600 dark:text-blue-400 text-sm">history</span>
+      </span>
+      <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Historial de Actividades</p>
+    </div>
+    <div class="flex items-center gap-1.5">
+      <button onclick="filtrarHistorial('todos')" id="filtro-hist-todos"
+        class="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-indigo-600 text-white shadow-sm">
+        <span class="material-symbols-outlined" style="font-size:13px">list</span>Todos
+      </button>
+      <button onclick="filtrarHistorial('ejercicio')" id="filtro-hist-ejercicio"
+        class="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-amber-50 dark:hover:bg-amber-900/20">
+        <span class="material-symbols-outlined" style="font-size:13px">calculate</span>Ejercicios
+      </button>
+      <button onclick="filtrarHistorial('material')" id="filtro-hist-material"
+        class="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20">
+        <span class="material-symbols-outlined" style="font-size:13px">book_2</span>Materiales
       </button>
     </div>
   </div>
 
-  <!-- RESUMEN SUPERIOR -->
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-    <!-- Tarjeta estudiante + progreso general -->
-    <div class="bg-white rounded-xl shadow-sm p-6 flex flex-col gap-4">
-      <div class="flex items-center gap-4">
-        <!-- Foto predeterminada -->
-        <div class="h-16 w-16 rounded-full overflow-hidden border border-gray-200">
-          <img
-            src="{{ url_for('static', filename='fotos_perfil/user_4.jpg') }}"
-            alt="Foto del estudiante"
-            class="h-full w-full object-cover"
-          />
-        </div>
-        <div class="flex flex-col">
-          <p class="text-base font-semibold">
-            {% if estudiante_actual %}
-              {{ estudiante_actual.nombre }}
-            {% else %}
-              Sin estudiante
-            {% endif %}
-          </p>
-          <p class="text-xs text-gray-500">
-            {% if salon_actual %}
-              {{ salon_actual.nombre }}
-            {% else %}
-              —
-            {% endif %}
-          </p>
-        </div>
-      </div>
-
-      <div class="mt-2">
-        <p class="text-sm font-medium text-gray-600">Progreso general</p>
-        <div class="w-full bg-gray-200 rounded-full h-3 mt-2">
-          <div class="bg-blue-600 h-3 rounded-full"
-               style="width: {{ progreso_general|default(0) }}%;"></div>
-        </div>
-        <p class="text-right text-blue-600 font-bold text-sm mt-1">
-          {{ progreso_general|default(0) }}%
-        </p>
-      </div>
-    </div>
-
-    <!-- Progreso histórico: gráfico tipo HEATMAP -->
-    <div class="lg:col-span-2 bg-white rounded-xl shadow-sm p-6">
-      <div class="flex items-start justify-between mb-4">
-        <div>
-          <h2 class="text-lg font-semibold mb-1">Progreso histórico</h2>
-          <p class="text-xs text-gray-500">
-            Cada cuadro representa la puntuación de un ejercicio reciente
-            (más oscuro = mejor desempeño).
-          </p>
-        </div>
-        <div class="flex items-center gap-1 text-[11px] text-gray-500">
-          <span class="mr-1">Bajo</span>
-          <span class="w-4 h-4 rounded bg-gray-100 border border-gray-200"></span>
-          <span class="w-4 h-4 rounded bg-blue-200"></span>
-          <span class="w-4 h-4 rounded bg-blue-400"></span>
-          <span class="w-4 h-4 rounded bg-blue-600"></span>
-          <span class="ml-1">Alto</span>
-        </div>
-      </div>
-
-      <!-- 7 columnas x 4 filas máximo -->
-      <div class="grid grid-cols-7 gap-2">
-        {% for valor in valores_heatmap %}
-          {% set clase = 'bg-gray-100 border border-gray-200 text-gray-400' %}
-          {% if valor >= 80 %}
-            {% set clase = 'bg-blue-600 text-white shadow-sm' %}
-          {% elif valor >= 50 %}
-            {% set clase = 'bg-blue-400 text-white' %}
-          {% elif valor > 0 %}
-            {% set clase = 'bg-blue-200 text-blue-800' %}
-          {% endif %}
-          <div class="h-10 rounded-md flex items-center justify-center text-[10px] font-semibold {{ clase }}">
-            {% if valor %}
-              {{ valor }}%
-            {% endif %}
-          </div>
-        {% endfor %}
-      </div>
-    </div>
-  </div>
-
-  <!-- PROGRESO POR COMPETENCIA -->
-  <div class="mt-2 bg-white rounded-xl shadow-sm p-6">
-    <h2 class="text-lg font-semibold mb-4">Progreso por competencia</h2>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      {% if progreso_competencias %}
-        {% for area, porcentaje in progreso_competencias.items() %}
-          {% set etiqueta = area.replace('_',' ') %}
-          <div class="rounded-xl border border-blue-50 bg-blue-50/40 flex flex-col items-center justify-center py-4">
-            <p class="text-sm font-semibold text-gray-700 mb-2 text-center px-3">
-              {{ etiqueta|title }}
-            </p>
-            <div class="w-24 h-24 rounded-full border-[6px] border-blue-100
-                        flex items-center justify-center">
-              <span class="text-2xl font-bold text-blue-600">
-                {{ porcentaje }}%
+  {% if historial %}
+  <div class="overflow-x-auto">
+    <div style="max-height: 352px; overflow-y: auto;">
+    <table class="w-full text-sm text-left">
+      <thead class="sticky top-0 z-10 border-b border-gray-100 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-700/90">
+        <tr>
+          <th class="px-5 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest">Fecha</th>
+          <th class="px-5 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest">Ejercicio / Material</th>
+          <th class="px-5 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest text-center">Intentos</th>
+          <th class="px-5 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest text-center">Puntaje</th>
+          <th class="px-5 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest text-center">Desarrollo</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-50 dark:divide-gray-700/60">
+        {% for h in historial %}
+        <tr class="hover:bg-indigo-50/30 dark:hover:bg-indigo-900/10 transition-colors"
+            data-hist-tipo="{{ h.tipo }}">
+          <td class="px-5 py-3 text-xs text-gray-500 whitespace-nowrap">
+            {% if h.ultima_fecha %}
+              {% set meses = ['', 'ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'] %}
+              <span class="font-semibold text-gray-700 dark:text-gray-300">
+                {{ h.ultima_fecha.day }} {{ meses[h.ultima_fecha.month] }}. {{ h.ultima_fecha.year }}
               </span>
-            </div>
-          </div>
+              <span class="text-gray-400 ml-1">{{ h.ultima_fecha.strftime('%H:%M') }}</span>
+            {% else %}—{% endif %}
+          </td>
+
+          <td class="px-5 py-3 max-w-xs">
+            <p class="font-semibold text-gray-800 dark:text-gray-200 line-clamp-2 text-sm leading-snug">{{ h.nombre }}</p>
+            <span class="text-[11px] text-gray-400">{{ h.tipo }}</span>
+          </td>
+
+          <td class="px-5 py-3 text-center">
+            <span class="inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold
+              {% if h.intentos > 2 %}bg-red-100 text-red-700
+              {% elif h.intentos > 1 %}bg-amber-100 text-amber-700
+              {% else %}bg-gray-100 text-gray-600{% endif %}">
+              {{ h.intentos }}
+            </span>
+          </td>
+
+          <td class="px-5 py-3 text-center">
+            {% if h.puntaje is not none %}
+              <span class="inline-block px-2.5 py-0.5 rounded-full text-xs font-bold
+                {% if h.puntaje >= 70 %}bg-emerald-100 text-emerald-700
+                {% elif h.puntaje >= 40 %}bg-amber-100 text-amber-700
+                {% else %}bg-red-100 text-red-700{% endif %}">
+                {{ h.puntaje }}%
+              </span>
+            {% else %}
+              <span class="text-gray-300 text-xs">—</span>
+            {% endif %}
+          </td>
+
+          <td class="px-5 py-3 text-center">
+            {% if h.tiene_desarrollo %}
+              <a href="{{ url_for('reportes.ver_imagen_respuesta', id_respuesta=h.id_respuesta) }}"
+                 target="_blank"
+                 class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 text-blue-600 border border-blue-200 text-xs font-bold hover:bg-blue-100 transition-colors">
+                <span class="material-symbols-outlined text-sm">open_in_new</span>Ver
+              </a>
+            {% else %}
+              <span class="text-gray-300 text-xs">—</span>
+            {% endif %}
+          </td>
+        </tr>
         {% endfor %}
-      {% else %}
-        <p class="text-sm text-gray-500 col-span-4">
-          Aún no hay datos de progreso por competencia para este estudiante.
-        </p>
-      {% endif %}
+      </tbody>
+    </table>
     </div>
   </div>
-
-  <!-- HISTORIAL DE ACTIVIDADES -->
-  <div class="mt-4">
-    <h2 class="text-lg font-semibold mb-3">Historial de actividades</h2>
-
-    <div class="overflow-x-auto bg-white rounded-xl shadow-sm">
-      <table class="w-full text-sm text-left">
-        <thead class="bg-gray-50 text-xs font-semibold text-gray-600">
-          <tr>
-            <th class="px-4 py-2">Fecha</th>
-            <th class="px-4 py-2">Actividad / Material</th>
-            <th class="px-4 py-2">Tipo</th>
-            <th class="px-4 py-2">Respuesta estudiante</th>
-            <th class="px-4 py-2">Respuesta correcta</th>
-            <th class="px-4 py-2">Puntaje / Estado</th>
-            <th class="px-4 py-2">Desarrollo</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% if historial %}
-            {% for h in historial %}
-              <tr class="border-t border-gray-100">
-                <td class="px-4 py-2 text-xs text-gray-500">
-                  {{ h.fecha.strftime('%Y-%m-%d %H:%M') if h.fecha else '-' }}
-                </td>
-                <td class="px-4 py-2 font-medium text-gray-800">
-                  {{ h.actividad }}
-                </td>
-                <td class="px-4 py-2">
-                  {{ h.tipo }}
-                </td>
-                <td class="px-4 py-2">
-                  {{ h.respuesta_estudiante or '-' }}
-                </td>
-                <td class="px-4 py-2">
-                  {{ h.respuesta_correcta or '-' }}
-                </td>
-                <td class="px-4 py-2">
-                  {% if h.puntaje is not none %}
-                    {% if h.puntaje == 100 %}
-                      <span class="text-green-600 font-semibold">{{ h.puntaje }}%</span>
-                    {% elif h.puntaje == 0 %}
-                      <span class="text-red-600 font-semibold">{{ h.puntaje }}%</span>
-                    {% else %}
-                      <span class="text-gray-700 font-semibold">{{ h.puntaje }}%</span>
-                    {% endif %}
-                  {% else %}
-                    <span class="text-gray-500">-</span>
-                  {% endif %}
-                </td>
-                <td class="px-4 py-2">
-                  {% if h.tiene_imagen %}
-                    <a
-                      href="{{ url_for('reportes.ver_imagen_respuesta', id_respuesta=h.id_respuesta) }}"
-                      target="_blank"
-                      class="text-blue-600 hover:underline text-xs"
-                    >
-                      Ver desarrollo
-                    </a>
-                  {% else %}
-                    <span class="text-gray-400 text-xs">Sin imagen</span>
-                  {% endif %}
-                </td>
-              </tr>
-            {% endfor %}
-          {% else %}
-            <tr>
-              <td colspan="7" class="px-4 py-4 text-center text-gray-500">
-                Aún no hay actividades registradas para este estudiante.
-              </td>
-            </tr>
-          {% endif %}
-        </tbody>
-      </table>
-    </div>
+  {% else %}
+  <div class="py-12 text-center">
+    <span class="material-symbols-outlined text-5xl text-gray-200 dark:text-gray-600 block mb-2">history</span>
+    <p class="text-sm text-gray-400">Aún no hay actividades registradas para este estudiante.</p>
   </div>
-
+  {% endif %}
 </div>
 
-<!-- JS: recargar al cambiar salón / estudiante -->
 <script>
+  // ── Filtros de historial ──────────────────────────────────────────────────
+  function filtrarHistorial(tipo) {
+    const btns = {
+      todos:     document.getElementById('filtro-hist-todos'),
+      ejercicio: document.getElementById('filtro-hist-ejercicio'),
+      material:  document.getElementById('filtro-hist-material'),
+    };
+    const clsActivo   = ['bg-indigo-600', 'text-white', 'shadow-sm'];
+    const clsInactivo = ['bg-gray-100', 'text-gray-500'];
+
+    Object.entries(btns).forEach(([k, btn]) => {
+      if (!btn) return;
+      if (k === tipo) {
+        btn.classList.remove(...clsInactivo, 'dark:bg-gray-700', 'dark:text-gray-400',
+                             'hover:bg-amber-50', 'dark:hover:bg-amber-900/20',
+                             'hover:bg-emerald-50', 'dark:hover:bg-emerald-900/20');
+        btn.classList.add(...clsActivo);
+      } else {
+        btn.classList.remove(...clsActivo);
+        btn.classList.add(...clsInactivo);
+      }
+    });
+
+    document.querySelectorAll('[data-hist-tipo]').forEach(tr => {
+      const raw = (tr.dataset.histTipo || '').toLowerCase();
+      const esEjercicio = raw === 'ejercicio';
+      const matches = tipo === 'todos'
+        || (tipo === 'ejercicio' && esEjercicio)
+        || (tipo === 'material' && !esEjercicio);
+      tr.style.display = matches ? '' : 'none';
+    });
+  }
+
   const selectSalon = document.getElementById("select-salon");
-  const selectEst  = document.getElementById("select-estudiante");
+  const selectEst   = document.getElementById("select-estudiante");
 
   function recargar() {
-    const s = selectSalon.value;
-    const e = selectEst.value;
     const params = new URLSearchParams();
-    if (s) params.set("id_salon", s);
-    if (e) params.set("id_estudiante", e);
+    if (selectSalon.value) params.set("id_salon",      selectSalon.value);
+    if (selectEst.value)   params.set("id_estudiante", selectEst.value);
     window.location.href = "{{ url_for('reportes.reporte_progreso') }}?" + params.toString();
   }
 
   selectSalon?.addEventListener("change", recargar);
-  selectEst?.addEventListener("change", recargar);
+  selectEst?.addEventListener("change",   recargar);
+
+  {% if foco %}
+  document.addEventListener("DOMContentLoaded", function () {
+    const banner = document.getElementById("seccion-analisis");
+    if (banner) {
+      setTimeout(() => banner.scrollIntoView({ behavior: "smooth", block: "start" }), 300);
+    }
+  });
+  {% endif %}
 </script>
 
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+<script>
+  {% if datos_chart %}
+  let miGrafico;
+  function resetZoom() { if (miGrafico) miGrafico.resetZoom(); }
+
+  (function () {
+    const labels  = {{ datos_chart | map(attribute='fecha')  | list | tojson }};
+    const valores = {{ datos_chart | map(attribute='puntaje') | list | tojson }};
+    const colores = valores.map(v => v >= 70 ? '#22c55e' : v >= 40 ? '#f59e0b' : '#f87171');
+
+    miGrafico = new Chart(document.getElementById('chartLinea'), {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label: '% Correcto',
+          data: valores,
+          tension: 0.35,
+          fill: true,
+          backgroundColor: 'rgba(99,102,241,0.08)',
+          borderColor: '#6366f1',
+          borderWidth: 2,
+          pointBackgroundColor: colores,
+          pointBorderColor: colores,
+          pointRadius: 5,
+          pointHoverRadius: 7,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: { label: ctx => ` ${ctx.parsed.y}% correcto` }
+          },
+          zoom: {
+            zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' },
+            pan: { enabled: true, mode: 'x' },
+          }
+        },
+        scales: {
+          y: {
+            min: 0, max: 100,
+            title: {
+              display: true,
+              text: '% Correcto',
+              color: '#9ca3af',
+              font: { size: 11, weight: '600' }
+            },
+            ticks: { callback: v => v + '%', stepSize: 25, font: { size: 11 } },
+            grid: { color: 'rgba(0,0,0,0.04)' }
+          },
+          x: {
+            title: {
+              display: true,
+              text: 'Fecha de actividad',
+              color: '#9ca3af',
+              font: { size: 11, weight: '600' }
+            },
+            ticks: { font: { size: 10 }, maxRotation: 45 },
+            grid: { display: false }
+          }
+        }
+      }
+    });
+  })();
+  {% endif %}
+</script>
 {% endblock %}

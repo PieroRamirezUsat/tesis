@@ -53,7 +53,6 @@ def login():
                   AND u.estado_usuario = 'activo'
             """, (correo,))
             row = cur.fetchone()
-            print("RESULT LOGIN WEB:", row)
 
             # No hay usuario o la contraseña no coincide con el hash
             if (not row) or (not row[6]) or (not check_password_hash(row[6], contrasena)):

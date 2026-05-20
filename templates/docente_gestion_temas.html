@@ -1,557 +1,606 @@
 {% extends "docente_base.html" %}
 
-{% block title %}Gestión de Temas de Álgebra{% endblock %}
+{% block title %}Catálogo de Temas{% endblock %}
 
 {% block contenido %}
-<div class="flex flex-col gap-6">
 
-  <!-- Título + botón -->
-  <div class="flex flex-wrap items-center justify-between gap-4">
-    <h1 class="text-3xl font-black leading-tight tracking-[-0.03em]">
-      Gestión de Temas de Álgebra
-    </h1>
+{% set NOMBRES_COMP = {
+  'cantidad': 'Resuelve problemas de cantidad',
+  'regularidad_equivalencia_cambio': 'Resuelve problemas de regularidad, equivalencia y cambio',
+  'forma_movimiento_localizacion': 'Resuelve problemas de forma, movimiento y localización',
+  'gestion_datos_incertidumbre': 'Resuelve problemas de gestión de datos e incertidumbre'
+} %}
 
-    <button
-      type="button"
-      id="btn-abrir-modal-tema"
-      class="flex items-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 shadow-sm"
-    >
-      <span class="material-symbols-outlined text-base">add</span>
-      <span>Añadir nuevo tema</span>
-    </button>
+<!-- ENCABEZADO -->
+<div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+  <div>
+    <p class="text-xs font-bold text-sky-500 uppercase tracking-widest mb-0.5">Contenido Curricular</p>
+    <h1 class="text-2xl font-black text-gray-900 dark:text-white leading-tight">Catálogo de Temas de Álgebra</h1>
+    <p class="text-sm text-gray-400 mt-0.5">Gestiona competencias y materiales de estudio</p>
+  </div>
+  <button type="button" id="btn-abrir-modal-tema"
+    class="flex items-center gap-2 px-4 py-2 rounded-xl
+           bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700
+           text-white text-sm font-bold shadow-lg shadow-sky-200/50 transition-all">
+    <span class="material-symbols-outlined text-base">add</span>
+    Nuevo tema
+  </button>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+  <!-- ===== COLUMNA IZQUIERDA: listado de temas ===== -->
+  <div class="lg:col-span-1">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-4">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="w-7 h-7 rounded-lg bg-sky-100 dark:bg-sky-900/40 flex items-center justify-center shrink-0">
+          <span class="material-symbols-outlined text-sky-600 dark:text-sky-400 text-sm">menu_book</span>
+        </span>
+        <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Competencias</p>
+      </div>
+
+      <div class="relative mb-3">
+        <span class="material-symbols-outlined absolute left-2.5 top-[8px] text-gray-400 text-[16px] pointer-events-none">search</span>
+        <input type="text" id="buscar-tema" placeholder="Buscar tema..."
+          class="w-full pl-8 pr-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/60 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-sky-400"/>
+      </div>
+
+      {% if temas %}
+      <div class="flex flex-col gap-1" id="lista-temas">
+        {% for t in temas %}
+        <a href="{{ url_for('temas.gestion_temas', id_competencia=t.id_competencia) }}"
+          data-tema-item
+          data-nombre="{{ NOMBRES_COMP.get(t.area, t.area | replace('_', ' ')) | lower }}"
+          class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
+            {% if tema_activo and t.id_competencia == tema_activo.id_competencia %}
+              bg-gradient-to-r from-sky-50 to-blue-50 text-sky-700 border border-sky-200
+              dark:from-sky-900/30 dark:to-blue-900/30 dark:text-sky-300 dark:border-sky-800 shadow-sm
+            {% else %}
+              text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/40 border border-transparent
+            {% endif %}">
+          <span class="w-2 h-2 rounded-full shrink-0
+            {% if tema_activo and t.id_competencia == tema_activo.id_competencia %}bg-sky-500{% else %}bg-gray-300{% endif %}"></span>
+          <span class="leading-tight">{{ NOMBRES_COMP.get(t.area, t.area | replace('_', ' ') | title) }}</span>
+        </a>
+        {% endfor %}
+      </div>
+      <p id="sin-temas-msg" class="hidden text-xs text-gray-400 mt-2 text-center py-2">Sin resultados.</p>
+      {% else %}
+      <div class="text-center py-8">
+        <span class="material-symbols-outlined text-4xl text-gray-200 dark:text-gray-600 block mb-2">topic</span>
+        <p class="text-sm text-gray-400">Aún no hay temas registrados.</p>
+      </div>
+      {% endif %}
+    </div>
   </div>
 
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <!-- Columna izquierda: listado de temas -->
-    <div class="lg:col-span-1">
-      <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4 h-full">
-        <h3 class="font-bold text-lg mb-4 text-gray-900 dark:text-gray-100">
-          Temas
-        </h3>
+  <!-- ===== COLUMNA DERECHA: detalle + materiales ===== -->
+  <div class="lg:col-span-2 flex flex-col gap-4">
+    {% if tema_activo %}
 
-        {% if temas %}
-          <div class="flex flex-col gap-2">
-            {% for t in temas %}
-              <a
-                href="{{ url_for('temas.gestion_temas', id_competencia=t.id_competencia) }}"
-                class="block px-3 py-2 rounded-lg text-sm font-medium
-                       {% if tema_activo and t.id_competencia == tema_activo.id_competencia %}
-                         bg-blue-50 text-blue-700 border border-blue-200
-                       {% else %}
-                         text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800
-                       {% endif %}"
-              >
-                {{ t.area }}
-              </a>
-            {% endfor %}
-          </div>
-        {% else %}
-          <p class="text-sm text-gray-500 dark:text-gray-400">
-            Aún no has registrado temas de álgebra.
-          </p>
+    <!-- Ficha del tema -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
+      <!-- Header de color -->
+      <div class="bg-gradient-to-r from-sky-500 to-blue-600 px-5 py-4 flex items-center justify-between">
+        <div>
+          <p class="text-sky-100 text-[10px] font-bold uppercase tracking-widest">Competencia activa</p>
+          <h2 class="text-base font-black text-white mt-0.5 leading-tight">
+            {{ NOMBRES_COMP.get(tema_activo.area, tema_activo.area | replace('_', ' ') | title) }}
+          </h2>
+        </div>
+        {% if tema_activo.id_competencia not in base_competencias_ids %}
+        <form action="{{ url_for('temas.eliminar_tema', id_competencia=tema_activo.id_competencia) }}" method="post"
+          onsubmit="return confirm('¿Seguro que deseas eliminar este tema?');">
+          <button type="submit"
+            class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/20 hover:bg-white/30 text-white text-xs font-bold transition-colors">
+            <span class="material-symbols-outlined text-sm">delete</span>Eliminar
+          </button>
+        </form>
         {% endif %}
       </div>
-    </div>
 
-    <!-- Columna derecha: detalle del tema -->
-    <div class="lg:col-span-2 flex flex-col gap-6">
-      {% if tema_activo %}
-
-      {% set etiqueta_nivel_filtro = 'Todos' %}
-      {% if nivel_filtro == 1 %}
-        {% set etiqueta_nivel_filtro = 'Básico' %}
-      {% elif nivel_filtro == 2 %}
-        {% set etiqueta_nivel_filtro = 'Intermedio' %}
-      {% elif nivel_filtro == 3 %}
-        {% set etiqueta_nivel_filtro = 'Avanzado' %}
-      {% endif %}
-
-      <!-- Ficha tema -->
-      <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6">
-        <div class="flex items-center justify-between mb-4">
-          <div>
-            <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              {{ tema_activo.area }}
-            </h2>
-            <p class="text-xs text-gray-500 mt-1">
-              Materiales mostrados para nivel:
-              <span class="font-semibold text-blue-600">
-                {{ etiqueta_nivel_filtro }}
-              </span>
-            </p>
-          </div>
-
-          {% if tema_activo.id_competencia not in base_competencias_ids %}
-          <form
-            action="{{ url_for('temas.eliminar_tema', id_competencia=tema_activo.id_competencia) }}"
-            method="post"
-            onsubmit="return confirm('¿Seguro que deseas eliminar este tema? Debe estar sin materiales asociados.');"
-          >
-            <button
-              type="submit"
-              class="px-3 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-semibold"
-            >
-              Eliminar tema
-            </button>
-          </form>
-          {% endif %}
-        </div>
-
-        <form
-          action="{{ url_for('temas.actualizar_tema', id_competencia=tema_activo.id_competencia) }}"
-          method="post"
-          class="space-y-4"
-        >
+      <div class="p-5">
+        <form action="{{ url_for('temas.actualizar_tema', id_competencia=tema_activo.id_competencia) }}" method="post" class="space-y-4">
           <div class="space-y-1">
-            <label class="text-sm font-medium text-gray-800 dark:text-gray-200">
-              Título del tema
-            </label>
-            <input
-              type="text"
-              name="titulo_tema"
-              value="{{ tema_activo.area }}"
-              class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-background-light dark:bg-background-dark px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
-              placeholder="Introduce el título del tema"
-              required
-            />
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wide">Título del tema</label>
+            <input type="text" name="titulo_tema"
+              value="{{ NOMBRES_COMP.get(tema_activo.area, tema_activo.area | replace('_', ' ') | title) }}"
+              class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/60 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-sky-400"
+              placeholder="Título del tema" required/>
           </div>
-
           <div class="space-y-1">
-            <label class="text-sm font-medium text-gray-800 dark:text-gray-200">
-              Descripción
-            </label>
-            <textarea
-              name="descripcion_tema"
-              rows="4"
-              class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-background-light dark:bg-background-dark px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
-              placeholder="Añade una breve descripción del tema"
-            >{{ tema_activo.descripcion }}</textarea>
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wide">Descripción</label>
+            <textarea name="descripcion_tema" rows="2"
+              class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/60 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-sky-400"
+              placeholder="Breve descripción del tema">{{ tema_activo.descripcion }}</textarea>
           </div>
-
-          <div class="space-y-1">
-            <label class="text-sm font-medium text-gray-800 dark:text-gray-200">
-              Nivel del tema
-            </label>
-            <select
-              name="nivel_tema"
-              class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-background-light dark:bg-background-dark px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
-            >
-              <option value="1" {% if tema_activo.nivel == 1 %}selected{% endif %}>Básico</option>
-              <option value="2" {% if tema_activo.nivel == 2 %}selected{% endif %}>Intermedio</option>
-              <option value="3" {% if tema_activo.nivel == 3 %}selected{% endif %}>Avanzado</option>
-            </select>
-          </div>
-
-          <div class="flex justify-end">
-            <button
-              type="submit"
-              class="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white text-sm font-semibold"
-            >
-              Guardar cambios del tema
-            </button>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="space-y-1">
+              <label class="text-xs font-bold text-gray-500 uppercase tracking-wide">Nivel</label>
+              <select name="nivel_tema"
+                class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/60 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400">
+                <option value="1" {% if tema_activo.nivel == 1 %}selected{% endif %}>Básico</option>
+                <option value="2" {% if tema_activo.nivel == 2 %}selected{% endif %}>Intermedio</option>
+                <option value="3" {% if tema_activo.nivel == 3 %}selected{% endif %}>Avanzado</option>
+              </select>
+            </div>
+            <div class="flex items-end">
+              <button type="submit"
+                class="w-full py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white text-sm font-bold shadow-sm transition-all">
+                Guardar cambios
+              </button>
+            </div>
           </div>
         </form>
       </div>
+    </div>
 
-      <!-- Materiales -->
-      <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6">
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="font-bold text-lg text-gray-900 dark:text-gray-100">
-            Materiales de Estudio
-          </h3>
+    <!-- ===== Materiales de estudio ===== -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
+        <div class="flex items-center gap-2">
+          <span class="w-7 h-7 rounded-lg bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center shrink-0">
+            <span class="material-symbols-outlined text-amber-600 dark:text-amber-400 text-sm">book_2</span>
+          </span>
+          <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Materiales de Estudio</p>
+        </div>
+        <button type="button" id="btn-abrir-modal-material"
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl
+                 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600
+                 text-white text-xs font-bold shadow-sm transition-all">
+          <span class="material-symbols-outlined text-sm">add</span>
+          Añadir material
+        </button>
+      </div>
 
-          <div class="flex items-center gap-3">
-            <!-- Filtro por nivel de material -->
-            <select
-              id="select-filtro-nivel"
-              class="h-9 text-xs rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-2"
-            >
-              <option value="" {% if not nivel_filtro %}selected{% endif %}>Todos los niveles</option>
-              <option value="1" {% if nivel_filtro == 1 %}selected{% endif %}>Básico</option>
-              <option value="2" {% if nivel_filtro == 2 %}selected{% endif %}>Intermedio</option>
-              <option value="3" {% if nivel_filtro == 3 %}selected{% endif %}>Avanzado</option>
-            </select>
-
-            <button
-              type="button"
-              id="btn-abrir-modal-material"
-              class="flex items-center gap-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-4 py-2"
-            >
-              <span class="material-symbols-outlined text-base">add</span>
-              <span>Añadir material</span>
-            </button>
+      <div class="p-5">
+        <!-- Búsqueda + filtro -->
+        <div class="flex flex-col sm:flex-row gap-2 mb-4">
+          <div class="relative flex-1">
+            <span class="material-symbols-outlined absolute left-2.5 top-[8px] text-gray-400 text-[16px] pointer-events-none">search</span>
+            <input type="text" id="buscar-material" placeholder="Buscar por título o tipo..."
+              class="w-full pl-8 pr-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/60 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-sky-400"/>
           </div>
+          <select id="select-filtro-nivel"
+            class="h-10 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/60 px-3 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-sky-400">
+            <option value="" {% if not nivel_filtro %}selected{% endif %}>Todos los niveles</option>
+            <option value="1" {% if nivel_filtro == 1 %}selected{% endif %}>Básico</option>
+            <option value="2" {% if nivel_filtro == 2 %}selected{% endif %}>Intermedio</option>
+            <option value="3" {% if nivel_filtro == 3 %}selected{% endif %}>Avanzado</option>
+          </select>
         </div>
 
         {% if materiales %}
-          <div class="space-y-3">
-            {% for m in materiales %}
-              {% set icono = 'videocam' %}
-              {% if m.tipo == 'pdf' %}
-                {% set icono = 'picture_as_pdf' %}
-              {% elif m.tipo == 'link' %}
-                {% set icono = 'link' %}
-              {% endif %}
+        <div style="max-height: 352px; overflow-y: auto; padding-right: 4px;">
+        <div class="space-y-2" id="lista-materiales">
+          {% for m in materiales %}
+          {% set icono = 'videocam' %}
+          {% if m.tipo == 'pdf' %}{% set icono = 'picture_as_pdf' %}
+          {% elif m.tipo == 'link' %}{% set icono = 'link' %}{% endif %}
 
-              {% set etiqueta_nivel = 'Sin nivel' %}
-              {% if m.nivel == 1 %}
-                {% set etiqueta_nivel = 'Básico' %}
-              {% elif m.nivel == 2 %}
-                {% set etiqueta_nivel = 'Intermedio' %}
-              {% elif m.nivel == 3 %}
-                {% set etiqueta_nivel = 'Avanzado' %}
-              {% endif %}
+          {% set etiqueta_nivel = 'Sin nivel' %}
+          {% if m.nivel == 1 %}{% set etiqueta_nivel = 'Básico' %}
+          {% elif m.nivel == 2 %}{% set etiqueta_nivel = 'Intermedio' %}
+          {% elif m.nivel == 3 %}{% set etiqueta_nivel = 'Avanzado' %}{% endif %}
 
-              <div class="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-900/50">
-                <div class="flex items-center gap-3">
-                  <span class="material-symbols-outlined text-blue-500">{{ icono }}</span>
-                  <div class="flex flex-col">
-                    <span class="text-sm font-medium text-gray-900 dark:text-gray-100">
-                      {{ m.titulo }}
-                    </span>
-                    <span class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2">
-                      <span>Tipo: {{ m.tipo|capitalize }}</span>
-                      {% if m.tiempo_estimado %}
-                        <span>· Duración aprox.: {{ m.tiempo_estimado }} min</span>
-                      {% endif %}
-                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold
-                                   {% if m.nivel == 1 %}
-                                     bg-emerald-50 text-emerald-700
-                                   {% elif m.nivel == 2 %}
-                                     bg-amber-50 text-amber-700
-                                   {% elif m.nivel == 3 %}
-                                     bg-purple-50 text-purple-700
-                                   {% else %}
-                                     bg-gray-100 text-gray-600
-                                   {% endif %}">
-                        {{ etiqueta_nivel }}
-                      </span>
-                    </span>
-                  </div>
-                </div>
-                <div class="flex items-center gap-2">
-                  <button
-                    type="button"
-                    class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
-                    data-accion="editar-material"
-                    data-id-material="{{ m.id_material }}"
-                    data-titulo="{{ m.titulo }}"
-                    data-tipo="{{ m.tipo }}"
-                    data-url="{{ m.url }}"
-                    data-tiempo="{{ m.tiempo_estimado }}"
-                    data-nivel="{{ m.nivel }}"
-                  >
-                    <span class="material-symbols-outlined text-base text-gray-700 dark:text-gray-300">edit</span>
-                  </button>
-
-                  <form
-                    action="{{ url_for('temas.eliminar_material', id_material=m.id_material) }}"
-                    method="post"
-                    class="inline"
-                    onsubmit="return confirm('¿Seguro que deseas eliminar este material?');"
-                  >
-                    <button
-                      type="submit"
-                      class="p-2 rounded-full hover:bg-red-50 dark:hover:bg-red-900/40"
-                    >
-                      <span class="material-symbols-outlined text-base text-red-600">delete</span>
-                    </button>
-                  </form>
+          <div class="flex items-center justify-between gap-3 p-3 rounded-xl
+                      bg-gray-50 dark:bg-gray-700/40 hover:bg-blue-50/50 dark:hover:bg-blue-900/10
+                      border border-gray-100 dark:border-gray-700 transition-colors"
+            data-material-item
+            data-titulo="{{ m.titulo | lower }}"
+            data-tipo="{{ m.tipo }}">
+            <div class="flex items-center gap-3 min-w-0">
+              <span class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0
+                {% if m.tipo == 'video' %}bg-blue-100 dark:bg-blue-900/40
+                {% elif m.tipo == 'pdf' %}bg-red-100 dark:bg-red-900/40
+                {% else %}bg-gray-100 dark:bg-gray-700{% endif %}">
+                <span class="material-symbols-outlined text-[18px]
+                  {% if m.tipo == 'video' %}text-blue-600
+                  {% elif m.tipo == 'pdf' %}text-red-600
+                  {% else %}text-gray-500{% endif %}">{{ icono }}</span>
+              </span>
+              <div class="flex flex-col min-w-0">
+                <a href="{{ m.url }}" target="_blank" rel="noopener noreferrer"
+                  class="text-sm font-semibold text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 truncate max-w-[240px] sm:max-w-sm">
+                  {{ m.titulo }}
+                </a>
+                <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
+                  <span class="text-[11px] text-gray-400">{{ m.tipo | capitalize }}</span>
+                  {% if m.tiempo_estimado %}
+                  <span class="text-[11px] text-gray-300">· {{ m.tiempo_estimado }} min</span>
+                  {% endif %}
+                  <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold
+                    {% if m.nivel == 1 %}bg-emerald-100 text-emerald-700
+                    {% elif m.nivel == 2 %}bg-amber-100 text-amber-700
+                    {% elif m.nivel == 3 %}bg-purple-100 text-purple-700
+                    {% else %}bg-gray-100 text-gray-600{% endif %}">
+                    {{ etiqueta_nivel }}
+                  </span>
                 </div>
               </div>
-            {% endfor %}
+            </div>
+            <div class="flex items-center gap-1 shrink-0">
+              <button type="button"
+                class="p-1.5 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors group"
+                data-accion="editar-material"
+                data-id-material="{{ m.id_material }}"
+                data-titulo="{{ m.titulo }}"
+                data-tipo="{{ m.tipo }}"
+                data-url="{{ m.url }}"
+                data-tiempo="{{ m.tiempo_estimado or '' }}"
+                data-nivel="{{ m.nivel or '' }}"
+                title="Editar material">
+                <span class="material-symbols-outlined text-[18px] text-blue-400 group-hover:text-blue-600">edit</span>
+              </button>
+              <form action="{{ url_for('temas.eliminar_material', id_material=m.id_material) }}" method="post" class="inline"
+                onsubmit="return confirm('¿Eliminar este material?');">
+                <button type="submit"
+                  class="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/40 transition-colors group"
+                  title="Eliminar material">
+                  <span class="material-symbols-outlined text-[18px] text-red-400 group-hover:text-red-600">delete</span>
+                </button>
+              </form>
+            </div>
           </div>
+          {% endfor %}
+        </div>
+        <p id="sin-materiales-msg" class="hidden text-sm text-gray-400 mt-3 text-center py-3">Sin resultados.</p>
+        </div>
+
         {% else %}
-          <p class="text-sm text-gray-500 dark:text-gray-400">
-            Este tema aún no tiene materiales de estudio para este filtro.
-            Añade videos, PDFs o enlaces para que el estudiante los vea en la app.
+        <div class="text-center py-10">
+          <span class="material-symbols-outlined text-5xl text-gray-200 dark:text-gray-600 block mb-2">book_2</span>
+          <p class="text-sm text-gray-400">
+            Este tema aún no tiene materiales.<br>
+            <span class="text-xs">Añade videos, PDFs o enlaces.</span>
           </p>
+        </div>
         {% endif %}
       </div>
-      {% else %}
-      <div class="lg:col-span-2">
-        <p class="text-sm text-gray-500 dark:text-gray-400">
-          No hay temas registrados. Crea uno nuevo para empezar.
-        </p>
-      </div>
-      {% endif %}
     </div>
+
+    {% else %}
+    <!-- Sin tema activo -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-12 text-center">
+      <span class="material-symbols-outlined text-5xl text-gray-200 dark:text-gray-600 block mb-3">topic</span>
+      <p class="text-sm font-semibold text-gray-500">Selecciona un tema del panel izquierdo</p>
+      <p class="text-xs text-gray-400 mt-1">o crea uno nuevo con el botón de arriba.</p>
+    </div>
+    {% endif %}
   </div>
 </div>
 
-<!-- ========= MODAL NUEVO TEMA ========= -->
-<div
-  id="modal-tema-backdrop"
-  class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden flex items-center justify-center z-40"
->
-  <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full mx-4 p-6 relative">
-    <h2 class="text-lg font-bold mb-4">Crear nuevo tema</h2>
-    <form method="post" action="{{ url_for('temas.crear_tema') }}" class="space-y-4">
+<!-- ========== MODAL NUEVO TEMA ========== -->
+<div id="modal-tema-backdrop"
+  class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden flex items-center justify-center z-40 p-4">
+  <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+    <div class="bg-gradient-to-r from-sky-500 to-blue-600 px-6 py-4 flex items-center justify-between">
+      <h2 class="text-base font-bold text-white">Crear nuevo tema</h2>
+      <button type="button" id="btn-cerrar-modal-tema-x"
+        class="w-7 h-7 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors">
+        <span class="material-symbols-outlined text-[16px] text-white">close</span>
+      </button>
+    </div>
+    <form method="post" action="{{ url_for('temas.crear_tema') }}" class="p-6 space-y-4">
       <div class="space-y-1">
-        <label class="text-sm font-medium text-gray-700 dark:text-gray-200">
-          Título del tema
-        </label>
-        <input
-          type="text"
-          name="titulo_tema"
-          required
-          class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-background-light dark:bg-background-dark px-3 py-2 text-sm"
-        />
+        <label class="text-xs font-bold text-gray-500 uppercase tracking-wide">Título del tema *</label>
+        <input type="text" name="titulo_tema" required
+          class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400"
+          placeholder="Ej. Ecuaciones Lineales"/>
       </div>
       <div class="space-y-1">
-        <label class="text-sm font-medium text-gray-700 dark:text-gray-200">
-          Descripción
-        </label>
-        <textarea
-          name="descripcion_tema"
-          rows="4"
-          class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-background-light dark:bg-background-dark px-3 py-2 text-sm"
-          placeholder="Breve descripción del tema"
-        ></textarea>
+        <label class="text-xs font-bold text-gray-500 uppercase tracking-wide">Descripción</label>
+        <textarea name="descripcion_tema" rows="3"
+          class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400"
+          placeholder="Breve descripción del tema"></textarea>
       </div>
       <div class="space-y-1">
-        <label class="text-sm font-medium text-gray-700 dark:text-gray-200">
-          Nivel del tema
-        </label>
-        <select
-          name="nivel_tema"
-          class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-background-light dark:bg-background-dark px-3 py-2 text-sm"
-        >
+        <label class="text-xs font-bold text-gray-500 uppercase tracking-wide">Nivel del tema</label>
+        <select name="nivel_tema"
+          class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400">
           <option value="1">Básico</option>
           <option value="2">Intermedio</option>
           <option value="3">Avanzado</option>
         </select>
       </div>
-      <div class="flex justify-end gap-3 pt-2">
-        <button
-          type="button"
-          id="btn-cerrar-modal-tema"
-          class="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-900"
-        >
-          Cancelar
-        </button>
-        <button
-          type="submit"
-          class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold"
-        >
-          Guardar
-        </button>
+      <div class="flex justify-end gap-3 pt-1">
+        <button type="button" id="btn-cerrar-modal-tema"
+          class="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50">Cancelar</button>
+        <button type="submit"
+          class="px-5 py-2 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white text-sm font-bold shadow-sm transition-all">Guardar</button>
       </div>
     </form>
   </div>
 </div>
 
 {% if tema_activo %}
-<!-- ========= MODAL NUEVO / EDITAR MATERIAL ========= -->
-<div
-  id="modal-material-backdrop"
-  class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden flex items-center justify-center z-40"
->
-  <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full mx-4 p-6 relative">
-    <h2 id="modal-material-titulo" class="text-lg font-bold mb-4">
-      Añadir material
-    </h2>
+<!-- ========== MODAL MATERIAL (nuevo / editar) ========== -->
+<div id="modal-material-backdrop"
+  class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden flex items-center justify-center z-40 p-4">
+  <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-lg w-full max-h-[92vh] flex flex-col overflow-hidden">
 
-    <form id="form-material" method="post"
-          action="{{ url_for('temas.crear_material', id_competencia=tema_activo.id_competencia) }}"
-          class="space-y-4">
-      <input type="hidden" id="form-id-material" />
+    <div class="bg-gradient-to-r from-amber-400 to-orange-500 px-6 py-4 flex items-center justify-between shrink-0">
+      <h2 id="modal-material-titulo" class="text-base font-bold text-white">Añadir material</h2>
+      <button type="button" id="btn-cerrar-modal-material-x"
+        class="w-7 h-7 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors">
+        <span class="material-symbols-outlined text-[16px] text-white">close</span>
+      </button>
+    </div>
 
-      <div class="space-y-1">
-        <label class="text-sm font-medium text-gray-700 dark:text-gray-200">
-          Título del material
-        </label>
-        <input
-          type="text"
-          name="titulo_material"
-          id="form-titulo-material"
-          required
-          class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-background-light dark:bg-background-dark px-3 py-2 text-sm"
-        />
-      </div>
+    <div class="overflow-y-auto flex-1">
+      <form id="form-material" method="post"
+        action="{{ url_for('temas.crear_material', id_competencia=tema_activo.id_competencia) }}"
+        class="px-6 py-5 space-y-5">
 
-      <div class="space-y-1">
-        <label class="text-sm font-medium text-gray-700 dark:text-gray-200">
-          Tipo
-        </label>
-        <select
-          name="tipo"
-          id="form-tipo-material"
-          class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-background-light dark:bg-background-dark px-3 py-2 text-sm"
-          required
-        >
-          <option value="video">Video</option>
-          <option value="pdf">PDF</option>
-          <option value="link">Enlace</option>
-        </select>
-      </div>
+        <!-- URL + detectar -->
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-gray-500 uppercase tracking-wide">
+            URL del recurso <span class="text-red-500">*</span>
+          </label>
+          <div class="flex gap-2">
+            <input type="text" name="url" id="form-url-material" autocomplete="off"
+              class="flex-1 min-w-0 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-400"
+              placeholder="https://youtu.be/... o https://ejemplo.com/doc.pdf"/>
+            <button type="button" id="btn-detectar-url"
+              class="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white text-sm font-bold transition-colors">
+              <span class="material-symbols-outlined text-base" id="icono-detectar">search</span>
+              <span id="texto-detectar">Detectar</span>
+            </button>
+          </div>
+          <p id="url-msg" class="text-xs hidden"></p>
+          <p class="text-xs text-gray-400">Solo HTTPS. YouTube, Vimeo, PDFs y recursos educativos.</p>
+        </div>
 
-      <div class="space-y-1">
-        <label class="text-sm font-medium text-gray-700 dark:text-gray-200">
-          URL del recurso
-        </label>
-        <input
-          type="text"
-          name="url"
-          id="form-url-material"
-          required
-          class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-background-light dark:bg-background-dark px-3 py-2 text-sm"
-          placeholder="https://..."
-        />
-      </div>
+        <!-- Cargando -->
+        <div id="bloque-cargando" class="hidden flex items-center gap-3 py-1 text-sm text-gray-500">
+          <div class="w-4 h-4 border-2 border-amber-500 border-t-transparent rounded-full animate-spin shrink-0"></div>
+          Analizando URL…
+        </div>
 
-      <div class="space-y-1">
-        <label class="text-sm font-medium text-gray-700 dark:text-gray-200">
-          Tiempo estimado (minutos)
-        </label>
-        <input
-          type="number"
-          name="tiempo_estimado"
-          id="form-tiempo-material"
-          min="0"
-          class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-background-light dark:bg-background-dark px-3 py-2 text-sm"
-        />
-      </div>
+        <!-- Campos (ocultos hasta detectar) -->
+        <div id="bloque-campos" class="space-y-4 hidden">
 
-      <div class="space-y-1">
-        <label class="text-sm font-medium text-gray-700 dark:text-gray-200">
-          Nivel del material
-        </label>
-        <select
-          name="nivel_material"
-          id="form-nivel-material"
-          class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-background-light dark:bg-background-dark px-3 py-2 text-sm"
-        >
-          <option value="1" {% if tema_activo.nivel == 1 %}selected{% endif %}>Básico</option>
-          <option value="2" {% if tema_activo.nivel == 2 %}selected{% endif %}>Intermedio</option>
-          <option value="3" {% if tema_activo.nivel == 3 %}selected{% endif %}>Avanzado</option>
-        </select>
-      </div>
+          <div class="flex items-center gap-2 p-3 rounded-xl bg-gray-50 dark:bg-gray-800">
+            <span class="text-xs text-gray-500">Tipo detectado:</span>
+            <span id="badge-tipo"
+              class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700">
+              <span class="material-symbols-outlined text-sm" id="badge-tipo-icono">link</span>
+              <span id="badge-tipo-texto">Enlace</span>
+            </span>
+            <input type="hidden" name="tipo" id="form-tipo-material" value="link"/>
+          </div>
 
-      <div class="flex justify-end gap-3 pt-2">
-        <button
-          type="button"
-          id="btn-cerrar-modal-material"
-          class="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-900"
-        >
-          Cancelar
-        </button>
-        <button
-          type="submit"
-          class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold"
-        >
-          Guardar
-        </button>
-      </div>
-    </form>
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wide">
+              Título del material <span class="text-red-500">*</span>
+            </label>
+            <input type="text" name="titulo_material" id="form-titulo-material"
+              class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-400"
+              placeholder="Ej. Introducción a ecuaciones lineales"/>
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wide">Duración (minutos) — opcional</label>
+            <input type="number" name="tiempo_estimado" id="form-tiempo-material" min="1"
+              class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+              placeholder="Ej. 15"/>
+          </div>
+
+          <div class="p-4 rounded-xl border-2 border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-800 space-y-1.5">
+            <label class="text-sm font-bold text-amber-800 dark:text-amber-300">
+              Nivel del material <span class="text-red-500">*</span>
+            </label>
+            <select name="nivel_material" id="form-nivel-material"
+              class="w-full rounded-xl border border-amber-300 dark:border-amber-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400">
+              <option value="">— Selecciona el nivel —</option>
+              <option value="1">Básico</option>
+              <option value="2">Intermedio</option>
+              <option value="3">Avanzado</option>
+            </select>
+            <p class="text-xs text-amber-700 dark:text-amber-400">Este es el único campo que defines tú.</p>
+          </div>
+
+          <div class="flex items-start gap-2 p-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+            <span class="material-symbols-outlined text-blue-600 text-lg shrink-0 mt-0.5">info</span>
+            <div class="text-xs text-blue-700 dark:text-blue-300">
+              <p class="font-bold mb-0.5">Verificación de contenido</p>
+              <p>Este material se añadirá a:
+                <strong>{{ tema_activo.area | replace('_', ' ') | title if tema_activo else '—' }}</strong>.
+              </p>
+            </div>
+          </div>
+
+          <div class="flex items-start gap-2 p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+            <input type="checkbox" id="chk-confirmar-relevancia"
+              class="mt-0.5 rounded border-gray-300 text-blue-600 focus:ring-blue-400 shrink-0" />
+            <label for="chk-confirmar-relevancia" class="text-xs text-gray-700 dark:text-gray-300 cursor-pointer select-none">
+              Confirmo que este material es de <strong>álgebra</strong> y está relacionado con
+              <strong>{{ tema_activo.area | replace('_', ' ') | title if tema_activo else 'esta competencia' }}</strong>.
+            </label>
+          </div>
+
+          <div class="flex justify-end gap-3 pt-1">
+            <button type="button" id="btn-cerrar-modal-material"
+              class="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-600 hover:bg-gray-50">Cancelar</button>
+            <button type="submit"
+              class="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white text-sm font-bold shadow-sm transition-all">
+              Guardar material
+            </button>
+          </div>
+        </div>
+
+      </form>
+    </div>
   </div>
 </div>
 {% endif %}
 
 <script>
-  // ---------- Modal NUEVO TEMA ----------
-  const backdropTema = document.getElementById("modal-tema-backdrop");
-  const btnAbrirTema = document.getElementById("btn-abrir-modal-tema");
-  const btnCerrarTema = document.getElementById("btn-cerrar-modal-tema");
+function cerrarModal(backdrop) { backdrop?.classList.add("hidden"); }
+function abrirModal(backdrop) { backdrop?.classList.remove("hidden"); }
 
-  if (btnAbrirTema) {
-    btnAbrirTema.addEventListener("click", () => {
-      backdropTema.classList.remove("hidden");
-    });
+// Modal tema
+const backdropTema = document.getElementById("modal-tema-backdrop");
+document.getElementById("btn-abrir-modal-tema")?.addEventListener("click", () => abrirModal(backdropTema));
+document.getElementById("btn-cerrar-modal-tema")?.addEventListener("click", () => cerrarModal(backdropTema));
+document.getElementById("btn-cerrar-modal-tema-x")?.addEventListener("click", () => cerrarModal(backdropTema));
+backdropTema?.addEventListener("click", (e) => { if (e.target === backdropTema) cerrarModal(backdropTema); });
+
+// Buscar tema
+document.getElementById("buscar-tema")?.addEventListener("input", function () {
+  const q = this.value.toLowerCase().trim();
+  let visible = 0;
+  document.querySelectorAll("[data-tema-item]").forEach(item => {
+    const match = !q || (item.dataset.nombre || "").includes(q);
+    item.style.display = match ? "" : "none";
+    if (match) visible++;
+  });
+  document.getElementById("sin-temas-msg")?.classList.toggle("hidden", visible > 0);
+});
+
+// Modal material
+const backdropMat = document.getElementById("modal-material-backdrop");
+const formMat = document.getElementById("form-material");
+const tituloModalMat = document.getElementById("modal-material-titulo");
+const campoUrlMat = document.getElementById("form-url-material");
+const campoTipoMat = document.getElementById("form-tipo-material");
+const campoTituloMat = document.getElementById("form-titulo-material");
+const campoTiempoMat = document.getElementById("form-tiempo-material");
+const campoNivelMat = document.getElementById("form-nivel-material");
+const btnDetectar = document.getElementById("btn-detectar-url");
+const bloqueCargando = document.getElementById("bloque-cargando");
+const bloqueCampos = document.getElementById("bloque-campos");
+const urlMsgEl = document.getElementById("url-msg");
+
+function mostrarMsgUrl(msg, tipo) {
+  if (!urlMsgEl) return;
+  urlMsgEl.textContent = msg;
+  urlMsgEl.className = "text-xs " + ({ error: "text-red-600", success: "text-green-600", info: "text-blue-600" }[tipo] || "text-gray-500");
+  urlMsgEl.classList.remove("hidden");
+}
+function ocultarMsgUrl() { urlMsgEl?.classList.add("hidden"); }
+
+const TIPOS = {
+  video: { icono: "videocam", texto: "Video", clase: "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700" },
+  pdf:   { icono: "picture_as_pdf", texto: "PDF", clase: "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700" },
+  link:  { icono: "link", texto: "Enlace", clase: "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700" },
+};
+function setTipo(tipo) {
+  const def = TIPOS[tipo] || TIPOS.link;
+  if (campoTipoMat) campoTipoMat.value = tipo || "link";
+  const badge = document.getElementById("badge-tipo");
+  if (badge) badge.className = def.clase;
+  const icono = document.getElementById("badge-tipo-icono");
+  if (icono) icono.textContent = def.icono;
+  const texto = document.getElementById("badge-tipo-texto");
+  if (texto) texto.textContent = def.texto;
+}
+
+async function detectarUrl() {
+  const url = (campoUrlMat?.value || "").trim();
+  ocultarMsgUrl();
+  if (!url) { mostrarMsgUrl("Ingresa una URL primero.", "error"); return; }
+  if (!url.startsWith("https://")) { mostrarMsgUrl("Solo se aceptan URLs con HTTPS.", "error"); return; }
+  if (btnDetectar) btnDetectar.disabled = true;
+  bloqueCargando?.classList.remove("hidden");
+  bloqueCampos?.classList.add("hidden");
+  try {
+    const resp = await fetch("/docente/temas/api/url-info?url=" + encodeURIComponent(url));
+    if (!resp.ok) throw new Error("HTTP " + resp.status);
+    const data = await resp.json();
+    if (!data.ok) { mostrarMsgUrl(data.mensaje || "No se pudo analizar la URL.", "error"); return; }
+    setTipo(data.tipo || "link");
+    if (data.titulo && campoTituloMat) campoTituloMat.value = data.titulo;
+    if (data.duracion_minutos && campoTiempoMat) campoTiempoMat.value = data.duracion_minutos;
+    bloqueCampos?.classList.remove("hidden");
+    mostrarMsgUrl(data.titulo ? "URL analizada. Revisa y selecciona el nivel." : "URL válida. Completa el título y nivel.", "success");
+    campoNivelMat?.focus();
+  } catch (e) {
+    mostrarMsgUrl("Error de conexión. Inténtalo de nuevo.", "error");
+  } finally {
+    if (btnDetectar) btnDetectar.disabled = false;
+    bloqueCargando?.classList.add("hidden");
   }
-  if (btnCerrarTema) {
-    btnCerrarTema.addEventListener("click", () => {
-      backdropTema.classList.add("hidden");
-    });
-  }
-  if (backdropTema) {
-    backdropTema.addEventListener("click", (e) => {
-      if (e.target === backdropTema) {
-        backdropTema.classList.add("hidden");
-      }
-    });
-  }
+}
 
-  // ---------- Modal MATERIAL ----------
-  const backdropMat = document.getElementById("modal-material-backdrop");
-  const btnAbrirMat = document.getElementById("btn-abrir-modal-material");
-  const btnCerrarMat = document.getElementById("btn-cerrar-modal-material");
-  const tituloModalMat = document.getElementById("modal-material-titulo");
-  const formMat = document.getElementById("form-material");
-  const campoIdMat = document.getElementById("form-id-material");
-  const campoTituloMat = document.getElementById("form-titulo-material");
-  const campoTipoMat = document.getElementById("form-tipo-material");
-  const campoUrlMat = document.getElementById("form-url-material");
-  const campoTiempoMat = document.getElementById("form-tiempo-material");
-  const campoNivelMat = document.getElementById("form-nivel-material");
+function abrirModalNuevoMaterial() {
+  if (!backdropMat) return;
+  if (tituloModalMat) tituloModalMat.textContent = "Añadir material";
+  if (formMat) formMat.action = "{{ url_for('temas.crear_material', id_competencia=tema_activo.id_competencia if tema_activo else 0) }}";
+  if (campoUrlMat) campoUrlMat.value = "";
+  setTipo("link");
+  if (campoTituloMat) campoTituloMat.value = "";
+  if (campoTiempoMat) campoTiempoMat.value = "";
+  if (campoNivelMat) campoNivelMat.value = "";
+  const chk = document.getElementById("chk-confirmar-relevancia");
+  if (chk) chk.checked = false;
+  ocultarMsgUrl();
+  bloqueCampos?.classList.add("hidden");
+  bloqueCargando?.classList.add("hidden");
+  abrirModal(backdropMat);
+  campoUrlMat?.focus();
+}
 
-  function abrirModalNuevoMaterial() {
-    if (!backdropMat) return;
-    tituloModalMat.textContent = "Añadir material";
-    campoIdMat.value = "";
-    campoTituloMat.value = "";
-    campoTipoMat.value = "video";
-    campoUrlMat.value = "";
-    campoTiempoMat.value = "";
-    campoNivelMat.value = "{{ tema_activo.nivel if tema_activo else 1 }}";
+function abrirModalEditarMaterial(btn) {
+  if (!backdropMat) return;
+  if (tituloModalMat) tituloModalMat.textContent = "Editar material";
+  const idMat = btn.dataset.idMaterial;
+  if (formMat) formMat.action = "{{ url_for('temas.editar_material', id_material=0) }}".replace(/\/0\//, "/" + idMat + "/");
+  if (campoUrlMat) campoUrlMat.value = btn.dataset.url || "";
+  setTipo(btn.dataset.tipo || "link");
+  if (campoTituloMat) campoTituloMat.value = btn.dataset.titulo || "";
+  if (campoTiempoMat) campoTiempoMat.value = btn.dataset.tiempo || "";
+  if (campoNivelMat) campoNivelMat.value = btn.dataset.nivel || "";
+  const chk = document.getElementById("chk-confirmar-relevancia");
+  if (chk) chk.checked = true;
+  ocultarMsgUrl();
+  bloqueCampos?.classList.remove("hidden");
+  bloqueCargando?.classList.add("hidden");
+  abrirModal(backdropMat);
+}
 
-    formMat.action = "{{ url_for('temas.crear_material', id_competencia=tema_activo.id_competencia if tema_activo else 0) }}";
+document.getElementById("btn-abrir-modal-material")?.addEventListener("click", abrirModalNuevoMaterial);
+document.getElementById("btn-cerrar-modal-material")?.addEventListener("click", () => cerrarModal(backdropMat));
+document.getElementById("btn-cerrar-modal-material-x")?.addEventListener("click", () => cerrarModal(backdropMat));
+backdropMat?.addEventListener("click", (e) => { if (e.target === backdropMat) cerrarModal(backdropMat); });
+btnDetectar?.addEventListener("click", detectarUrl);
+campoUrlMat?.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); detectarUrl(); } });
+document.querySelectorAll("[data-accion='editar-material']").forEach(btn => {
+  btn.addEventListener("click", () => abrirModalEditarMaterial(btn));
+});
 
-    backdropMat.classList.remove("hidden");
-  }
+formMat?.addEventListener("submit", function (e) {
+  const url = (campoUrlMat?.value || "").trim();
+  const titulo = (campoTituloMat?.value || "").trim();
+  const nivel = campoNivelMat?.value || "";
+  const chkConfirmar = document.getElementById("chk-confirmar-relevancia");
+  if (!url.startsWith("https://")) { e.preventDefault(); mostrarMsgUrl("La URL debe comenzar con https://", "error"); campoUrlMat?.focus(); return; }
+  if (!titulo || titulo.length < 5) { e.preventDefault(); mostrarMsgUrl("El título debe tener al menos 5 caracteres.", "error"); campoTituloMat?.focus(); return; }
+  if (!nivel) { e.preventDefault(); mostrarMsgUrl("Selecciona el nivel del material.", "error"); campoNivelMat?.focus(); return; }
+  if (chkConfirmar && !chkConfirmar.checked) { e.preventDefault(); mostrarMsgUrl("Debes confirmar que el material es relevante.", "error"); chkConfirmar.focus(); return; }
+});
 
-  function abrirModalEditarMaterial(btn) {
-    const idMat = btn.dataset.idMaterial;
-    const titulo = btn.dataset.titulo || "";
-    const tipo = btn.dataset.tipo || "video";
-    const url = btn.dataset.url || "";
-    const tiempo = btn.dataset.tiempo || "";
-    const nivel = btn.dataset.nivel || "{{ tema_activo.nivel if tema_activo else 1 }}";
+const sinMaterialesMsg = document.getElementById("sin-materiales-msg");
+document.getElementById("buscar-material")?.addEventListener("input", function () {
+  const q = this.value.toLowerCase().trim();
+  let visible = 0;
+  document.querySelectorAll("[data-material-item]").forEach(item => {
+    const match = !q || (item.dataset.titulo || "").includes(q) || (item.dataset.tipo || "").includes(q);
+    item.style.display = match ? "" : "none";
+    if (match) visible++;
+  });
+  sinMaterialesMsg?.classList.toggle("hidden", visible > 0);
+});
 
-    tituloModalMat.textContent = "Editar material";
-    campoIdMat.value = idMat;
-    campoTituloMat.value = titulo;
-    campoTipoMat.value = tipo;
-    campoUrlMat.value = url;
-    campoTiempoMat.value = tiempo;
-    campoNivelMat.value = nivel;
-
-    formMat.action = "{{ url_for('temas.editar_material', id_material=0) }}".replace("0", idMat);
-
-    backdropMat.classList.remove("hidden");
-  }
-
-  if (btnAbrirMat && backdropMat) {
-    btnAbrirMat.addEventListener("click", abrirModalNuevoMaterial);
-    btnCerrarMat.addEventListener("click", () => backdropMat.classList.add("hidden"));
-    backdropMat.addEventListener("click", (e) => {
-      if (e.target === backdropMat) {
-        backdropMat.classList.add("hidden");
-      }
-    });
-
-    document.querySelectorAll("[data-accion='editar-material']").forEach((btn) => {
-      btn.addEventListener("click", () => abrirModalEditarMaterial(btn));
-    });
-  }
-
-  // ---------- Filtro de nivel de materiales ----------
-  const selectFiltroNivel = document.getElementById("select-filtro-nivel");
-  if (selectFiltroNivel && {{ 'true' if tema_activo else 'false' }}) {
-    selectFiltroNivel.addEventListener("change", () => {
-      const nivel = selectFiltroNivel.value;
-      const params = new URLSearchParams(window.location.search);
-
-      params.set("id_competencia", "{{ tema_activo.id_competencia if tema_activo else '' }}");
-
-      if (nivel) {
-        params.set("nivel_filtro", nivel);
-      } else {
-        params.delete("nivel_filtro");
-      }
-
-      window.location.href = "{{ url_for('temas.gestion_temas') }}?" + params.toString();
-    });
-  }
+const selectFiltroNivel = document.getElementById("select-filtro-nivel");
+if (selectFiltroNivel) {
+  selectFiltroNivel.addEventListener("change", () => {
+    const nivel = selectFiltroNivel.value;
+    const params = new URLSearchParams(window.location.search);
+    params.set("id_competencia", "{{ tema_activo.id_competencia if tema_activo else '' }}");
+    if (nivel) params.set("nivel_filtro", nivel); else params.delete("nivel_filtro");
+    window.location.href = "{{ url_for('temas.gestion_temas') }}?" + params.toString();
+  });
+}
 </script>
 {% endblock %}

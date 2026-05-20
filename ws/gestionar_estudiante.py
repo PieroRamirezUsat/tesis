@@ -1,7 +1,7 @@
-# ws/gestionar_estudiante.py
-
-from flask import render_template, request, redirect, url_for, session, flash
+import os
+from flask import render_template, request, redirect, url_for, session, flash, current_app
 from werkzeug.security import generate_password_hash
+from werkzeug.utils import secure_filename
 
 from db import get_db
 from .docentes import bp_docentes  # usamos el mismo Blueprint
@@ -43,8 +43,34 @@ def gestion_estudiantes():
     # ============================
     # Estudiantes de los salones
     # ============================
+    # Usamos la misma lógica de progreso que /progreso/resumen:
+    # - Ejercicio distinto correcto = peso 1.0
+    # - Repeticiones correctas      = peso 0.30
     cur.execute(
         """
+        WITH prog AS (
+            SELECT
+                e.id_estudiante,
+                COUNT(DISTINCT ex.id_ejercicio) AS total_ejercicios,
+                COUNT(
+                    DISTINCT CASE
+                        WHEN o.es_correcta = TRUE THEN r.id_ejercicio
+                    END
+                ) AS distintos_correctos,
+                COUNT(
+                    CASE
+                        WHEN o.es_correcta = TRUE THEN 1
+                    END
+                ) AS correctos_totales
+            FROM estudiante e
+            LEFT JOIN respuestas_estudiantes r
+              ON r.id_estudiante = e.id_estudiante
+            LEFT JOIN opciones_ejercicio o
+              ON o.id_opcion = r.id_opcion
+            LEFT JOIN ejercicios ex
+              ON ex.id_ejercicio = r.id_ejercicio
+            GROUP BY e.id_estudiante
+        )
         SELECT
             e.id_estudiante,
             u.id_usuario,
@@ -54,21 +80,42 @@ def gestion_estudiantes():
             e.grado,
             e.estado_estudiante,
             s.nombre_salon,
-            COALESCE(e.operaciones_basicas, 0) AS comp_cantidad,
-            COALESCE(e.ecuaciones, 0)          AS comp_regularidad,
-            COALESCE(e.funciones, 0)           AS comp_forma,
-            COALESCE(e.geometria, 0)           AS comp_datos,
-            COALESCE(e.progreso_general, 0)    AS progreso_general
+
+            -- Niveles diagnósticos iniciales MINEDU (0 a 100)
+            COALESCE(e.cantidad, 0)                          AS comp_cantidad,
+            COALESCE(e.regularidad_equivalencia_cambio, 0)   AS comp_regularidad,
+            COALESCE(e.forma_movimiento_localizacion, 0)     AS comp_forma,
+            COALESCE(e.gestion_datos_incertidumbre, 0)       AS comp_datos,
+
+            -- Progreso calculado dinámicamente por ejercicios resueltos
+            COALESCE(
+                CASE
+                    WHEN prog.total_ejercicios > 0 THEN
+                        ROUND(
+                            (
+                                prog.distintos_correctos * 1.0 +
+                                GREATEST(
+                                    prog.correctos_totales - prog.distintos_correctos,
+                                    0
+                                ) * 0.30
+                            ) / prog.total_ejercicios * 100
+                        )
+                    ELSE 0
+                END,
+                0
+            ) AS progreso_general
         FROM docente_salones ds
-        JOIN salones s ON s.id_salon = ds.id_salon
+        JOIN salones s             ON s.id_salon = ds.id_salon
         JOIN estudiante_salones es ON es.id_salon = s.id_salon
-        JOIN estudiante e ON e.id_estudiante = es.id_estudiante
-        JOIN usuarios u ON u.id_usuario = e.id_usuario
+        JOIN estudiante e          ON e.id_estudiante = es.id_estudiante
+        JOIN usuarios u            ON u.id_usuario = e.id_usuario
+        LEFT JOIN prog             ON prog.id_estudiante = e.id_estudiante
         WHERE ds.id_docente = %s
         ORDER BY u.apellidos, u.nombre
         """,
         (id_docente,),
     )
+
     rows = cur.fetchall()
 
     estudiantes = [
@@ -337,13 +384,6 @@ def editar_estudiante(id_estudiante):
             flash("Las contraseñas no coinciden.", "error")
             return redirect(url_for("docentes.gestion_estudiantes"))
 
-    # Progreso general manual (promedio de las competencias ingresadas)
-    valores = [
-        v for v in [comp_cantidad, comp_regularidad, comp_forma, comp_datos]
-        if v is not None
-    ]
-    progreso_general = int(round(sum(valores) / len(valores))) if valores else None
-
     conn = get_db()
     cur = conn.cursor()
 
@@ -367,17 +407,16 @@ def editar_estudiante(id_estudiante):
         (nombre, apellidos, correo, id_usuario),
     )
 
-    # Actualizar estudiante + niveles iniciales
+    # Actualizar estudiante + niveles diagnósticos iniciales (MINEDU)
     cur.execute(
         """
         UPDATE estudiante
         SET grado = %s,
-            estado_estudiante = %s,
-            operaciones_basicas = COALESCE(%s, operaciones_basicas),
-            ecuaciones          = COALESCE(%s, ecuaciones),
-            funciones           = COALESCE(%s, funciones),
-            geometria           = COALESCE(%s, geometria),
-            progreso_general    = COALESCE(%s, progreso_general)
+            estado_estudiante              = %s,
+            cantidad                       = COALESCE(%s, cantidad),
+            regularidad_equivalencia_cambio= COALESCE(%s, regularidad_equivalencia_cambio),
+            forma_movimiento_localizacion  = COALESCE(%s, forma_movimiento_localizacion),
+            gestion_datos_incertidumbre    = COALESCE(%s, gestion_datos_incertidumbre)
         WHERE id_estudiante = %s
         """,
         (
@@ -387,7 +426,6 @@ def editar_estudiante(id_estudiante):
             comp_regularidad,
             comp_forma,
             comp_datos,
-            progreso_general,
             id_estudiante,
         ),
     )
@@ -399,6 +437,43 @@ def editar_estudiante(id_estudiante):
             "UPDATE usuarios SET contrasena = %s WHERE id_usuario = %s",
             (hash_pwd, id_usuario),
         )
+
+    # ——— Sincronizar diagnóstico inicial → nivel_estudiante_competencia ———
+    # Convierte score 0-100 a nivel_actual 1-7 y hace upsert en NEC,
+    # para que la app móvil y los reportes reflejen el diagnóstico del profesor.
+    comp_scores = {
+        "cantidad": comp_cantidad,
+        "regularidad_equivalencia_cambio": comp_regularidad,
+        "forma_movimiento_localizacion": comp_forma,
+        "gestion_datos_incertidumbre": comp_datos,
+    }
+    comp_scores_validos = {k: v for k, v in comp_scores.items() if v is not None}
+
+    if comp_scores_validos:
+        cur.execute(
+            "SELECT id_competencia, area FROM competencias WHERE area = ANY(%s)",
+            (list(comp_scores_validos.keys()),),
+        )
+        area_to_id = {row[1]: row[0] for row in cur.fetchall()}
+
+        for area, score in comp_scores_validos.items():
+            id_comp = area_to_id.get(area)
+            if not id_comp:
+                continue
+            nivel_actual = max(1, min(7, int(score * 6 / 100) + 1))
+            cur.execute(
+                """
+                INSERT INTO nivel_estudiante_competencia
+                    (id_estudiante, id_competencia, nivel_actual,
+                     promedio_puntaje, ejercicios_considerados, fecha_ultimo_update)
+                VALUES (%s, %s, %s, %s, 0, NOW())
+                ON CONFLICT (id_estudiante, id_competencia) DO UPDATE SET
+                    nivel_actual            = EXCLUDED.nivel_actual,
+                    promedio_puntaje        = EXCLUDED.promedio_puntaje,
+                    fecha_ultimo_update     = EXCLUDED.fecha_ultimo_update
+                """,
+                (id_estudiante, id_comp, nivel_actual, float(score)),
+            )
 
     conn.commit()
     cur.close()
@@ -422,4 +497,47 @@ def baja_estudiante(id_estudiante):
     cur.close()
 
     flash("Estudiante dado de baja.", "success")
+    return redirect(url_for("docentes.gestion_estudiantes"))
+
+
+@bp_docentes.route("/estudiantes/<int:id_estudiante>/foto", methods=["POST"])
+def subir_foto_estudiante(id_estudiante):
+    if "user_id" not in session or session.get("user_rol") != "docente":
+        return redirect(url_for("auth.login"))
+
+    foto = request.files.get("foto_estudiante")
+    if not foto or not foto.filename:
+        flash("No se seleccionó ninguna imagen.", "warning")
+        return redirect(url_for("docentes.gestion_estudiantes"))
+
+    ext = os.path.splitext(secure_filename(foto.filename))[1].lower()
+    if ext not in {".jpg", ".jpeg", ".png"}:
+        flash("Solo se permiten imágenes JPG o PNG.", "danger")
+        return redirect(url_for("docentes.gestion_estudiantes"))
+
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT e.id_estudiante, u.id_usuario FROM estudiante e JOIN usuarios u ON u.id_usuario = e.id_usuario WHERE e.id_estudiante = %s",
+        (id_estudiante,),
+    )
+    row = cur.fetchone()
+    cur.close()
+
+    if not row:
+        flash("Estudiante no encontrado.", "danger")
+        return redirect(url_for("docentes.gestion_estudiantes"))
+
+    id_usuario = row[1]
+    fotos_dir = os.path.join(current_app.root_path, "static", "fotos_perfil")
+    os.makedirs(fotos_dir, exist_ok=True)
+    ruta_destino = os.path.join(fotos_dir, f"user_{id_usuario}.jpg")
+
+    try:
+        foto.save(ruta_destino)
+        flash("Foto del estudiante actualizada.", "success")
+    except Exception as e:
+        print("Error guardando foto estudiante:", e)
+        flash("No se pudo guardar la imagen.", "danger")
+
     return redirect(url_for("docentes.gestion_estudiantes"))

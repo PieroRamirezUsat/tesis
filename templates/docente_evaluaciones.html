@@ -1,0 +1,778 @@
+{% extends "docente_base.html" %}
+
+{% block title %}Gestión de Evaluaciones{% endblock %}
+
+{% block contenido %}
+
+<!-- ENCABEZADO -->
+<div class="mb-5">
+  <p class="text-xs font-bold text-rose-500 uppercase tracking-widest mb-0.5">Evaluación Adaptativa</p>
+  <h1 class="text-2xl font-black text-gray-900 dark:text-white leading-tight">Gestión de Evaluaciones</h1>
+  <p class="text-sm text-gray-400 mt-0.5">Crea evaluaciones y actívalas para que los estudiantes las rindan desde la app</p>
+</div>
+
+{% if evaluacion_ejercicios %}
+<!-- ====== VISTA: EJERCICIOS DE EVALUACIÓN ====== -->
+<div class="mb-4">
+  <a href="{{ url_for('evaluaciones.gestion_evaluaciones') }}"
+     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-sm font-semibold text-gray-600 dark:text-gray-300 transition-colors">
+    <span class="material-symbols-outlined text-base">arrow_back</span>
+    Volver a evaluaciones
+  </a>
+</div>
+
+<div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
+  <!-- Header -->
+  <div class="bg-gradient-to-r from-indigo-500 to-violet-600 px-6 py-5">
+    <div class="flex items-start justify-between gap-3">
+      <div>
+        <p class="text-indigo-100 text-[10px] font-bold uppercase tracking-widest">Banco de ejercicios</p>
+        <h2 class="text-lg font-black text-white mt-0.5">{{ evaluacion_ejercicios.titulo }}</h2>
+        <p class="text-indigo-200 text-sm mt-1">
+          {{ evaluacion_ejercicios.salon }} ·
+          <span class="font-bold">{{ evaluacion_ejercicios.num_preguntas }}</span> preguntas por estudiante
+          {% if evaluacion_ejercicios.num_grupos > 1 %} ·
+            <span class="font-bold">{{ evaluacion_ejercicios.num_grupos }}</span> grupos
+          {% endif %}
+        </p>
+      </div>
+      <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold shrink-0
+        {% if evaluacion_ejercicios.estado == 'activa' %}bg-emerald-400/20 text-emerald-100 border border-emerald-400/30
+        {% elif evaluacion_ejercicios.estado == 'cerrada' %}bg-white/10 text-white/70 border border-white/20
+        {% else %}bg-amber-400/20 text-amber-100 border border-amber-400/30{% endif %}">
+        <span class="w-1.5 h-1.5 rounded-full
+          {% if evaluacion_ejercicios.estado == 'activa' %}bg-emerald-400 animate-pulse
+          {% elif evaluacion_ejercicios.estado == 'cerrada' %}bg-gray-400
+          {% else %}bg-amber-400{% endif %}"></span>
+        {{ evaluacion_ejercicios.estado | capitalize }}
+      </span>
+    </div>
+  </div>
+
+  <div class="p-5">
+    {% set AREAS_EVAL = {
+      'cantidad': 'Resuelve problemas de cantidad',
+      'regularidad_equivalencia_cambio': 'Resuelve problemas de regularidad, equivalencia y cambio',
+      'forma_movimiento_localizacion': 'Resuelve problemas de forma, movimiento y localización',
+      'gestion_datos_incertidumbre': 'Resuelve problemas de gestión de datos e incertidumbre'
+    } %}
+    {% if ejercicios_por_grupo %}
+    <!-- Tabs por grupo -->
+    <div class="mb-4 flex items-center gap-2 flex-wrap">
+      {% for letra in ejercicios_por_grupo.keys() %}
+      <button type="button"
+              onclick="mostrarGrupo('{{ letra }}')"
+              id="tab-grupo-{{ letra }}"
+              class="tab-grupo px-4 py-1.5 rounded-lg text-sm font-bold border-2 transition-all
+                     {% if loop.first %}border-indigo-400 bg-indigo-50 text-indigo-700{% else %}border-gray-200 bg-white text-gray-500 hover:border-indigo-200{% endif %}">
+        Grupo {{ letra }}
+        <span class="ml-1 text-[11px] font-normal">({{ ejercicios_por_grupo[letra]|length }} ejerc.)</span>
+      </button>
+      {% endfor %}
+    </div>
+
+    {% for letra, ejercicios in ejercicios_por_grupo.items() %}
+    <div id="panel-grupo-{{ letra }}" class="panel-grupo {% if not loop.first %}hidden{% endif %}">
+      <div class="rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden">
+        <div style="max-height: 396px; overflow-y: auto;">
+        <table class="w-full text-sm text-left">
+          <thead class="sticky top-0 z-10 bg-gray-50 dark:bg-gray-700/90 border-b border-gray-100 dark:border-gray-700">
+            <tr>
+              <th class="px-4 py-2.5 text-[11px] font-bold text-gray-400 uppercase tracking-widest w-8">#</th>
+              <th class="px-4 py-2.5 text-[11px] font-bold text-gray-400 uppercase tracking-widest">Enunciado</th>
+              <th class="px-4 py-2.5 text-[11px] font-bold text-gray-400 uppercase tracking-widest hidden sm:table-cell">Competencia</th>
+              <th class="px-4 py-2.5 text-[11px] font-bold text-gray-400 uppercase tracking-widest text-center w-12">Img</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-50 dark:divide-gray-700/60">
+            {% for ej in ejercicios %}
+            <tr class="hover:bg-indigo-50/30 dark:hover:bg-indigo-900/10 transition-colors">
+              <td class="px-4 py-3 text-xs text-gray-400 tabular-nums">{{ loop.index }}</td>
+              <td class="px-4 py-3 text-sm font-medium text-gray-800 dark:text-gray-200 max-w-sm">
+                <span class="line-clamp-2">{{ ej.descripcion }}</span>
+              </td>
+              <td class="px-4 py-3 hidden sm:table-cell" style="min-width:180px">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 text-[11px] font-semibold leading-tight">
+                  {{ AREAS_EVAL.get(ej.competencia, ej.competencia) }}
+                </span>
+              </td>
+              <td class="px-4 py-3 text-center">
+                <div class="img-thumb-wrapper relative inline-block">
+                  {% if ej.imagen_url %}
+                  <img src="{{ ej.imagen_url }}" alt=""
+                       class="w-7 h-7 rounded-full object-cover border-2 border-indigo-200 shadow-sm cursor-zoom-in" />
+                  <div class="img-preview img-preview-left">
+                    <div class="bg-white dark:bg-gray-900 rounded-2xl border-2 border-indigo-300 shadow-2xl p-1.5 w-48">
+                      <img src="{{ ej.imagen_url }}" alt="Vista ampliada" class="w-full rounded-xl object-contain max-h-44" />
+                    </div>
+                  </div>
+                  {% else %}
+                  <div class="w-7 h-7 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center mx-auto">
+                    <span class="material-symbols-outlined text-gray-300 dark:text-gray-600" style="font-size:14px">image</span>
+                  </div>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+
+    {% else %}
+    <!-- Sin grupos: selección aleatoria por estudiante -->
+    <div class="flex flex-col items-center text-center py-10 gap-4">
+      <div class="w-16 h-16 rounded-2xl bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center">
+        <span class="material-symbols-outlined text-amber-500" style="font-size:32px">shuffle</span>
+      </div>
+      <div class="max-w-md">
+        <p class="text-sm font-bold text-gray-700 dark:text-gray-200 mb-1">Selección aleatoria por estudiante</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+          Esta evaluación tiene <strong class="text-gray-700 dark:text-gray-200">{{ evaluacion_ejercicios.num_preguntas }} preguntas</strong>
+          que se eligen aleatoriamente del catálogo completo al momento en que cada estudiante inicia la prueba.
+          Cada alumno recibe un conjunto diferente de ejercicios.
+        </p>
+      </div>
+      <div class="flex items-start gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800/40 rounded-xl px-4 py-3 max-w-sm text-left">
+        <span class="material-symbols-outlined text-amber-500 shrink-0 mt-0.5" style="font-size:16px">lightbulb</span>
+        <p class="text-xs text-amber-700 dark:text-amber-400">
+          Para ver qué ejercicios recibe cada grupo, activa la evaluación con <strong>2, 3 o 4 grupos de trabajo</strong>.
+          Cada grupo recibirá ejercicios diferentes para evitar copia.
+        </p>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<style>
+  .img-thumb-wrapper { position: relative; }
+  .img-preview {
+    display: none;
+    position: absolute;
+    left: calc(100% + 8px);
+    top: 50%;
+    transform: translateY(-40%);
+    z-index: 9999;
+  }
+  .img-preview-left {
+    left: auto;
+    right: calc(100% + 8px);
+  }
+  .img-thumb-wrapper:hover .img-preview { display: block; }
+</style>
+
+<script>
+  function mostrarGrupo(letra) {
+    document.querySelectorAll('.panel-grupo').forEach(p => p.classList.add('hidden'));
+    document.querySelectorAll('.tab-grupo').forEach(t => {
+      t.classList.remove('border-indigo-400', 'bg-indigo-50', 'text-indigo-700');
+      t.classList.add('border-gray-200', 'bg-white', 'text-gray-500');
+    });
+    document.getElementById('panel-grupo-' + letra)?.classList.remove('hidden');
+    const tab = document.getElementById('tab-grupo-' + letra);
+    if (tab) {
+      tab.classList.add('border-indigo-400', 'bg-indigo-50', 'text-indigo-700');
+      tab.classList.remove('border-gray-200', 'bg-white', 'text-gray-500');
+    }
+  }
+</script>
+
+{% elif evaluacion_detalle %}
+<!-- ====== VISTA: RESULTADOS ====== -->
+<div class="mb-4">
+  <a href="{{ url_for('evaluaciones.gestion_evaluaciones') }}"
+     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-sm font-semibold text-gray-600 dark:text-gray-300 transition-colors">
+    <span class="material-symbols-outlined text-base">arrow_back</span>
+    Volver a evaluaciones
+  </a>
+</div>
+
+<div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
+  <div class="bg-gradient-to-r from-rose-500 to-pink-600 px-6 py-5">
+    <div class="flex items-start justify-between gap-3">
+      <div>
+        <p class="text-rose-100 text-[10px] font-bold uppercase tracking-widest">Resultados</p>
+        <h2 class="text-lg font-black text-white mt-0.5">{{ evaluacion_detalle.titulo }}</h2>
+        <p class="text-rose-200 text-sm mt-1">{{ evaluacion_detalle.salon }}</p>
+      </div>
+      <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold shrink-0
+        {% if evaluacion_detalle.estado == 'activa' %}bg-emerald-400/20 text-emerald-100 border border-emerald-400/30
+        {% elif evaluacion_detalle.estado == 'cerrada' %}bg-white/10 text-white/70 border border-white/20
+        {% else %}bg-amber-400/20 text-amber-100 border border-amber-400/30{% endif %}">
+        <span class="w-1.5 h-1.5 rounded-full
+          {% if evaluacion_detalle.estado == 'activa' %}bg-emerald-400
+          {% elif evaluacion_detalle.estado == 'cerrada' %}bg-gray-400
+          {% else %}bg-amber-400{% endif %}"></span>
+        {{ evaluacion_detalle.estado | capitalize }}
+      </span>
+    </div>
+  </div>
+
+  <div class="p-5">
+    {% if resultados %}
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm text-left">
+        <thead class="border-b border-gray-100 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-700/40">
+          <tr>
+            <th class="px-4 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest">Estudiante</th>
+            {% if evaluacion_detalle.num_grupos > 1 %}
+            <th class="px-4 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest text-center">Grupo</th>
+            {% endif %}
+            <th class="px-4 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest text-center">Correctas</th>
+            <th class="px-4 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest text-center">Total</th>
+            <th class="px-4 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest text-center">Puntaje</th>
+            <th class="px-4 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest text-center">Estado</th>
+            <th class="px-4 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest text-center">Finalizado</th>
+            <th class="px-4 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest text-center">Detalle</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-50 dark:divide-gray-700/60">
+          {% for r in resultados %}
+          <tr class="hover:bg-rose-50/30 dark:hover:bg-rose-900/10 transition-colors">
+            <td class="px-4 py-3 font-semibold text-gray-800 dark:text-gray-200">{{ r.nombre }}</td>
+            {% if evaluacion_detalle.num_grupos > 1 %}
+            <td class="px-4 py-3 text-center">
+              <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 text-xs font-black">
+                {{ r.grupo }}
+              </span>
+            </td>
+            {% endif %}
+            <td class="px-4 py-3 text-center font-bold text-gray-700 dark:text-gray-300">{{ r.correctas or 0 }}</td>
+            <td class="px-4 py-3 text-center text-gray-500">{{ r.total or 0 }}</td>
+            <td class="px-4 py-3 text-center">
+              {% if r.puntaje is not none %}
+                <span class="inline-block px-2.5 py-0.5 rounded-full text-xs font-bold
+                  {% if r.puntaje >= 70 %}bg-emerald-100 text-emerald-700
+                  {% elif r.puntaje >= 40 %}bg-amber-100 text-amber-700
+                  {% else %}bg-red-100 text-red-700{% endif %}">{{ r.puntaje }}%</span>
+              {% else %}<span class="text-gray-300">—</span>{% endif %}
+            </td>
+            <td class="px-4 py-3 text-center">
+              {% if r.estado == 'completado' %}
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold">
+                  <span class="material-symbols-outlined text-xs">check_circle</span>Completado
+                </span>
+              {% else %}
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-xs font-bold">
+                  En progreso
+                </span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3 text-center text-xs text-gray-400">
+              {% if r.fecha_fin %}{{ r.fecha_fin.strftime('%d/%m/%Y %H:%M') }}{% else %}—{% endif %}
+            </td>
+            <td class="px-4 py-3 text-center">
+              <a href="{{ url_for('evaluaciones.detalle_estudiante_evaluacion', id_evaluacion=evaluacion_detalle.id_evaluacion, id_estudiante=r.id_estudiante) }}"
+                 class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-50 text-rose-600 border border-rose-200 text-xs font-bold hover:bg-rose-100 transition-colors">
+                <span class="material-symbols-outlined text-sm">manage_search</span>Ver
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center py-10">
+      <span class="material-symbols-outlined text-5xl text-gray-200 dark:text-gray-600 block mb-2">pending</span>
+      <p class="text-sm text-gray-400">Ningún estudiante ha completado esta evaluación aún.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% elif evaluacion_detalle_est %}
+<!-- ====== VISTA: DETALLE POR ESTUDIANTE ====== -->
+<div class="mb-4 flex items-center gap-3">
+  <a href="{{ url_for('evaluaciones.resultados_evaluacion', id_evaluacion=evaluacion_detalle_est.id_evaluacion) }}"
+     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-sm font-semibold text-gray-600 dark:text-gray-300 transition-colors">
+    <span class="material-symbols-outlined text-base">arrow_back</span>
+    Volver a resultados
+  </a>
+</div>
+
+<div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden mb-4">
+  <!-- Header -->
+  <div class="bg-gradient-to-r from-violet-500 to-purple-600 px-6 py-5">
+    <div class="flex items-start justify-between gap-3">
+      <div>
+        <p class="text-violet-100 text-[10px] font-bold uppercase tracking-widest">Detalle de prueba</p>
+        <h2 class="text-lg font-black text-white mt-0.5">{{ evaluacion_detalle_est.nombre_estudiante }}</h2>
+        <p class="text-violet-200 text-sm mt-1">
+          {{ evaluacion_detalle_est.titulo }} · {{ evaluacion_detalle_est.salon }}
+          {% if evaluacion_detalle_est.grupo %}
+            · Grupo <strong>{{ evaluacion_detalle_est.grupo }}</strong>
+          {% endif %}
+        </p>
+      </div>
+      {% if evaluacion_detalle_est.resumen %}
+      <div class="text-right shrink-0">
+        <p class="text-[10px] text-violet-200 font-bold uppercase tracking-widest">Resultado</p>
+        <p class="text-3xl font-black text-white leading-none mt-0.5">
+          {{ evaluacion_detalle_est.resumen.correctas or 0 }}<span class="text-base font-bold text-violet-200">/{{ evaluacion_detalle_est.resumen.total or 0 }}</span>
+        </p>
+        <p class="text-violet-200 text-xs mt-0.5">
+          {% if evaluacion_detalle_est.resumen.puntaje is not none %}{{ evaluacion_detalle_est.resumen.puntaje }}% de puntaje{% endif %}
+        </p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="p-5">
+    <div class="mb-3 flex items-center gap-2">
+      <span class="w-6 h-6 rounded-md bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center shrink-0">
+        <span class="material-symbols-outlined text-violet-600 dark:text-violet-400 text-sm">quiz</span>
+      </span>
+      <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Respuestas por ejercicio</p>
+    </div>
+    <p class="text-xs text-gray-400 mb-4">Esta evaluación no afecta el progreso del estudiante en el sistema adaptativo. Es solo para revisión del docente.</p>
+
+    {% if respuestas_est %}
+    <div class="rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden">
+      <div style="max-height: 440px; overflow-y: auto;">
+      <table class="w-full text-sm text-left">
+        <thead class="sticky top-0 z-10 bg-gray-50 dark:bg-gray-700/90">
+          <tr class="text-[11px] text-gray-400 uppercase tracking-widest">
+            <th class="px-4 py-3">#</th>
+            <th class="px-4 py-3">Ejercicio</th>
+            <th class="px-4 py-3">Respuesta elegida</th>
+            <th class="px-4 py-3">Respuesta correcta</th>
+            <th class="px-4 py-3 text-center w-28">Resultado</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-50 dark:divide-gray-700/60">
+          {% for r in respuestas_est %}
+          <tr class="hover:bg-violet-50/30 dark:hover:bg-violet-900/10 transition-colors
+            {% if r.es_correcta %}bg-emerald-50/30 dark:bg-emerald-900/5{% else %}bg-red-50/20 dark:bg-red-900/5{% endif %}">
+            <td class="px-4 py-3 text-xs text-gray-400 font-mono">{{ loop.index }}</td>
+            <td class="px-4 py-3 max-w-xs">
+              <span class="text-xs font-medium text-gray-800 dark:text-gray-200 line-clamp-2 leading-snug">{{ r.ejercicio }}</span>
+            </td>
+            <td class="px-4 py-3 text-xs text-gray-600 dark:text-gray-300">{{ r.opcion_elegida }}</td>
+            <td class="px-4 py-3 text-xs text-emerald-700 dark:text-emerald-400 font-semibold">{{ r.respuesta_correcta }}</td>
+            <td class="px-4 py-3 text-center">
+              {% if r.es_correcta %}
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold">
+                  <span class="material-symbols-outlined text-xs">check_circle</span>Correcto
+                </span>
+              {% else %}
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-100 text-red-700 text-xs font-bold">
+                  <span class="material-symbols-outlined text-xs">cancel</span>Incorrecto
+                </span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      </div>
+    </div>
+    {% else %}
+    <div class="text-center py-10 rounded-xl border border-dashed border-gray-200 dark:border-gray-700">
+      <span class="material-symbols-outlined text-5xl text-gray-200 dark:text-gray-600 block mb-2">quiz</span>
+      <p class="text-sm text-gray-400">Este estudiante aún no ha respondido ningún ejercicio.</p>
+      <p class="text-xs text-gray-300 mt-1">Las respuestas aparecerán aquí cuando el estudiante rinda la prueba desde la app.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% else %}
+<!-- ====== VISTA PRINCIPAL ====== -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+  <!-- FORMULARIO CREAR / EDITAR -->
+  <div class="lg:col-span-1 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
+    <div class="bg-gradient-to-r from-rose-500 to-pink-600 px-5 py-4">
+      <p class="text-rose-100 text-[10px] font-bold uppercase tracking-widest">Editor</p>
+      <h2 id="form-titulo-header" class="text-base font-black text-white mt-0.5">Nueva Evaluación</h2>
+      <p id="form-subtitulo" class="text-rose-200 text-xs mt-0.5">Completa los datos y crea una evaluación.</p>
+    </div>
+
+    <div class="p-5">
+      <form id="form-evaluacion" method="post"
+            action="{{ url_for('evaluaciones.crear_evaluacion') }}"
+            class="space-y-4">
+        <input type="hidden" name="id_evaluacion" id="field-id-evaluacion" value="" />
+
+        <!-- Título -->
+        <div class="space-y-1">
+          <label class="text-xs font-bold text-gray-500 uppercase tracking-wide">Título *</label>
+          <input type="text" name="titulo" id="field-titulo" required
+                 class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/60 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
+                 placeholder="Ej: Examen Parcial de Álgebra" />
+        </div>
+
+        <!-- Descripción -->
+        <div class="space-y-1">
+          <label class="text-xs font-bold text-gray-500 uppercase tracking-wide">Descripción (opcional)</label>
+          <textarea name="descripcion" id="field-descripcion" rows="2"
+                    class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/60 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
+                    placeholder="Instrucciones o notas para el estudiante..."></textarea>
+        </div>
+
+        <!-- Salón -->
+        <div class="space-y-1">
+          <label class="text-xs font-bold text-gray-500 uppercase tracking-wide">Salón *</label>
+          <select name="id_salon" id="field-salon" required
+                  class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/60 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400">
+            <option value="">— Selecciona un salón —</option>
+            {% for s in salones %}
+              <option value="{{ s.id_salon }}">{{ s.nombre }}</option>
+            {% endfor %}
+          </select>
+          <!-- Advertencia de evaluación activa -->
+          <div id="alerta-activa" class="hidden mt-1.5 flex items-start gap-2 p-2.5 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/40">
+            <span class="material-symbols-outlined text-amber-500 text-base mt-0.5 shrink-0">warning</span>
+            <p class="text-[11px] text-amber-700 dark:text-amber-400">
+              Ya hay una activa: <strong id="nombre-activa-alerta">—</strong>.
+              Al activar esta, la otra se desactivará automáticamente.
+            </p>
+          </div>
+        </div>
+
+        <!-- Número de preguntas -->
+        <div class="space-y-1">
+          <label class="text-xs font-bold text-gray-500 uppercase tracking-wide">Número de preguntas *</label>
+          <input type="number" name="num_preguntas" id="field-num-preguntas"
+                 min="1" max="50" value="10"
+                 class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/60 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400" />
+          <p class="text-[11px] text-gray-400">Se seleccionan aleatoriamente del banco (1–50).</p>
+        </div>
+
+        <!-- Fechas -->
+        <div class="grid grid-cols-2 gap-3">
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wide">Fecha inicio</label>
+            <input type="datetime-local" name="fecha_inicio" id="field-fecha-inicio"
+                   class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/60 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400" />
+          </div>
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wide">Fecha fin</label>
+            <input type="datetime-local" name="fecha_fin" id="field-fecha-fin"
+                   class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/60 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400" />
+          </div>
+        </div>
+
+        <!-- Grupos de trabajo -->
+        <div class="p-3 rounded-xl bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800/40 space-y-2.5">
+          <div class="flex items-center gap-2">
+            <input type="checkbox" id="chk-grupos"
+                   class="rounded border-gray-300 text-purple-500 focus:ring-purple-400" />
+            <label for="chk-grupos" class="text-sm font-semibold text-purple-700 dark:text-purple-400 cursor-pointer flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-base">group_work</span>
+              Dividir en grupos de trabajo
+            </label>
+          </div>
+          <div id="bloque-grupos" class="hidden space-y-2">
+            <p class="text-[11px] text-purple-600 dark:text-purple-400">
+              Los estudiantes se dividirán automáticamente y cada grupo recibirá ejercicios <strong>diferentes</strong> para evitar copia.
+            </p>
+            <div class="flex gap-2 flex-wrap">
+              {% for n in [2, 3, 4] %}
+              <button type="button" data-n="{{ n }}" onclick="seleccionarGrupos({{ n }})"
+                class="btn-num-grupos px-3 py-1.5 rounded-lg border-2 border-purple-200 bg-white text-purple-600 text-sm font-bold hover:border-purple-400 transition-all">
+                {{ n }} grupos
+              </button>
+              {% endfor %}
+            </div>
+            <input type="hidden" name="num_grupos" id="field-num-grupos" value="1" />
+            <p class="text-[11px] text-purple-500">
+              Grupos: <span id="letras-grupos" class="font-bold">—</span>
+            </p>
+          </div>
+        </div>
+
+        <!-- Activar al crear (solo en creación) -->
+        <div id="bloque-activar" class="flex items-center gap-2 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800">
+          <input type="checkbox" name="activar_al_crear" value="1" id="chk-activar"
+                 class="rounded border-gray-300 text-emerald-500 focus:ring-emerald-400" />
+          <label for="chk-activar" class="text-sm font-semibold text-emerald-700 dark:text-emerald-400 cursor-pointer">
+            Activar inmediatamente
+          </label>
+        </div>
+
+        <div class="flex gap-2 pt-1">
+          <button type="submit" id="btn-submit-ev"
+                  class="flex-1 py-2 rounded-xl bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white text-sm font-bold shadow-sm transition-all">
+            Crear evaluación
+          </button>
+          <button type="button" id="btn-cancelar-edicion"
+                  onclick="resetForm()"
+                  class="hidden px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50">
+            Cancelar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- LISTA DE EVALUACIONES -->
+  <div class="lg:col-span-2">
+    {% if evaluaciones %}
+      <div class="flex flex-col gap-3">
+        {% for ev in evaluaciones %}
+        <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm
+                    hover:shadow-md hover:border-rose-100 dark:hover:border-rose-800/40 transition-all cursor-pointer"
+             onclick="cargarEdicion(this)"
+             data-id="{{ ev.id_evaluacion }}"
+             data-titulo="{{ ev.titulo | e }}"
+             data-descripcion="{{ ev.descripcion or '' | e }}"
+             data-salon="{{ ev.id_salon }}"
+             data-fecha-inicio="{{ ev.fecha_inicio.strftime('%Y-%m-%dT%H:%M') if ev.fecha_inicio else '' }}"
+             data-fecha-fin="{{ ev.fecha_fin.strftime('%Y-%m-%dT%H:%M') if ev.fecha_fin else '' }}"
+             data-num-preguntas="{{ ev.num_preguntas or 10 }}"
+             data-num-grupos="{{ ev.num_grupos or 1 }}"
+             title="Clic para editar esta evaluación">
+
+          <!-- Franja de color por estado -->
+          <div class="h-1 rounded-t-2xl
+            {% if ev.estado == 'activa' %}bg-gradient-to-r from-emerald-400 to-green-500
+            {% elif ev.estado == 'cerrada' %}bg-gray-200 dark:bg-gray-700
+            {% else %}bg-gradient-to-r from-amber-400 to-orange-400{% endif %}"></div>
+
+          <div class="p-4">
+            <div class="flex items-start justify-between gap-3 mb-2">
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-1 flex-wrap">
+                  {% if ev.estado == 'activa' %}
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[11px] font-bold">
+                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>Activa
+                    </span>
+                  {% elif ev.estado == 'cerrada' %}
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 text-[11px] font-bold">Cerrada</span>
+                  {% else %}
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[11px] font-bold">
+                      <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>Inactiva
+                    </span>
+                  {% endif %}
+
+                  {% if ev.num_grupos > 1 %}
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 text-[11px] font-bold">
+                    <span class="material-symbols-outlined text-[12px]">group_work</span>{{ ev.num_grupos }} grupos
+                  </span>
+                  {% endif %}
+
+                  <span class="inline-flex items-center gap-1 text-[11px] text-gray-400">
+                    <span class="material-symbols-outlined text-[13px]">class</span>
+                    {{ ev.nombre_salon }}
+                  </span>
+                </div>
+                <h3 class="text-base font-bold text-gray-900 dark:text-gray-100 truncate">{{ ev.titulo }}</h3>
+                {% if ev.descripcion %}
+                  <p class="text-xs text-gray-400 mt-0.5 truncate">{{ ev.descripcion }}</p>
+                {% endif %}
+              </div>
+
+              <!-- Stats -->
+              <div class="flex flex-col items-end gap-1 shrink-0">
+                <div class="flex items-center gap-1 text-xs text-gray-400">
+                  <span class="material-symbols-outlined text-[14px]">quiz</span>
+                  <span class="font-bold text-gray-600 dark:text-gray-300">{{ ev.num_preguntas or '—' }}</span>
+                  <span>preg.</span>
+                </div>
+                <div class="flex items-center gap-1 text-xs text-gray-400">
+                  <span class="material-symbols-outlined text-[14px]">how_to_reg</span>
+                  <span class="font-bold text-gray-600 dark:text-gray-300">{{ ev.num_completadas }}</span>
+                  <span>completaron</span>
+                </div>
+              </div>
+            </div>
+
+            {% if ev.fecha_inicio or ev.fecha_fin %}
+            <p class="text-[11px] text-gray-400 mb-3 flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-[13px]">schedule</span>
+              {% if ev.fecha_inicio %}{{ ev.fecha_inicio.strftime('%d/%m/%Y %H:%M') }}{% endif %}
+              {% if ev.fecha_fin %} → {{ ev.fecha_fin.strftime('%d/%m/%Y %H:%M') }}{% endif %}
+            </p>
+            {% endif %}
+
+            <!-- Acciones -->
+            <div class="flex flex-wrap gap-2 border-t border-gray-50 dark:border-gray-700 pt-3" onclick="event.stopPropagation()">
+              {% if ev.estado != 'activa' %}
+              <form method="post" action="{{ url_for('evaluaciones.activar_evaluacion', id_evaluacion=ev.id_evaluacion) }}">
+                <button type="submit"
+                        class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold shadow-sm transition-colors">
+                  <span class="material-symbols-outlined text-sm">play_arrow</span>Activar
+                </button>
+              </form>
+              {% endif %}
+              {% if ev.estado == 'activa' %}
+              <form method="post" action="{{ url_for('evaluaciones.cerrar_evaluacion', id_evaluacion=ev.id_evaluacion) }}">
+                <button type="submit"
+                        class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-gray-500 hover:bg-gray-600 text-white text-xs font-bold transition-colors">
+                  <span class="material-symbols-outlined text-sm">stop</span>Cerrar
+                </button>
+              </form>
+              {% endif %}
+
+              <!-- Ver ejercicios -->
+              <a href="{{ url_for('evaluaciones.ejercicios_evaluacion', id_evaluacion=ev.id_evaluacion) }}"
+                 class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:hover:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 text-xs font-bold transition-colors">
+                <span class="material-symbols-outlined text-sm">format_list_bulleted</span>Ver ejercicios
+              </a>
+
+              <!-- Ver resultados -->
+              <a href="{{ url_for('evaluaciones.resultados_evaluacion', id_evaluacion=ev.id_evaluacion) }}"
+                 class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 dark:bg-rose-900/20 dark:hover:bg-rose-900/40 text-rose-600 dark:text-rose-400 text-xs font-bold transition-colors">
+                <span class="material-symbols-outlined text-sm">bar_chart</span>Ver resultados
+              </a>
+
+              <!-- Eliminar -->
+              <form method="post"
+                    action="{{ url_for('evaluaciones.eliminar_evaluacion', id_evaluacion=ev.id_evaluacion) }}"
+                    onsubmit="return confirm('¿Eliminar esta evaluación? Esta acción no se puede deshacer.');">
+                <button type="submit"
+                        class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-500 text-xs font-bold transition-colors">
+                  <span class="material-symbols-outlined text-sm">delete</span>Eliminar
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-12 flex flex-col items-center justify-center text-center gap-3">
+        <span class="material-symbols-outlined text-5xl text-gray-200 dark:text-gray-600">assignment</span>
+        <p class="text-gray-400 text-sm">Aún no tienes evaluaciones creadas.<br>
+          <span class="text-xs">Usa el formulario de la izquierda para crear la primera.</span>
+        </p>
+      </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endif %}
+
+<script>
+  const URL_EDITAR_TPL = "{{ url_for('evaluaciones.editar_evaluacion', id_evaluacion=99999) }}";
+  const URL_CREAR      = "{{ url_for('evaluaciones.crear_evaluacion') }}";
+  const ACTIVA_POR_SALON = {{ activa_por_salon | tojson }};
+
+  /* ---- Advertencia de evaluación activa al cambiar salón ---- */
+  document.getElementById('field-salon')?.addEventListener('change', function () {
+    const alerta = document.getElementById('alerta-activa');
+    const nombre = document.getElementById('nombre-activa-alerta');
+    const info = ACTIVA_POR_SALON[this.value];
+    if (info) {
+      nombre.textContent = info.titulo;
+      alerta.classList.remove('hidden');
+    } else {
+      alerta.classList.add('hidden');
+    }
+  });
+
+  /* ---- Toggle grupos ---- */
+  document.getElementById('chk-grupos')?.addEventListener('change', function () {
+    const bloque = document.getElementById('bloque-grupos');
+    if (this.checked) {
+      bloque.classList.remove('hidden');
+    } else {
+      bloque.classList.add('hidden');
+      document.getElementById('field-num-grupos').value = '1';
+      document.querySelectorAll('.btn-num-grupos').forEach(b =>
+        b.classList.remove('border-purple-500', 'bg-purple-50', 'text-purple-700'));
+      document.getElementById('letras-grupos').textContent = '—';
+    }
+  });
+
+  function seleccionarGrupos(n) {
+    document.getElementById('field-num-grupos').value = n;
+    document.querySelectorAll('.btn-num-grupos').forEach(b => {
+      const activo = parseInt(b.dataset.n) === n;
+      b.classList.toggle('border-purple-500', activo);
+      b.classList.toggle('bg-purple-50',      activo);
+      b.classList.toggle('text-purple-700',   activo);
+      b.classList.toggle('border-purple-200', !activo);
+    });
+    const letras = ['A','B','C','D','E','F'].slice(0, n).join(', ');
+    document.getElementById('letras-grupos').textContent = letras;
+  }
+
+  /* ---- Cargar datos en formulario al clicar tarjeta ---- */
+  function cargarEdicion(card) {
+    const id           = card.dataset.id;
+    const titulo       = card.dataset.titulo;
+    const desc         = card.dataset.descripcion;
+    const salon        = card.dataset.salon;
+    const fInicio      = card.dataset.fechaInicio;
+    const fFin         = card.dataset.fechaFin;
+    const numPreguntas = card.dataset.numPreguntas || '10';
+    const numGrupos    = parseInt(card.dataset.numGrupos || '1');
+
+    document.getElementById('field-id-evaluacion').value = id;
+    document.getElementById('field-titulo').value         = titulo;
+    document.getElementById('field-descripcion').value    = desc;
+    document.getElementById('field-salon').value          = salon;
+    document.getElementById('field-fecha-inicio').value   = fInicio;
+    document.getElementById('field-fecha-fin').value      = fFin;
+    document.getElementById('field-num-preguntas').value  = numPreguntas;
+
+    /* Grupos */
+    const chkGrupos = document.getElementById('chk-grupos');
+    const bloqueGrupos = document.getElementById('bloque-grupos');
+    if (numGrupos > 1) {
+      chkGrupos.checked = true;
+      bloqueGrupos.classList.remove('hidden');
+      seleccionarGrupos(numGrupos);
+    } else {
+      chkGrupos.checked = false;
+      bloqueGrupos.classList.add('hidden');
+      document.getElementById('field-num-grupos').value = '1';
+    }
+
+    /* Advertencia activa */
+    const alerta = document.getElementById('alerta-activa');
+    const nombreAlerta = document.getElementById('nombre-activa-alerta');
+    const info = ACTIVA_POR_SALON[salon];
+    if (info && String(info.id) !== id) {
+      nombreAlerta.textContent = info.titulo;
+      alerta.classList.remove('hidden');
+    } else {
+      alerta.classList.add('hidden');
+    }
+
+    document.getElementById('form-titulo-header').textContent = 'Editar Evaluación';
+    document.getElementById('form-subtitulo').textContent     = 'Modificando: ' + titulo;
+    document.getElementById('btn-submit-ev').textContent      = 'Guardar cambios';
+    document.getElementById('bloque-activar').classList.add('hidden');
+    document.getElementById('btn-cancelar-edicion').classList.remove('hidden');
+
+    const form = document.getElementById('form-evaluacion');
+    form.action = URL_EDITAR_TPL.replace('99999', id);
+    form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document.getElementById('field-titulo').focus();
+  }
+
+  function resetForm() {
+    document.getElementById('field-id-evaluacion').value = '';
+    document.getElementById('field-titulo').value         = '';
+    document.getElementById('field-descripcion').value    = '';
+    document.getElementById('field-salon').value          = '';
+    document.getElementById('field-fecha-inicio').value   = '';
+    document.getElementById('field-fecha-fin').value      = '';
+    document.getElementById('field-num-preguntas').value  = '10';
+    document.getElementById('field-num-grupos').value     = '1';
+    document.getElementById('chk-grupos').checked         = false;
+    document.getElementById('bloque-grupos').classList.add('hidden');
+    document.getElementById('letras-grupos').textContent  = '—';
+    document.querySelectorAll('.btn-num-grupos').forEach(b => {
+      b.classList.remove('border-purple-500', 'bg-purple-50', 'text-purple-700');
+      b.classList.add('border-purple-200');
+    });
+    document.getElementById('alerta-activa').classList.add('hidden');
+    document.getElementById('form-titulo-header').textContent = 'Nueva Evaluación';
+    document.getElementById('form-subtitulo').textContent     = 'Completa los datos y crea una evaluación.';
+    document.getElementById('btn-submit-ev').textContent      = 'Crear evaluación';
+    document.getElementById('bloque-activar').classList.remove('hidden');
+    document.getElementById('btn-cancelar-edicion').classList.add('hidden');
+    document.getElementById('form-evaluacion').action = URL_CREAR;
+  }
+</script>
+{% endblock %}

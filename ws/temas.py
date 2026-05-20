@@ -1,6 +1,13 @@
 # ws/temas.py
+import json
+import re
+from urllib.request import urlopen
+from urllib.request import Request as URequest
+from urllib.parse import urlparse
+
 from flask import (
     Blueprint,
+    jsonify,
     render_template,
     session,
     redirect,
@@ -14,6 +21,65 @@ bp_temas = Blueprint("temas", __name__, url_prefix="/docente/temas")
 
 # IDs de las 4 competencias base del MINEDU (ajusta si tus IDs son otros)
 BASE_COMPETENCIAS_IDS = {1, 2, 3, 4}
+
+
+# ================= API: OBTENER INFO DE URL =================
+@bp_temas.route("/api/url-info", methods=["GET"])
+def api_url_info():
+    """Detecta tipo y obtiene metadatos de una URL via oEmbed (YouTube / Vimeo)."""
+    url = (request.args.get("url") or "").strip()
+
+    if not url:
+        return jsonify({"ok": False, "mensaje": "URL vacía."})
+
+    try:
+        parsed = urlparse(url)
+    except Exception:
+        return jsonify({"ok": False, "mensaje": "URL con formato inválido."})
+
+    if parsed.scheme != "https":
+        return jsonify({"ok": False, "mensaje": "Solo se aceptan URLs con HTTPS."})
+
+    hostname = (parsed.hostname or "").lower()
+    if not hostname or "." not in hostname:
+        return jsonify({"ok": False, "mensaje": "Dominio inválido."})
+
+    # Bloquear direcciones locales / privadas
+    private = {"localhost", "127.0.0.1", "0.0.0.0", "::1"}
+    if hostname in private or re.match(
+        r"^(?:10|192\.168|172\.(?:1[6-9]|2\d|3[01]))\.\d+\.\d+$", hostname
+    ):
+        return jsonify({"ok": False, "mensaje": "URL no permitida."})
+
+    # Detectar tipo
+    tipo = "link"
+    oembed_url = None
+
+    if hostname in ("youtube.com", "www.youtube.com", "youtu.be", "m.youtube.com"):
+        tipo = "video"
+        oembed_url = f"https://www.youtube.com/oembed?url={url}&format=json"
+    elif hostname in ("vimeo.com", "www.vimeo.com"):
+        tipo = "video"
+        oembed_url = f"https://vimeo.com/api/oembed.json?url={url}"
+    elif parsed.path.lower().endswith(".pdf"):
+        tipo = "pdf"
+
+    titulo = ""
+    duracion_minutos = None
+
+    if oembed_url:
+        try:
+            req = URequest(oembed_url, headers={"User-Agent": "Mozilla/5.0 (compatible)"})
+            with urlopen(req, timeout=6) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+            titulo = data.get("title", "")
+            dur_seg = data.get("duration")  # Vimeo devuelve duración en segundos
+            if dur_seg and isinstance(dur_seg, (int, float)):
+                duracion_minutos = max(1, round(int(dur_seg) / 60))
+        except Exception:
+            pass  # El usuario completa el título manualmente
+
+    return jsonify({"ok": True, "tipo": tipo, "titulo": titulo, "duracion_minutos": duracion_minutos})
 
 
 # ================= LISTAR TEMAS Y MATERIALES =================
@@ -275,6 +341,18 @@ def crear_material(id_competencia):
         flash("Título, tipo y URL del material son obligatorios.", "error")
         return redirect(url_for("temas.gestion_temas", id_competencia=id_competencia))
 
+    if not url_mat.startswith("https://"):
+        flash("La URL debe comenzar con https://", "error")
+        return redirect(url_for("temas.gestion_temas", id_competencia=id_competencia))
+
+    if tipo not in ("video", "pdf", "link"):
+        flash("Tipo de material inválido.", "error")
+        return redirect(url_for("temas.gestion_temas", id_competencia=id_competencia))
+
+    if nivel_material not in (1, 2, 3):
+        flash("El nivel del material es obligatorio.", "error")
+        return redirect(url_for("temas.gestion_temas", id_competencia=id_competencia))
+
     conn = get_db()
     cur = conn.cursor()
     cur.execute(
@@ -334,6 +412,21 @@ def editar_material(id_material):
     if not titulo or not tipo or not url_mat:
         cur.close()
         flash("Título, tipo y URL del material son obligatorios.", "error")
+        return redirect(url_for("temas.gestion_temas", id_competencia=id_competencia))
+
+    if not url_mat.startswith("https://"):
+        cur.close()
+        flash("La URL debe comenzar con https://", "error")
+        return redirect(url_for("temas.gestion_temas", id_competencia=id_competencia))
+
+    if tipo not in ("video", "pdf", "link"):
+        cur.close()
+        flash("Tipo de material inválido.", "error")
+        return redirect(url_for("temas.gestion_temas", id_competencia=id_competencia))
+
+    if nivel_material not in (1, 2, 3):
+        cur.close()
+        flash("El nivel del material es obligatorio.", "error")
         return redirect(url_for("temas.gestion_temas", id_competencia=id_competencia))
 
     cur.execute(

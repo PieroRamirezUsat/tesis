@@ -5,32 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>{% block title %}Panel del Docente{% endblock %}</title>
 
-  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 
-  <!-- Fuentes -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
-    rel="stylesheet"
-  />
-  <!-- Íconos -->
-  <link
-    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined"
-    rel="stylesheet"
-  />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
 
   <script>
     tailwind.config = {
       darkMode: "class",
       theme: {
         extend: {
-          fontFamily: {
-            display: ["Inter", "system-ui", "sans-serif"],
-          },
+          fontFamily: { display: ["Inter", "system-ui", "sans-serif"] },
           colors: {
-            primary: "#2563EB",
+            primary: "#4F46E5",
             secondary: "#22C55E",
             accent: "#F97316",
             "background-light": "#F4F7FB",
@@ -40,210 +29,199 @@
             danger: "#E11D48",
             success: "#16A34A",
           },
-          boxShadow: {
-            card: "0 10px 25px rgba(15, 23, 42, 0.08)",
-          },
-          borderRadius: {
-            xl: "0.9rem",
-          },
+          boxShadow: { card: "0 10px 25px rgba(15, 23, 42, 0.08)" },
         },
       },
     };
   </script>
 
   <style>
-    body {
-      margin: 0;
-      font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont,
-        "Segoe UI", sans-serif;
-    }
-    .material-symbols-outlined {
-      font-variation-settings: "FILL" 0, "wght" 500, "GRAD" 0, "opsz" 24;
-    }
+    body { margin: 0; font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .material-symbols-outlined { font-variation-settings: "FILL" 0, "wght" 500, "GRAD" 0, "opsz" 24; }
+    .nav-icon-active { font-variation-settings: "FILL" 1, "wght" 600, "GRAD" 0, "opsz" 24; }
   </style>
 </head>
 
-<body
-  class="bg-background-light dark:bg-background-dark font-display text-text-light dark:text-text-dark"
->
+<body class="bg-background-light dark:bg-background-dark font-display text-text-light dark:text-text-dark">
   <div class="relative flex min-h-screen w-full overflow-x-hidden">
-    <!-- SIDEBAR -->
-    <aside
-      class="flex flex-col w-64 bg-white dark:bg-background-dark border-r border-gray-200 dark:border-gray-700 p-4"
-    >
-      <!-- PARTE SUPERIOR (perfil + menú) -->
-      <div class="flex-1">
-        <!-- Perfil corto del docente -->
-        <div class="flex items-center gap-3 mb-6">
-          <img
-            src="{{ url_for('static', filename='fotos_perfil/user_' ~ session.get('user_id', 0) ~ '.jpg') }}"
-            onerror="this.onerror=null;this.src='{{ url_for('static', filename='fotos_perfil/user_4.jpg') }}';"
-            alt="Foto de perfil"
-            class="h-12 w-12 rounded-full object-cover border border-gray-200"
-          />
-          <div class="flex flex-col">
-            <span class="font-semibold text-sm text-gray-900 dark:text-white">
-              {{ session.get('user_name', 'Profesor') }}
-            </span>
-            <span class="text-xs text-gray-500">
-              {{ session.get('user_rol', 'Álgebra') }}
-            </span>
+
+    <!-- ======== SIDEBAR ======== -->
+    <aside class="flex flex-col w-64 shrink-0 bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800">
+
+      <!-- Brand + Profile (gradient header) -->
+      <div class="bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-700 px-4 pt-5 pb-4">
+        <div class="flex items-center gap-2.5 mb-4">
+          <div class="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+            <span class="material-symbols-outlined text-white" style="font-size:18px">school</span>
+          </div>
+          <div>
+            <p class="text-white font-black text-sm leading-tight">TutorMath</p>
+            <p class="text-indigo-200 leading-tight" style="font-size:10px">Sistema Adaptativo</p>
           </div>
         </div>
 
+        <div class="flex items-center gap-3 bg-white/10 rounded-xl px-3 py-2.5">
+          <img
+            src="{{ url_for('static', filename='fotos_perfil/user_' ~ session.get('user_id', 0) ~ '.jpg') }}"
+            onerror="this.onerror=null;this.src='{{ url_for('static', filename='fotos_perfil/user_4.jpg') }}';"
+            alt="Foto"
+            class="h-9 w-9 rounded-full object-cover border-2 border-white/40 shrink-0"
+          />
+          <div class="flex flex-col min-w-0">
+            <span class="font-bold text-white leading-tight truncate" style="font-size:12px">
+              {{ session.get('user_name', 'Profesor') }}
+            </span>
+            <span class="text-indigo-200 leading-tight truncate" style="font-size:10px">
+              {{ session.get('user_rol', 'Docente') }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation -->
+      <div class="flex-1 overflow-y-auto py-3 px-3">
         {% set ap = active_page|default('') %}
 
-        <!-- Navegación -->
-        <nav class="space-y-1">
-          <!-- Panel de Control -->
-          <a
-            href="{{ url_for('docentes.dashboard') }}"
-            class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm
-              {% if ap == 'dashboard' %}
-                bg-primary/10 text-primary font-semibold
-              {% else %}
-                text-gray-700 hover:bg-gray-100
-              {% endif %}"
-          >
-            <span class="material-symbols-outlined text-base">dashboard</span>
-            <span>Panel de Control</span>
+        <p class="font-bold text-gray-400 uppercase tracking-widest px-2 mb-2" style="font-size:9px">Menú Principal</p>
+
+        <nav class="space-y-0.5">
+
+          <!-- Dashboard -->
+          <a href="{{ url_for('docentes.dashboard') }}"
+            class="group flex items-center gap-3 px-2.5 py-2 rounded-xl text-sm transition-all
+              {% if ap == 'dashboard' %}bg-indigo-50 dark:bg-indigo-900/30{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50{% endif %}">
+            <div class="flex items-center justify-center w-8 h-8 rounded-lg shrink-0 transition-all
+              {% if ap == 'dashboard' %}bg-indigo-600 shadow-sm{% else %}bg-indigo-50 dark:bg-indigo-900/20 group-hover:bg-indigo-100{% endif %}">
+              <span class="material-symbols-outlined {% if ap == 'dashboard' %}nav-icon-active text-white{% else %}text-indigo-500{% endif %}" style="font-size:18px">dashboard</span>
+            </div>
+            <span class="{% if ap == 'dashboard' %}font-bold text-indigo-700 dark:text-indigo-300{% else %}font-medium{% endif %}">Panel de Control</span>
           </a>
 
-          <!-- Gestión de Estudiantes -->
-          <a
-            href="{{ url_for('docentes.gestion_estudiantes') }}"
-            class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm
-              {% if ap == 'estudiantes' %}
-                bg-primary/10 text-primary font-semibold
-              {% else %}
-                text-gray-700 hover:bg-gray-100
-              {% endif %}"
-          >
-            <span class="material-symbols-outlined text-base">group</span>
-            <span>Gestión de Estudiantes</span>
+          <!-- Estudiantes -->
+          <a href="{{ url_for('docentes.gestion_estudiantes') }}"
+            class="group flex items-center gap-3 px-2.5 py-2 rounded-xl text-sm transition-all
+              {% if ap == 'estudiantes' %}bg-blue-50 dark:bg-blue-900/30{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50{% endif %}">
+            <div class="flex items-center justify-center w-8 h-8 rounded-lg shrink-0 transition-all
+              {% if ap == 'estudiantes' %}bg-blue-600 shadow-sm{% else %}bg-blue-50 dark:bg-blue-900/20 group-hover:bg-blue-100{% endif %}">
+              <span class="material-symbols-outlined {% if ap == 'estudiantes' %}nav-icon-active text-white{% else %}text-blue-500{% endif %}" style="font-size:18px">group</span>
+            </div>
+            <span class="{% if ap == 'estudiantes' %}font-bold text-blue-700 dark:text-blue-300{% else %}font-medium{% endif %}">Gestión de Estudiantes</span>
           </a>
 
-          <!-- Gestión de Salones -->
-          <a
-            href="{{ url_for('salones.gestion_salones') }}"
-            class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm
-              {% if ap == 'salones' %}
-                bg-primary/10 text-primary font-semibold
-              {% else %}
-                text-gray-700 hover:bg-gray-100
-              {% endif %}"
-          >
-            <span class="material-symbols-outlined text-base">class</span>
-            <span>Gestión de Salones</span>
+          <!-- Salones -->
+          <a href="{{ url_for('salones.gestion_salones') }}"
+            class="group flex items-center gap-3 px-2.5 py-2 rounded-xl text-sm transition-all
+              {% if ap == 'salones' %}bg-violet-50 dark:bg-violet-900/30{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50{% endif %}">
+            <div class="flex items-center justify-center w-8 h-8 rounded-lg shrink-0 transition-all
+              {% if ap == 'salones' %}bg-violet-600 shadow-sm{% else %}bg-violet-50 dark:bg-violet-900/20 group-hover:bg-violet-100{% endif %}">
+              <span class="material-symbols-outlined {% if ap == 'salones' %}nav-icon-active text-white{% else %}text-violet-500{% endif %}" style="font-size:18px">class</span>
+            </div>
+            <span class="{% if ap == 'salones' %}font-bold text-violet-700 dark:text-violet-300{% else %}font-medium{% endif %}">Gestión de Salones</span>
           </a>
 
-          <!-- Catálogo de Temas -->
-          <a
-            href="{{ url_for('temas.gestion_temas') }}"
-            class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm
-              {% if ap == 'temas' %}
-                bg-primary/10 text-primary font-semibold
-              {% else %}
-                text-gray-700 hover:bg-gray-100
-              {% endif %}"
-          >
-            <span class="material-symbols-outlined text-base">menu_book</span>
-            <span>Catálogo de Temas</span>
+          <!-- Temas -->
+          <a href="{{ url_for('temas.gestion_temas') }}"
+            class="group flex items-center gap-3 px-2.5 py-2 rounded-xl text-sm transition-all
+              {% if ap == 'temas' %}bg-sky-50 dark:bg-sky-900/30{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50{% endif %}">
+            <div class="flex items-center justify-center w-8 h-8 rounded-lg shrink-0 transition-all
+              {% if ap == 'temas' %}bg-sky-600 shadow-sm{% else %}bg-sky-50 dark:bg-sky-900/20 group-hover:bg-sky-100{% endif %}">
+              <span class="material-symbols-outlined {% if ap == 'temas' %}nav-icon-active text-white{% else %}text-sky-500{% endif %}" style="font-size:18px">menu_book</span>
+            </div>
+            <span class="{% if ap == 'temas' %}font-bold text-sky-700 dark:text-sky-300{% else %}font-medium{% endif %}">Catálogo de Temas</span>
           </a>
 
-          <!-- Gestión de Ejercicios -->
-          <a
-            href="{{ url_for('ejercicios.gestion_ejercicios') }}"
-            class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm
-              {% if ap == 'ejercicios' %}
-                bg-primary/10 text-primary font-semibold
-              {% else %}
-                text-gray-700 hover:bg-gray-100
-              {% endif %}"
-          >
-            <span class="material-symbols-outlined text-base">calculate</span>
-            <span>Gestión de Ejercicios</span>
+          <!-- Ejercicios -->
+          <a href="{{ url_for('ejercicios.gestion_ejercicios') }}"
+            class="group flex items-center gap-3 px-2.5 py-2 rounded-xl text-sm transition-all
+              {% if ap == 'ejercicios' %}bg-amber-50 dark:bg-amber-900/30{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50{% endif %}">
+            <div class="flex items-center justify-center w-8 h-8 rounded-lg shrink-0 transition-all
+              {% if ap == 'ejercicios' %}bg-amber-500 shadow-sm{% else %}bg-amber-50 dark:bg-amber-900/20 group-hover:bg-amber-100{% endif %}">
+              <span class="material-symbols-outlined {% if ap == 'ejercicios' %}nav-icon-active text-white{% else %}text-amber-500{% endif %}" style="font-size:18px">calculate</span>
+            </div>
+            <span class="{% if ap == 'ejercicios' %}font-bold text-amber-700 dark:text-amber-300{% else %}font-medium{% endif %}">Gestión de Ejercicios</span>
           </a>
 
-          <!-- Reportes Detallados -->
-          <a
-            href="{{ url_for('reportes.reporte_progreso') }}"
-            class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm
-              {% if ap == 'reportes' %}
-                bg-primary/10 text-primary font-semibold
-              {% else %}
-                text-gray-700 hover:bg-gray-100
-              {% endif %}"
-          >
-            <span class="material-symbols-outlined text-base">bar_chart</span>
-            <span>Reportes Detallados</span>
+          <!-- Reportes -->
+          <a href="{{ url_for('reportes.reporte_progreso') }}"
+            class="group flex items-center gap-3 px-2.5 py-2 rounded-xl text-sm transition-all
+              {% if ap == 'reportes' %}bg-emerald-50 dark:bg-emerald-900/30{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50{% endif %}">
+            <div class="flex items-center justify-center w-8 h-8 rounded-lg shrink-0 transition-all
+              {% if ap == 'reportes' %}bg-emerald-600 shadow-sm{% else %}bg-emerald-50 dark:bg-emerald-900/20 group-hover:bg-emerald-100{% endif %}">
+              <span class="material-symbols-outlined {% if ap == 'reportes' %}nav-icon-active text-white{% else %}text-emerald-500{% endif %}" style="font-size:18px">bar_chart</span>
+            </div>
+            <span class="{% if ap == 'reportes' %}font-bold text-emerald-700 dark:text-emerald-300{% else %}font-medium{% endif %}">Reportes Detallados</span>
           </a>
 
-          <!-- Perfil del Profesor -->
-          <a
-            href="{{ url_for('docentes.perfil') }}"
-            class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm
-              {% if ap == 'perfil' %}
-                bg-primary/10 text-primary font-semibold
-              {% else %}
-                text-gray-700 hover:bg-gray-100
-              {% endif %}"
-          >
-            <span class="material-symbols-outlined text-base">person</span>
-            <span>Perfil del Profesor</span>
+          <!-- Evaluaciones -->
+          <a href="{{ url_for('evaluaciones.gestion_evaluaciones') }}"
+            class="group flex items-center gap-3 px-2.5 py-2 rounded-xl text-sm transition-all
+              {% if ap == 'evaluaciones' %}bg-rose-50 dark:bg-rose-900/30{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50{% endif %}">
+            <div class="flex items-center justify-center w-8 h-8 rounded-lg shrink-0 transition-all
+              {% if ap == 'evaluaciones' %}bg-rose-600 shadow-sm{% else %}bg-rose-50 dark:bg-rose-900/20 group-hover:bg-rose-100{% endif %}">
+              <span class="material-symbols-outlined {% if ap == 'evaluaciones' %}nav-icon-active text-white{% else %}text-rose-500{% endif %}" style="font-size:18px">assignment</span>
+            </div>
+            <span class="{% if ap == 'evaluaciones' %}font-bold text-rose-700 dark:text-rose-300{% else %}font-medium{% endif %}">Evaluaciones</span>
           </a>
+
+          <div class="border-t border-gray-100 dark:border-gray-800 my-2"></div>
+          <p class="font-bold text-gray-400 uppercase tracking-widest px-2 mb-2" style="font-size:9px">Cuenta</p>
+
+          <!-- Perfil -->
+          <a href="{{ url_for('docentes.perfil') }}"
+            class="group flex items-center gap-3 px-2.5 py-2 rounded-xl text-sm transition-all
+              {% if ap == 'perfil' %}bg-slate-100 dark:bg-slate-800/40{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50{% endif %}">
+            <div class="flex items-center justify-center w-8 h-8 rounded-lg shrink-0 transition-all
+              {% if ap == 'perfil' %}bg-slate-600 shadow-sm{% else %}bg-slate-100 dark:bg-slate-800/20 group-hover:bg-slate-200{% endif %}">
+              <span class="material-symbols-outlined {% if ap == 'perfil' %}nav-icon-active text-white{% else %}text-slate-500{% endif %}" style="font-size:18px">person</span>
+            </div>
+            <span class="{% if ap == 'perfil' %}font-bold text-slate-700 dark:text-slate-300{% else %}font-medium{% endif %}">Mi Perfil</span>
+          </a>
+
         </nav>
       </div>
 
-      <!-- BOTÓN CERRAR SESIÓN (GET) -->
-      <div class="mt-6">
-        <a
-          href="{{ url_for('auth.logout') }}"
-          class="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg
-            text-sm font-semibold text-danger hover:bg-red-50"
-        >
-          <span class="material-symbols-outlined text-base">logout</span>
+      <!-- Logout -->
+      <div class="p-3 border-t border-gray-100 dark:border-gray-800">
+        <a href="{{ url_for('auth.logout') }}"
+          class="group flex items-center gap-3 px-2.5 py-2 rounded-xl text-sm font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-all">
+          <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-900/20 group-hover:bg-rose-100 shrink-0 transition-all">
+            <span class="material-symbols-outlined text-rose-500" style="font-size:18px">logout</span>
+          </div>
           <span>Cerrar Sesión</span>
         </a>
       </div>
     </aside>
 
-    <!-- CONTENIDO PRINCIPAL -->
-    <div class="flex-1 flex flex-col">
-      <!-- Header -->
-      <header
-        class="flex items-center justify-between whitespace-nowrap border-b border-solid border-gray-200
-          dark:border-gray-700 px-6 py-4 bg-white dark:bg-background-dark shadow-sm"
-      >
-        <div class="flex flex-col">
-          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
-            {{ titulo_pagina or 'Panel de Control' }}
-          </h1>
-        </div>
+    <!-- ======== CONTENIDO PRINCIPAL ======== -->
+    <div class="flex-1 flex flex-col min-w-0">
+      <header class="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 px-6 py-4 bg-white dark:bg-gray-900 shadow-sm">
+        <h1 class="text-xl font-black text-gray-900 dark:text-white leading-tight">
+          {{ titulo_pagina or 'Panel de Control' }}
+        </h1>
       </header>
 
-      <main
-        class="flex-1 bg-background-light dark:bg-background-dark p-4 sm:p-6 lg:p-8"
-      >
-        <div class="max-w-[1200px] mx-auto">
+      <main class="flex-1 bg-background-light dark:bg-background-dark p-4 sm:p-6 lg:p-8">
+        <div class="w-full">
 
-          {# --- BLOQUE DE MENSAJES FLASH GLOBAL --- #}
           {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
-              <div class="space-y-2 mb-4">
+              <div class="space-y-2 mb-5">
                 {% for category, message in messages %}
-                  <div
-                    class="px-4 py-2 rounded-lg text-sm
-                      {% if category == 'success' %}
-                        bg-green-100 text-green-800
-                      {% elif category == 'danger' or category == 'error' %}
-                        bg-red-100 text-red-800
-                      {% elif category == 'warning' %}
-                        bg-yellow-100 text-yellow-800
-                      {% else %}
-                        bg-blue-100 text-blue-800
-                      {% endif %}"
-                  >
+                  <div class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium border
+                    {% if category == 'success' %}bg-emerald-50 text-emerald-800 border-emerald-100
+                    {% elif category == 'danger' or category == 'error' %}bg-rose-50 text-rose-800 border-rose-100
+                    {% elif category == 'warning' %}bg-amber-50 text-amber-800 border-amber-100
+                    {% else %}bg-blue-50 text-blue-800 border-blue-100{% endif %}">
+                    <span class="material-symbols-outlined shrink-0
+                      {% if category == 'success' %}text-emerald-500
+                      {% elif category == 'danger' or category == 'error' %}text-rose-500
+                      {% elif category == 'warning' %}text-amber-500
+                      {% else %}text-blue-500{% endif %}" style="font-size:18px">
+                      {% if category == 'success' %}check_circle
+                      {% elif category == 'danger' or category == 'error' %}error
+                      {% elif category == 'warning' %}warning
+                      {% else %}info{% endif %}
+                    </span>
                     {{ message }}
                   </div>
                 {% endfor %}
@@ -256,5 +234,6 @@
       </main>
     </div>
   </div>
+  {% block scripts %}{% endblock %}
 </body>
 </html>

@@ -3,94 +3,104 @@
 {% block title %}Gestión de Salones{% endblock %}
 
 {% block contenido %}
-<div class="flex flex-col gap-6">
 
-  <!-- Título + botones -->
-  <div class="flex flex-wrap items-center justify-between gap-4">
-    <h1 class="text-3xl font-black leading-tight tracking-[-0.03em]">
-      Administración de Salones
-    </h1>
+<!-- ENCABEZADO -->
+<div class="mb-5">
+  <p class="text-xs font-bold text-violet-500 uppercase tracking-widest mb-0.5">Organización del Aula</p>
+  <h1 class="text-2xl font-black text-gray-900 dark:text-white leading-tight">Administrar Salones</h1>
+  <p class="text-sm text-gray-400 mt-0.5">Crea, edita y gestiona los salones de clase</p>
+</div>
 
-    <div class="flex flex-wrap gap-2">
-      <!-- Botón UNIRSE A SALÓN -->
-      <button
-        type="button"
-        id="btn-abrir-modal-unirse"
-        class="flex items-center gap-2 rounded-lg border border-blue-600 text-blue-600 hover:bg-blue-50 text-sm font-semibold px-4 py-2 shadow-sm"
-      >
-        <span class="material-symbols-outlined text-base">group_add</span>
-        <span>Unirse a salón</span>
-      </button>
-
-      <!-- Botón CREAR SALÓN -->
-      <button
-        type="button"
-        id="btn-abrir-modal-salon"
-        class="flex items-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 shadow-sm"
-      >
-        <span class="material-symbols-outlined text-base">add</span>
-        <span>Crear salón</span>
-      </button>
+<!-- STATS + ACCIONES -->
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
+  <div class="sm:col-span-2 bg-gradient-to-br from-violet-600 to-purple-700 rounded-2xl p-5 text-white shadow-sm">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-violet-200 text-xs font-bold uppercase tracking-widest mb-1">Total de Salones</p>
+        <p class="text-4xl font-black leading-none">{{ salones|length }}</p>
+        <p class="text-violet-200 text-sm mt-1">salones registrados</p>
+      </div>
+      <div class="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center">
+        <span class="material-symbols-outlined text-white" style="font-size:32px">class</span>
+      </div>
     </div>
   </div>
 
-  <!-- Tabla de salones -->
-  <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-x-auto">
+  <div class="flex flex-col gap-2.5">
+    <button type="button" id="btn-abrir-modal-salon"
+      class="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white text-sm font-bold px-4 shadow-sm transition-all">
+      <span class="material-symbols-outlined" style="font-size:18px">add_circle</span>
+      <span>Crear Salón</span>
+    </button>
+    <button type="button" id="btn-abrir-modal-unirse"
+      class="flex-1 flex items-center justify-center gap-2 rounded-2xl border-2 border-violet-200 dark:border-violet-800 text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 text-sm font-bold px-4 transition-all">
+      <span class="material-symbols-outlined" style="font-size:18px">group_add</span>
+      <span>Unirse a Salón</span>
+    </button>
+  </div>
+</div>
+
+<!-- TABLA DE SALONES -->
+<div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
+
+  <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
+    <div class="w-7 h-7 rounded-lg bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
+      <span class="material-symbols-outlined text-violet-600 dark:text-violet-400" style="font-size:16px">list</span>
+    </div>
+    <h2 class="text-sm font-bold text-gray-700 dark:text-gray-200">Lista de Salones</h2>
+  </div>
+
+  <div class="overflow-x-auto">
     <table class="w-full text-sm text-left">
-      <thead class="border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950/40">
+      <thead class="border-b border-gray-100 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-700/40">
         <tr>
-          <th class="px-6 py-3 font-medium text-gray-600 dark:text-gray-300">Nombre del salón</th>
-          <th class="px-6 py-3 font-medium text-gray-600 dark:text-gray-300">Grado</th>
-          <th class="px-6 py-3 font-medium text-gray-600 dark:text-gray-300">Estudiantes</th>
-          <th class="px-6 py-3 font-medium text-gray-600 dark:text-gray-300 text-right">Acciones</th>
+          <th class="px-5 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest">Salón</th>
+          <th class="px-5 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest">Grado</th>
+          <th class="px-5 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest text-center">Estudiantes</th>
+          <th class="px-5 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest text-right">Acciones</th>
         </tr>
       </thead>
       <tbody>
         {% if salones %}
           {% for s in salones %}
-          <tr class="border-b last:border-b-0 border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900/60 transition-colors">
-            <td class="px-6 py-3">
-              <p class="font-medium text-gray-900 dark:text-gray-100">{{ s.nombre_salon }}</p>
-              <p class="text-xs text-gray-500 dark:text-gray-400">
-                Código: {{ s.id_salon }}
-              </p>
+          <tr class="border-b last:border-b-0 border-gray-50 dark:border-gray-700/60 hover:bg-violet-50/30 dark:hover:bg-violet-900/10 transition-colors">
+            <td class="px-5 py-3.5">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-400 to-purple-500 flex items-center justify-center shrink-0">
+                  <span class="material-symbols-outlined text-white" style="font-size:16px">class</span>
+                </div>
+                <div>
+                  <p class="font-semibold text-gray-900 dark:text-gray-100">{{ s.nombre_salon }}</p>
+                  <p class="text-[11px] text-gray-400">ID: {{ s.id_salon }}</p>
+                </div>
+              </div>
             </td>
-            <td class="px-6 py-3 text-gray-700 dark:text-gray-300">
-              {{ s.grado }}
+            <td class="px-5 py-3.5">
+              <span class="inline-flex items-center px-2.5 py-1 rounded-lg bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300 text-[11px] font-semibold">
+                {{ s.grado }}
+              </span>
             </td>
-            <td class="px-6 py-3 text-gray-700 dark:text-gray-300">
-              {{ s.num_estudiantes }}
-            </td>
-            <td class="px-6 py-3 text-right">
+            <td class="px-5 py-3.5 text-center">
               <div class="inline-flex items-center gap-1.5">
-                <!-- Editar -->
-                <button
-                  type="button"
-                  class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+                <span class="material-symbols-outlined text-gray-400" style="font-size:16px">group</span>
+                <span class="font-semibold text-gray-700 dark:text-gray-200">{{ s.num_estudiantes }}</span>
+              </div>
+            </td>
+            <td class="px-5 py-3.5 text-right">
+              <div class="inline-flex items-center gap-1">
+                <button type="button"
+                  class="p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors group"
                   data-accion="editar-salon"
                   data-id-salon="{{ s.id_salon }}"
                   data-nombre="{{ s.nombre_salon }}"
                   data-grado="{{ s.grado }}"
-                >
-                  <span class="material-symbols-outlined text-base text-gray-700 dark:text-gray-300">
-                    edit
-                  </span>
+                  title="Editar">
+                  <span class="material-symbols-outlined text-blue-400 group-hover:text-blue-600" style="font-size:18px">edit</span>
                 </button>
-
-                <!-- Eliminar -->
-                <form
-                  action="{{ url_for('salones.eliminar_salon', id_salon=s.id_salon) }}"
-                  method="post"
-                  class="inline"
-                  onsubmit="return confirm('¿Seguro que deseas eliminar este salón? Esto desvinculará a los estudiantes de este salón.');"
-                >
-                  <button
-                    type="submit"
-                    class="p-2 rounded-full hover:bg-red-50 dark:hover:bg-red-900/40"
-                  >
-                    <span class="material-symbols-outlined text-base text-red-600">
-                      delete
-                    </span>
+                <form action="{{ url_for('salones.eliminar_salon', id_salon=s.id_salon) }}" method="post" class="inline"
+                  onsubmit="return confirm('¿Seguro que deseas eliminar este salón? Esto desvinculará a los estudiantes.');">
+                  <button type="submit" class="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors group" title="Eliminar">
+                    <span class="material-symbols-outlined text-red-400 group-hover:text-red-600" style="font-size:18px">delete</span>
                   </button>
                 </form>
               </div>
@@ -99,8 +109,10 @@
           {% endfor %}
         {% else %}
           <tr>
-            <td colspan="4" class="px-6 py-6 text-center text-gray-500 dark:text-gray-400">
-              Aún no tienes salones registrados.
+            <td colspan="4" class="px-5 py-14 text-center">
+              <span class="material-symbols-outlined text-gray-200 dark:text-gray-600 block mb-2" style="font-size:48px">class</span>
+              <p class="text-sm font-medium text-gray-400">Aún no tienes salones registrados.</p>
+              <p class="text-xs text-gray-300 dark:text-gray-600 mt-1">Crea tu primer salón con el botón de arriba.</p>
             </td>
           </tr>
         {% endif %}
@@ -109,58 +121,48 @@
   </div>
 </div>
 
-<!-- ============= MODAL NUEVO / EDITAR SALÓN ============= -->
-<div
-  id="modal-salon-backdrop"
-  class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden z-40 flex items-center justify-center"
->
-  <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full mx-4 p-6 relative">
-    <h2 id="modal-salon-titulo" class="text-lg font-bold mb-4">
-      Crear nuevo salón
-    </h2>
+<!-- ===== MODAL CREAR / EDITAR SALÓN ===== -->
+<div id="modal-salon-backdrop"
+  class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden z-40 flex items-center justify-center">
+  <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden">
 
-    <form id="form-salon" method="post" action="{{ url_for('salones.crear_salon') }}" class="space-y-4">
+    <div class="bg-gradient-to-r from-violet-600 to-purple-700 px-6 py-5">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-violet-200 text-[10px] font-bold uppercase tracking-widest mb-0.5">Salones</p>
+          <h2 id="modal-salon-titulo" class="text-lg font-black text-white">Crear nuevo salón</h2>
+        </div>
+        <button type="button" id="btn-cerrar-modal-salon"
+          class="w-8 h-8 flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition-colors">
+          <span class="material-symbols-outlined text-white" style="font-size:18px">close</span>
+        </button>
+      </div>
+    </div>
+
+    <form id="form-salon" method="post" action="{{ url_for('salones.crear_salon') }}" class="p-6 space-y-4">
       <input type="hidden" name="id_salon" id="form-id-salon" />
 
-      <div class="space-y-1">
-        <label class="text-sm font-medium text-gray-700 dark:text-gray-200">
-          Nombre del salón
-        </label>
-        <input
-          type="text"
-          name="nombre_salon"
-          id="form-nombre-salon"
-          required
-          class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm"
-        />
+      <div class="space-y-1.5">
+        <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Nombre del salón</label>
+        <input type="text" name="nombre_salon" id="form-nombre-salon" required
+          placeholder="Ej: Matemáticas 3A"
+          class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-violet-400" />
       </div>
 
-      <div class="space-y-1">
-        <label class="text-sm font-medium text-gray-700 dark:text-gray-200">
-          Grado
-        </label>
-        <input
-          type="text"
-          name="grado"
-          id="form-grado-salon"
-          required
+      <div class="space-y-1.5">
+        <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Grado</label>
+        <input type="text" name="grado" id="form-grado-salon" required
           placeholder="Ej: 3ro A"
-          class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm"
-        />
+          class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-violet-400" />
       </div>
 
       <div class="flex justify-end gap-3 pt-2">
-        <button
-          type="button"
-          id="btn-cerrar-modal-salon"
-          class="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-900"
-        >
+        <button type="button" id="btn-cerrar-modal-salon-footer"
+          class="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
           Cancelar
         </button>
-        <button
-          type="submit"
-          class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold"
-        >
+        <button type="submit"
+          class="px-5 py-2 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white text-sm font-bold shadow-sm transition-all">
           Guardar
         </button>
       </div>
@@ -168,58 +170,49 @@
   </div>
 </div>
 
-<!-- ============= MODAL UNIRSE A SALÓN (CON LISTA) ============= -->
-<div
-  id="modal-unirse-backdrop"
-  class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden z-40 flex items-center justify-center"
->
-  <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full mx-4 p-6 relative">
-    <h2 class="text-lg font-bold mb-4">
-      Unirse a un salón existente
-    </h2>
+<!-- ===== MODAL UNIRSE A SALÓN ===== -->
+<div id="modal-unirse-backdrop"
+  class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden z-40 flex items-center justify-center">
+  <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden">
 
-    <form method="post" action="{{ url_for('salones.unirse_salon') }}" class="space-y-4">
-      <div class="space-y-1">
-        <label class="text-sm font-medium text-gray-700 dark:text-gray-200">
-          Selecciona un salón
-        </label>
+    <div class="bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-5">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-blue-200 text-[10px] font-bold uppercase tracking-widest mb-0.5">Colaboración</p>
+          <h2 class="text-lg font-black text-white">Unirse a un salón</h2>
+        </div>
+        <button type="button" id="btn-cerrar-modal-unirse"
+          class="w-8 h-8 flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition-colors">
+          <span class="material-symbols-outlined text-white" style="font-size:18px">close</span>
+        </button>
+      </div>
+    </div>
 
-        <select
-          name="id_salon"
-          id="select-salon-unirse"
-          required
-          class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm"
-        >
+    <form method="post" action="{{ url_for('salones.unirse_salon') }}" class="p-6 space-y-4">
+      <div class="space-y-1.5">
+        <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Selecciona un salón</label>
+        <select name="id_salon" id="select-salon-unirse" required
+          class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400">
           <option value="">-- Selecciona un salón --</option>
           {% if salones_disponibles %}
             {% for s in salones_disponibles %}
-            <option value="{{ s.id_salon }}">
-              {{ s.nombre_salon }} – {{ s.grado }} (ID {{ s.id_salon }})
-            </option>
+            <option value="{{ s.id_salon }}">{{ s.nombre_salon }} – {{ s.grado }} (ID {{ s.id_salon }})</option>
             {% endfor %}
           {% else %}
-            <option value="">No hay salones disponibles para unirse.</option>
+            <option value="" disabled>No hay salones disponibles para unirse</option>
           {% endif %}
         </select>
-
-        <p class="text-xs text-gray-500 dark:text-gray-400">
-          Solo se muestran los salones a los que aún no estás asignado.
-        </p>
+        <p class="text-[11px] text-gray-400">Solo aparecen salones a los que aún no estás asignado.</p>
       </div>
 
       <div class="flex justify-end gap-3 pt-2">
-        <button
-          type="button"
-          id="btn-cerrar-modal-unirse"
-          class="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-900"
-        >
+        <button type="button" id="btn-cerrar-modal-unirse-footer"
+          class="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
           Cancelar
         </button>
-        <button
-          type="submit"
-          class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold"
-          {% if not salones_disponibles %}disabled class="opacity-60 cursor-not-allowed"{% endif %}
-        >
+        <button type="submit"
+          {% if not salones_disponibles %}disabled{% endif %}
+          class="px-5 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white text-sm font-bold shadow-sm transition-all disabled:opacity-60 disabled:cursor-not-allowed">
           Unirse
         </button>
       </div>
@@ -228,11 +221,9 @@
 </div>
 
 <script>
-  // ---------- Modal CREAR / EDITAR ----------
   const backdropSalon = document.getElementById("modal-salon-backdrop");
   const tituloSalon   = document.getElementById("modal-salon-titulo");
   const formSalon     = document.getElementById("form-salon");
-
   const campoIdSalon  = document.getElementById("form-id-salon");
   const campoNombreS  = document.getElementById("form-nombre-salon");
   const campoGradoS   = document.getElementById("form-grado-salon");
@@ -247,53 +238,30 @@
   }
 
   function abrirModalEditarSalon(btn) {
-    const idSalon = btn.dataset.idSalon;
-    const nombre  = btn.dataset.nombre;
-    const grado   = btn.dataset.grado;
-
     tituloSalon.textContent = "Editar salón";
-    campoIdSalon.value = idSalon;
-    campoNombreS.value = nombre;
-    campoGradoS.value = grado;
-
-    formSalon.action = "{{ url_for('salones.editar_salon', id_salon=0) }}".replace("0", idSalon);
-
+    campoIdSalon.value = btn.dataset.idSalon;
+    campoNombreS.value = btn.dataset.nombre;
+    campoGradoS.value  = btn.dataset.grado;
+    formSalon.action = "{{ url_for('salones.editar_salon', id_salon=0) }}".replace("0", btn.dataset.idSalon);
     backdropSalon.classList.remove("hidden");
   }
 
-  document.getElementById("btn-abrir-modal-salon")
-    ?.addEventListener("click", abrirModalNuevoSalon);
+  function cerrarSalon() { backdropSalon.classList.add("hidden"); }
 
-  document.getElementById("btn-cerrar-modal-salon")
-    ?.addEventListener("click", () => backdropSalon.classList.add("hidden"));
-
-  backdropSalon.addEventListener("click", (e) => {
-    if (e.target === backdropSalon) {
-      backdropSalon.classList.add("hidden");
-    }
-  });
-
-  document.querySelectorAll("[data-accion='editar-salon']").forEach((btn) => {
+  document.getElementById("btn-abrir-modal-salon")?.addEventListener("click", abrirModalNuevoSalon);
+  document.getElementById("btn-cerrar-modal-salon")?.addEventListener("click", cerrarSalon);
+  document.getElementById("btn-cerrar-modal-salon-footer")?.addEventListener("click", cerrarSalon);
+  backdropSalon.addEventListener("click", e => { if (e.target === backdropSalon) cerrarSalon(); });
+  document.querySelectorAll("[data-accion='editar-salon']").forEach(btn => {
     btn.addEventListener("click", () => abrirModalEditarSalon(btn));
   });
 
-  // ---------- Modal UNIRSE A SALÓN ----------
-  const backdropUnirse   = document.getElementById("modal-unirse-backdrop");
-  const btnAbrirUnirse   = document.getElementById("btn-abrir-modal-unirse");
-  const btnCerrarUnirse  = document.getElementById("btn-cerrar-modal-unirse");
+  const backdropUnirse  = document.getElementById("modal-unirse-backdrop");
+  function cerrarUnirse() { backdropUnirse.classList.add("hidden"); }
 
-  btnAbrirUnirse?.addEventListener("click", () => {
-    backdropUnirse.classList.remove("hidden");
-  });
-
-  btnCerrarUnirse?.addEventListener("click", () => {
-    backdropUnirse.classList.add("hidden");
-  });
-
-  backdropUnirse.addEventListener("click", (e) => {
-    if (e.target === backdropUnirse) {
-      backdropUnirse.classList.add("hidden");
-    }
-  });
+  document.getElementById("btn-abrir-modal-unirse")?.addEventListener("click", () => backdropUnirse.classList.remove("hidden"));
+  document.getElementById("btn-cerrar-modal-unirse")?.addEventListener("click", cerrarUnirse);
+  document.getElementById("btn-cerrar-modal-unirse-footer")?.addEventListener("click", cerrarUnirse);
+  backdropUnirse.addEventListener("click", e => { if (e.target === backdropUnirse) cerrarUnirse(); });
 </script>
 {% endblock %}

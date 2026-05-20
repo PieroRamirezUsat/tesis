@@ -16,6 +16,18 @@ class Config:
         "postgresql://postgres:hola1@localhost:5432/bd_ejemplo"
     )
 
+    # ==============================================================
+    #  🖼️ Carpeta de imágenes de desarrollos del alumno
+    #  Si las imágenes se guardan en un proyecto API separado,
+    #  apunta esta variable a esa carpeta.
+    #  Se puede sobreescribir con la variable de entorno
+    #  DESARROLLOS_ALUMNO_PATH en producción.
+    # ==============================================================
+    DESARROLLOS_ALUMNO_PATH = os.environ.get(
+        "DESARROLLOS_ALUMNO_PATH",
+        r"D:\Tesis\TODO\API_RESTFUL\API_COMERCIAL\static\desarrollos_alumno"
+    )
+
     # ============================
     #  📧 Configuración de correo
     # ============================

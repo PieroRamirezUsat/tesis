@@ -1,178 +1,298 @@
 {% extends "docente_base.html" %}
 
+{% block title %}Mi Perfil{% endblock %}
+
 {% block contenido %}
-<div class="max-w-4xl mx-auto">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
-  <!-- Mensajes flash -->
-  {% with messages = get_flashed_messages(with_categories=true) %}
-  {% if messages %}
-  <div class="space-y-2 mb-4">
-    {% for category, message in messages %}
-    <div class="rounded-md px-4 py-2 text-sm
-                {% if category == 'success' %} bg-green-100 text-green-800
-                {% elif category == 'danger' %} bg-red-100 text-red-800
-                {% else %} bg-gray-100 text-gray-800 {% endif %}">
-      {{ message }}
-    </div>
-    {% endfor %}
-  </div>
-  {% endif %}
-  {% endwith %}
+<!-- ===== COLUMNA PRINCIPAL ===== -->
+<div class="lg:col-span-2 flex flex-col gap-4">
 
-  <div class="flex flex-wrap justify-between gap-3 p-4 mb-4">
-    <p class="text-3xl md:text-4xl font-black leading-tight tracking-[-0.033em] min-w-48">
-      Mi Perfil
-    </p>
-  </div>
-
-  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 md:p-6">
-    <form method="POST" enctype="multipart/form-data" class="flex flex-col gap-8">
-
-      <!-- Perfil + foto -->
-      <div class="flex p-2 md:p-4 @container">
-        <div class="flex w-full flex-col gap-4 @[520px]:flex-row @[520px]:justify-between @[520px]:items-center">
-
-          <div class="flex gap-4 items-center">
-            <div class="relative">
-              <div class="bg-center bg-no-repeat bg-cover rounded-full min-h-28 w-28 md:min-h-32 md:w-32"
-                   style="background-image: url('{{ foto_url }}');">
-              </div>
-
-              <!-- Botón cámara sobre la foto -->
-              <button type="button"
-                      id="btnCambiarFoto2"
-                      class="absolute bottom-1 right-1 flex items-center justify-center size-8 bg-primary text-white rounded-full hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
-                <span class="material-symbols-outlined text-base">photo_camera</span>
-              </button>
-
-              <!-- Input real de archivo -->
-              <input id="fotoInput" name="foto" type="file" accept="image/*" class="hidden" />
-            </div>
-
-            <div class="flex flex-col justify-center">
-              <p class="text-[20px] md:text-[22px] font-bold leading-tight tracking-[-0.015em]">
-                {{ nombre_completo }}
-              </p>
-              <p class="text-gray-500 dark:text-gray-400 text-sm md:text-base leading-normal">
-                {{ correo }}
-              </p>
-            </div>
-          </div>
-
-          <button type="button"
-                  id="btnCambiarFoto"
-                  class="flex min-w-[120px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-gray-200 dark:bg-gray-700 text-sm font-bold">
-            <span class="truncate">Cambiar foto</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Datos personales -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 px-2 md:px-4">
-        <label class="flex flex-col flex-1">
-          <p class="text-base font-medium pb-2">Nombre(s)</p>
-          <input
-              name="nombre"
-              value="{{ nombre }}"
-              class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg
-                     text-text-light dark:text-text-dark focus:outline-0 focus:ring-2 focus:ring-primary/50
-                     border border-gray-300 dark:border-gray-600 bg-background-light dark:bg-background-dark
-                     h-12 md:h-14 placeholder:text-gray-500 p-3 md:p-[15px] text-base" />
-        </label>
-
-        <label class="flex flex-col flex-1">
-          <p class="text-base font-medium pb-2">Apellidos</p>
-          <input
-              name="apellidos"
-              value="{{ apellidos }}"
-              class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg
-                     text-text-light dark:text-text-dark focus:outline-0 focus:ring-2 focus:ring-primary/50
-                     border border-gray-300 dark:border-gray-600 bg-background-light dark:bg-background-dark
-                     h-12 md:h-14 placeholder:text-gray-500 p-3 md:p-[15px] text-base" />
-        </label>
-
-        <label class="flex flex-col flex-1">
-          <p class="text-base font-medium pb-2">Correo Electrónico</p>
-          <input
-              value="{{ correo }}"
-              disabled
-              class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg
-                     text-gray-400 dark:text-gray-500 focus:outline-0
-                     border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700
-                     h-12 md:h-14 p-3 md:p-[15px] text-base cursor-not-allowed" />
-        </label>
-
-        <label class="flex flex-col flex-1">
-          <p class="text-base font-medium pb-2">Especialidad</p>
-          <input
-              name="especialidad"
-              value="{{ especialidad }}"
-              class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg
-                     text-text-light dark:text-text-dark focus:outline-0 focus:ring-2 focus:ring-primary/50
-                     border border-gray-300 dark:border-gray-600 bg-background-light dark:bg-background-dark
-                     h-12 md:h-14 placeholder:text-gray-500 p-3 md:p-[15px] text-base" />
-        </label>
-      </div>
-
-      <!-- Seguridad -->
-      <div class="px-2 md:px-4">
-        <h3 class="text-lg font-semibold mb-4">Seguridad</h3>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <label class="flex flex-col">
-            <p class="text-base font-medium pb-2">Nueva contraseña</p>
-            <input
-                type="password"
-                name="nueva_contrasena"
-                placeholder="Dejar vacío para no cambiarla"
-                class="form-input w-full rounded-lg border border-gray-300 dark:border-gray-600
-                       bg-background-light dark:bg-background-dark h-12 md:h-14 p-3 text-base" />
-          </label>
-
-          <label class="flex flex-col">
-            <p class="text-base font-medium pb-2">Confirmar contraseña</p>
-            <input
-                type="password"
-                name="confirmar_contrasena"
-                placeholder="Repite la nueva contraseña"
-                class="form-input w-full rounded-lg border border-gray-300 dark:border-gray-600
-                       bg-background-light dark:bg-background-dark h-12 md:h-14 p-3 text-base" />
-          </label>
-        </div>
-      </div>
-
-      <!-- Botones -->
-      <div class="flex flex-col md:flex-row md:justify-end gap-3 md:gap-4 p-2 md:p-4">
-        <a
-            href="{{ url_for('docentes.dashboard') }}"
-            class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg
-                   h-11 md:h-12 px-4 md:px-6 bg-danger/20 text-danger text-base font-bold hover:bg-danger/30 text-center">
-          <span class="truncate w-full">Cancelar</span>
-        </a>
-
-        <button
-            type="submit"
-            class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg
-                   h-11 md:h-12 px-4 md:px-6 bg-primary text-white text-base font-bold hover:bg-primary/90">
-          <span class="truncate">Guardar Cambios</span>
+  <!-- HERO con gradiente -->
+  <div class="bg-gradient-to-br from-slate-700 via-slate-800 to-gray-900 rounded-2xl p-6 mb-5 shadow-sm">
+    <div class="flex items-center gap-5">
+      <div class="relative shrink-0">
+        <img
+          id="preview-foto"
+          src="{{ foto_url }}"
+          onerror="this.onerror=null;this.src='https://ui-avatars.com/api/?name={{ nombre_completo|urlencode }}&background=4F46E5&color=fff&size=128';"
+          alt="Foto de perfil"
+          class="h-24 w-24 rounded-2xl object-cover border-4 border-white/20 shadow-lg"
+        />
+        <button type="button" id="btnCambiarFoto2"
+          class="absolute -bottom-1.5 -right-1.5 w-8 h-8 flex items-center justify-center bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl shadow-md transition-colors">
+          <span class="material-symbols-outlined" style="font-size:16px">photo_camera</span>
         </button>
       </div>
-
-    </form>
+      <div class="min-w-0">
+        <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Docente</p>
+        <h2 class="text-xl font-black text-white leading-tight truncate">{{ nombre_completo }}</h2>
+        <p class="text-slate-400 text-sm mt-0.5 truncate">{{ correo }}</p>
+        <span class="inline-flex items-center gap-1 mt-2 px-2.5 py-1 rounded-lg bg-white/10 text-slate-200 text-xs font-semibold">
+          <span class="material-symbols-outlined" style="font-size:13px">workspace_premium</span>
+          {{ especialidad or 'Sin especialidad' }}
+        </span>
+      </div>
+    </div>
   </div>
-</div>
+
+  <form method="POST" enctype="multipart/form-data" class="space-y-4">
+    <input id="fotoInput" name="foto" type="file" accept="image/*" class="hidden" />
+
+    <!-- Datos personales -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
+        <div class="w-7 h-7 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+          <span class="material-symbols-outlined text-indigo-600 dark:text-indigo-400" style="font-size:16px">person</span>
+        </div>
+        <h3 class="text-sm font-bold text-gray-700 dark:text-gray-200">Datos Personales</h3>
+      </div>
+
+      <div class="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Nombre(s)</label>
+          <input name="nombre" value="{{ nombre }}" required
+            class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/60 px-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Apellidos</label>
+          <input name="apellidos" value="{{ apellidos }}" required
+            class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/60 px-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Correo Electrónico</label>
+          <div class="relative">
+            <input value="{{ correo }}" disabled
+              class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 px-4 py-2.5 text-sm text-gray-400 dark:text-gray-500 cursor-not-allowed" />
+            <span class="absolute right-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-gray-300" style="font-size:16px">lock</span>
+          </div>
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Especialidad</label>
+          <input name="especialidad" value="{{ especialidad }}"
+            placeholder="Ej: Álgebra, Geometría…"
+            class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/60 px-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Foto de perfil (botón alternativo) -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
+        <div class="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800/40 flex items-center justify-center">
+          <span class="material-symbols-outlined text-slate-600 dark:text-slate-400" style="font-size:16px">photo_camera</span>
+        </div>
+        <h3 class="text-sm font-bold text-gray-700 dark:text-gray-200">Foto de Perfil</h3>
+      </div>
+      <div class="p-5 flex items-center gap-4">
+        <img id="preview-foto-small"
+          src="{{ foto_url }}"
+          onerror="this.onerror=null;this.src='https://ui-avatars.com/api/?name={{ nombre_completo|urlencode }}&background=4F46E5&color=fff&size=64';"
+          alt="Vista previa"
+          class="h-14 w-14 rounded-xl object-cover border border-gray-200 dark:border-gray-700"
+        />
+        <div>
+          <button type="button" id="btnCambiarFoto"
+            class="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-semibold transition-colors">
+            <span class="material-symbols-outlined" style="font-size:16px">upload</span>
+            Cambiar foto
+          </button>
+          <p class="text-xs text-gray-400 mt-1.5">JPG, PNG o WEBP. Máximo 5 MB.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Seguridad -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
+        <div class="w-7 h-7 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+          <span class="material-symbols-outlined text-amber-600 dark:text-amber-400" style="font-size:16px">lock</span>
+        </div>
+        <h3 class="text-sm font-bold text-gray-700 dark:text-gray-200">Seguridad</h3>
+      </div>
+
+      <div class="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Nueva contraseña</label>
+          <input type="password" name="nueva_contrasena"
+            placeholder="Dejar vacío para no cambiar"
+            class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/60 px-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-400" />
+        </div>
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Confirmar contraseña</label>
+          <input type="password" name="confirmar_contrasena"
+            placeholder="Repite la nueva contraseña"
+            class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/60 px-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-400" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Acciones -->
+    <div class="flex items-center justify-end gap-3 pb-2">
+      <a href="{{ url_for('docentes.dashboard') }}"
+        class="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+        <span class="material-symbols-outlined" style="font-size:16px">arrow_back</span>
+        Cancelar
+      </a>
+      <button type="submit"
+        class="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white text-sm font-bold shadow-sm transition-all">
+        <span class="material-symbols-outlined" style="font-size:16px">save</span>
+        Guardar Cambios
+      </button>
+    </div>
+  </form>
+</div><!-- fin columna principal -->
+
+<!-- ===== SIDEBAR DERECHO ===== -->
+<div class="lg:col-span-1 flex flex-col gap-4">
+
+  <!-- Completitud de perfil -->
+  {% set pasos = [
+    {'label': 'Nombre y apellidos', 'icono': 'badge',      'hecho': nombre and apellidos},
+    {'label': 'Especialidad',        'icono': 'workspace_premium', 'hecho': especialidad | length > 0},
+    {'label': 'Foto de perfil',      'icono': 'photo_camera',       'hecho': true},
+    {'label': 'Correo registrado',   'icono': 'mail',               'hecho': correo | length > 0},
+  ] %}
+  {% set n_hechos = pasos | selectattr('hecho') | list | length %}
+  {% set pct_comp = (n_hechos / pasos|length * 100) | int %}
+
+  <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
+    <div class="bg-gradient-to-r from-indigo-500 to-violet-600 px-5 py-4">
+      <p class="text-indigo-100 text-[10px] font-bold uppercase tracking-widest mb-0.5">Estado</p>
+      <h3 class="text-sm font-black text-white">Completitud del perfil</h3>
+    </div>
+    <div class="p-5">
+      <div class="flex items-center gap-4 mb-4">
+        <div class="relative w-16 h-16 shrink-0">
+          <svg class="w-16 h-16 -rotate-90" viewBox="0 0 64 64">
+            <circle cx="32" cy="32" r="26" fill="none" stroke="#E5E7EB" stroke-width="6"/>
+            <circle cx="32" cy="32" r="26" fill="none"
+              stroke="{% if pct_comp == 100 %}#16A34A{% elif pct_comp >= 75 %}#4F46E5{% else %}#F97316{% endif %}"
+              stroke-width="6"
+              stroke-dasharray="{{ (pct_comp / 100 * 163.4) | round(1) }} 163.4"
+              stroke-linecap="round"/>
+          </svg>
+          <span class="absolute inset-0 flex items-center justify-center text-sm font-black text-gray-700 dark:text-gray-200">{{ pct_comp }}%</span>
+        </div>
+        <div>
+          <p class="text-sm font-bold text-gray-800 dark:text-gray-100">
+            {% if pct_comp == 100 %}¡Perfil completo!{% elif pct_comp >= 75 %}Casi listo{% else %}En progreso{% endif %}
+          </p>
+          <p class="text-xs text-gray-400 mt-0.5">{{ n_hechos }} de {{ pasos|length }} elementos</p>
+        </div>
+      </div>
+      <div class="space-y-2">
+        {% for paso in pasos %}
+        <div class="flex items-center gap-2.5">
+          <div class="w-6 h-6 rounded-full flex items-center justify-center shrink-0
+            {% if paso.hecho %}bg-emerald-100 dark:bg-emerald-900/30{% else %}bg-gray-100 dark:bg-gray-700{% endif %}">
+            <span class="material-symbols-outlined {% if paso.hecho %}text-emerald-600{% else %}text-gray-300{% endif %}" style="font-size:13px">
+              {% if paso.hecho %}check_circle{% else %}{{ paso.icono }}{% endif %}
+            </span>
+          </div>
+          <span class="text-xs {% if paso.hecho %}text-gray-700 dark:text-gray-200 font-medium{% else %}text-gray-400{% endif %}">
+            {{ paso.label }}
+          </span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Información de la cuenta -->
+  <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
+    <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
+      <div class="w-7 h-7 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+        <span class="material-symbols-outlined text-blue-600 dark:text-blue-400" style="font-size:16px">info</span>
+      </div>
+      <h3 class="text-sm font-bold text-gray-700 dark:text-gray-200">Tu cuenta</h3>
+    </div>
+    <div class="p-5 space-y-3">
+      <div class="flex items-start gap-3">
+        <span class="material-symbols-outlined text-gray-300 shrink-0 mt-0.5" style="font-size:18px">mail</span>
+        <div>
+          <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-0.5">Correo</p>
+          <p class="text-xs font-semibold text-gray-700 dark:text-gray-200 break-all">{{ correo }}</p>
+        </div>
+      </div>
+      <div class="flex items-start gap-3">
+        <span class="material-symbols-outlined text-gray-300 shrink-0 mt-0.5" style="font-size:18px">school</span>
+        <div>
+          <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-0.5">Rol</p>
+          <p class="text-xs font-semibold text-gray-700 dark:text-gray-200">Docente</p>
+        </div>
+      </div>
+      <div class="flex items-start gap-3">
+        <span class="material-symbols-outlined text-gray-300 shrink-0 mt-0.5" style="font-size:18px">workspace_premium</span>
+        <div>
+          <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-0.5">Especialidad</p>
+          <p class="text-xs font-semibold text-gray-700 dark:text-gray-200">{{ especialidad or 'No configurada' }}</p>
+        </div>
+      </div>
+      <div class="flex items-start gap-3">
+        <span class="material-symbols-outlined text-gray-300 shrink-0 mt-0.5" style="font-size:18px">verified_user</span>
+        <div>
+          <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-0.5">Sistema</p>
+          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-bold">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>TutorMath Activo
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Accesos rápidos -->
+  <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
+    <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
+      <div class="w-7 h-7 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+        <span class="material-symbols-outlined text-amber-600 dark:text-amber-400" style="font-size:16px">grid_view</span>
+      </div>
+      <h3 class="text-sm font-bold text-gray-700 dark:text-gray-200">Accesos rápidos</h3>
+    </div>
+    <div class="p-4 grid grid-cols-2 gap-2">
+      <a href="{{ url_for('docentes.dashboard') }}"
+        class="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors text-center">
+        <span class="material-symbols-outlined text-indigo-500" style="font-size:22px">dashboard</span>
+        <span class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400">Panel</span>
+      </a>
+      <a href="{{ url_for('docentes.gestion_estudiantes') }}"
+        class="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors text-center">
+        <span class="material-symbols-outlined text-blue-500" style="font-size:22px">group</span>
+        <span class="text-[10px] font-bold text-blue-600 dark:text-blue-400">Estudiantes</span>
+      </a>
+      <a href="{{ url_for('reportes.reporte_progreso') }}"
+        class="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors text-center">
+        <span class="material-symbols-outlined text-emerald-500" style="font-size:22px">bar_chart</span>
+        <span class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">Reportes</span>
+      </a>
+      <a href="{{ url_for('evaluaciones.gestion_evaluaciones') }}"
+        class="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-rose-50 dark:bg-rose-900/20 hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-colors text-center">
+        <span class="material-symbols-outlined text-rose-500" style="font-size:22px">assignment</span>
+        <span class="text-[10px] font-bold text-rose-600 dark:text-rose-400">Evaluaciones</span>
+      </a>
+    </div>
+  </div>
+
+</div><!-- fin sidebar -->
+</div><!-- fin grid -->
 
 <script>
-  // Disparar el input file desde los botones "Cambiar foto"
   const fotoInput = document.getElementById("fotoInput");
-  const btn1 = document.getElementById("btnCambiarFoto");
-  const btn2 = document.getElementById("btnCambiarFoto2");
+  const previewHero  = document.getElementById("preview-foto");
+  const previewSmall = document.getElementById("preview-foto-small");
 
-  if (btn1 && fotoInput) {
-    btn1.addEventListener("click", () => fotoInput.click());
-  }
-  if (btn2 && fotoInput) {
-    btn2.addEventListener("click", () => fotoInput.click());
-  }
+  document.getElementById("btnCambiarFoto")?.addEventListener("click", () => fotoInput.click());
+  document.getElementById("btnCambiarFoto2")?.addEventListener("click", () => fotoInput.click());
+
+  fotoInput?.addEventListener("change", () => {
+    const file = fotoInput.files[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    if (previewHero)  previewHero.src  = url;
+    if (previewSmall) previewSmall.src = url;
+  });
 </script>
 {% endblock %}

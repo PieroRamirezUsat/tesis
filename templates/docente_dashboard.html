@@ -1,235 +1,609 @@
 {% extends "docente_base.html" %}
 
 {% block contenido %}
-<div class="flex flex-wrap justify-between gap-3 mb-6">
-  <div class="flex flex-col gap-1">
-    <h1 class="text-3xl font-black leading-tight tracking-[-0.033em] text-text-light dark:text-text-dark">
-      Panel de Control
+
+<!-- ENCABEZADO -->
+<div class="flex items-start justify-between mb-6">
+  <div>
+    <p class="text-xs font-bold text-indigo-500 uppercase tracking-widest mb-0.5">Panel de Control</p>
+    <h1 class="text-2xl font-black text-gray-900 dark:text-white leading-tight">
+      Bienvenido/a, Prof. <span class="text-indigo-600 dark:text-indigo-400">{{ nombre }}</span>
     </h1>
-    <p class="text-gray-500 dark:text-gray-400 text-base font-normal leading-normal">
-      Bienvenido/a, Profesor/a {{ nombre }}
-    </p>
+    <p class="text-sm text-gray-400 mt-0.5">Resumen de actividad de tus salones</p>
+  </div>
+  <div class="hidden sm:flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm">
+    <span class="material-symbols-outlined text-indigo-400 text-base">school</span>
+    <span class="text-xs font-bold text-gray-500 dark:text-gray-300">I.E. "27 de Diciembre"</span>
   </div>
 </div>
 
-<!-- Tarjetas resumen -->
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-  <div class="flex min-w-[158px] flex-1 flex-col gap-2 rounded-xl p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm">
-    <p class="text-base font-medium text-gray-600 dark:text-gray-300">Estudiantes Activos</p>
-    <p class="text-3xl font-bold leading-tight text-primary">{{ total_estudiantes }}</p>
-  </div>
-  <div class="flex min-w-[158px] flex-1 flex-col gap-2 rounded-xl p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm">
-    <p class="text-base font-medium text-gray-600 dark:text-gray-300">Progreso Alto</p>
-    <p class="text-3xl font-bold leading-tight text-secondary">{{ porc_avanzado }}%</p>
-  </div>
-  <div class="flex min-w-[158px] flex-1 flex-col gap-2 rounded-xl p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm">
-    <p class="text-base font-medium text-gray-600 dark:text-gray-300">Necesitan Ayuda</p>
-    <p class="text-3xl font-bold leading-tight text-accent">{{ porc_necesita_ayuda }}%</p>
-  </div>
-</div>
+<!-- ═══════════════════════════════════════
+     BENTO STATS — asimétrico 2/3 + 1/3
+     ═══════════════════════════════════════ -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-5">
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-  <!-- Acceso rápido -->
-  <div class="lg:col-span-1 bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-    <h3 class="text-lg font-bold mb-4">Acceso Rápido</h3>
-    <div class="space-y-4">
-      <!-- Gestionar mis Salones -->
-      <a
-        href="{{ url_for('salones.gestion_salones') }}"
-        class="w-full flex items-center gap-3 p-4 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary font-bold transition-colors"
-      >
-        <span class="material-symbols-outlined">class</span>
-        <span>Gestionar mis Salones</span>
-      </a>
+  <!-- FEATURED: Panorama del Aula (2 columnas) -->
+  <div class="lg:col-span-2 relative overflow-hidden rounded-2xl p-6
+              bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-800
+              text-white shadow-xl shadow-indigo-300/30 dark:shadow-indigo-900/40">
+    <!-- Círculos decorativos -->
+    <div class="pointer-events-none absolute -top-10 -right-10 w-56 h-56 rounded-full bg-white/5"></div>
+    <div class="pointer-events-none absolute -bottom-8 -left-8 w-40 h-40 rounded-full bg-white/5"></div>
+    <div class="pointer-events-none absolute top-1/2 right-8 w-24 h-24 rounded-full bg-white/[0.03]"></div>
 
-      <!-- Ver Temario de Álgebra -->
-      <a
-        href="{{ url_for('temas.gestion_temas') }}"
-        class="w-full flex items-center gap-3 p-4 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary font-bold transition-colors"
-      >
-        <span class="material-symbols-outlined">menu_book</span>
-        <span>Ver Temario de Álgebra</span>
-      </a>
+    <div class="relative z-10">
+      <div class="flex items-start justify-between mb-6">
+        <div>
+          <p class="text-indigo-200 text-[11px] font-bold uppercase tracking-widest">Panorama del Aula</p>
+          <div class="flex items-end gap-2 mt-1">
+            <span class="text-6xl font-black leading-none tabular-nums">{{ total_estudiantes }}</span>
+            <span class="text-xl font-semibold text-indigo-300 mb-1">alumnos activos</span>
+          </div>
+        </div>
+        <div class="w-14 h-14 rounded-2xl bg-white/15 flex items-center justify-center shrink-0">
+          <span class="material-symbols-outlined text-2xl text-white">groups</span>
+        </div>
+      </div>
 
-      <!-- Asignar Actividad (ir a gestión de ejercicios) -->
-      <a
-        href="{{ url_for('ejercicios.gestion_ejercicios') }}"
-        class="w-full flex items-center gap-3 p-4 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary font-bold transition-colors"
-      >
-        <span class="material-symbols-outlined">calculate</span>
-        <span>Asignar Actividad</span>
-      </a>
-    </div>
-  </div>
+      <!-- Barra segmentada de distribución -->
+      <div class="mb-3">
+        <div class="flex items-center justify-between mb-2">
+          <p class="text-indigo-200 text-[10px] font-bold uppercase tracking-widest">Distribución del grupo</p>
+          {% if total_estudiantes > 0 %}
+          <p class="text-indigo-300 text-[10px] font-semibold">{{ porc_avanzado }}% · {{ (100 - porc_avanzado - porc_necesita_ayuda) | abs }}% · {{ porc_necesita_ayuda }}%</p>
+          {% endif %}
+        </div>
+        <div class="flex rounded-full overflow-hidden h-3 bg-white/10 gap-px">
+          {% if total_estudiantes > 0 %}
+          {% set pct_prog = (en_progreso / total_estudiantes * 100) | round | int %}
+          <div class="bg-emerald-400 h-full"
+               style="width:{{ porc_avanzado }}%;"
+               title="{{ avanzados }} avanzados"></div>
+          <div class="bg-amber-400 h-full"
+               style="width:{{ pct_prog }}%;"
+               title="{{ en_progreso }} en progreso"></div>
+          <div class="bg-red-400 h-full"
+               style="width:{{ porc_necesita_ayuda }}%;"
+               title="{{ necesita_ayuda }} necesitan ayuda"></div>
+          {% else %}
+          <div class="bg-white/20 h-full w-full"></div>
+          {% endif %}
+        </div>
+      </div>
 
-  <!-- Donut -->
-  <div class="lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-    <h3 class="text-lg font-bold mb-4">Progreso General de los Estudiantes</h3>
-    <div class="flex items-center justify-center">
-      <div class="relative w-64 h-64">
-        <svg class="w-full h-full" viewBox="0 0 36 36">
-          <!-- fondo -->
-          <path class="stroke-current text-gray-200 dark:text-gray-700"
-                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                fill="none" stroke-width="3"></path>
-
-          <!-- Avanzado -->
-          <path class="stroke-current text-secondary"
-                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                fill="none"
-                stroke-dasharray="{{ porc_avanzado }}, 100"
-                stroke-linecap="round"
-                stroke-width="3"></path>
-
-          <!-- En progreso -->
-          <path class="stroke-current text-primary"
-                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                fill="none"
-                stroke-dasharray="{{ porc_en_progreso }}, 100"
-                stroke-dashoffset="-{{ offset_progreso }}"
-                stroke-linecap="round"
-                stroke-width="3"></path>
-
-          <!-- Necesita ayuda -->
-          <path class="stroke-current text-accent"
-                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                fill="none"
-                stroke-dasharray="{{ porc_necesita_ayuda }}, 100"
-                stroke-dashoffset="-{{ offset_ayuda }}"
-                stroke-linecap="round"
-                stroke-width="3"></path>
-        </svg>
-
-        <div class="absolute inset-0 flex flex-col items-center justify-center">
-          <span class="text-3xl font-bold">{{ total_estudiantes }}</span>
-          <span class="text-sm text-gray-500 dark:text-gray-400">Estudiantes</span>
+      <!-- Leyenda -->
+      <div class="flex items-center gap-4 flex-wrap mt-4">
+        <div class="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-lg">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 shrink-0"></span>
+          <span class="text-xs text-white font-bold">{{ avanzados }}</span>
+          <span class="text-xs text-indigo-200">avanzados</span>
+        </div>
+        <div class="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-lg">
+          <span class="w-2.5 h-2.5 rounded-full bg-amber-400 shrink-0"></span>
+          <span class="text-xs text-white font-bold">{{ en_progreso }}</span>
+          <span class="text-xs text-indigo-200">en progreso</span>
+        </div>
+        <div class="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-lg">
+          <span class="w-2.5 h-2.5 rounded-full bg-red-400 shrink-0"></span>
+          <span class="text-xs text-white font-bold">{{ necesita_ayuda }}</span>
+          <span class="text-xs text-indigo-200">necesitan ayuda</span>
         </div>
       </div>
     </div>
+  </div>
 
-    <div class="flex justify-center gap-6 mt-4 text-sm">
-      <div class="flex items-center gap-2">
-        <span class="w-3 h-3 rounded-full bg-secondary"></span>
-        <span>Avanzado ({{ porc_avanzado }}%)</span>
-      </div>
-      <div class="flex items-center gap-2">
-        <span class="w-3 h-3 rounded-full bg-primary"></span>
-        <span>En Progreso ({{ porc_en_progreso }}%)</span>
-      </div>
-      <div class="flex items-center gap-2">
-        <span class="w-3 h-3 rounded-full bg-accent"></span>
-        <span>Necesita Ayuda ({{ porc_necesita_ayuda }}%)</span>
+  <!-- COLUMNA DERECHA: 2 mini-cards apiladas -->
+  <div class="flex flex-col gap-4">
+
+    <!-- Progreso Alto -->
+    <div class="relative overflow-hidden rounded-2xl p-5 flex-1
+                bg-gradient-to-br from-emerald-400 to-emerald-600
+                text-white shadow-lg shadow-emerald-200/40 dark:shadow-emerald-900/30">
+      <div class="pointer-events-none absolute -bottom-5 -right-5 w-24 h-24 rounded-full bg-white/10"></div>
+      <div class="relative z-10 flex items-center justify-between">
+        <div>
+          <p class="text-emerald-100 text-[10px] font-bold uppercase tracking-widest mb-0.5">Progreso Alto ≥70%</p>
+          <p class="text-5xl font-black leading-none tabular-nums">
+            {{ porc_avanzado }}<span class="text-2xl font-bold text-emerald-200">%</span>
+          </p>
+          <p class="text-emerald-200 text-xs mt-1.5 font-medium">
+            {{ avanzados }} alumno{{ 's' if avanzados != 1 else '' }} avanzado{{ 's' if avanzados != 1 else '' }}
+          </p>
+        </div>
+        <span class="w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+          <span class="material-symbols-outlined text-xl text-white">trending_up</span>
+        </span>
       </div>
     </div>
+
+    <!-- Necesitan Ayuda -->
+    <div class="relative overflow-hidden rounded-2xl p-5 flex-1
+                bg-gradient-to-br from-rose-500 to-red-600
+                text-white shadow-lg shadow-red-200/40 dark:shadow-red-900/30">
+      <div class="pointer-events-none absolute -bottom-5 -right-5 w-24 h-24 rounded-full bg-white/10"></div>
+      <div class="relative z-10 flex items-center justify-between">
+        <div>
+          <p class="text-red-100 text-[10px] font-bold uppercase tracking-widest mb-0.5">Necesitan Ayuda &lt;40%</p>
+          <p class="text-5xl font-black leading-none tabular-nums">
+            {{ porc_necesita_ayuda }}<span class="text-2xl font-bold text-red-200">%</span>
+          </p>
+          <p class="text-red-200 text-xs mt-1.5 font-medium">
+            {{ necesita_ayuda }} requieren atención
+          </p>
+        </div>
+        <span class="w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+          <span class="material-symbols-outlined text-xl text-white">warning</span>
+        </span>
+      </div>
+    </div>
+
   </div>
 </div>
 
-<!-- Salones y rendimiento por tema -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-  <!-- Salones con mayor actividad -->
-  <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-    <h3 class="text-lg font-bold mb-4">Salones con Mayor Actividad</h3>
-    <div class="overflow-x-auto">
-      <table class="w-full text-left">
-        <thead>
-        <tr class="border-b dark:border-gray-700">
-          <th class="py-3 px-4 font-semibold text-sm">Salón</th>
-          <th class="py-3 px-4 font-semibold text-sm">Nº de Estudiantes</th>
-          <th class="py-3 px-4 font-semibold text-sm">Progreso Promedio</th>
-        </tr>
-        </thead>
-        <tbody>
-        {% for sal in salones %}
-          <tr class="border-b dark:border-gray-700">
-            <td class="py-3 px-4">{{ sal.salon }}</td>
-            <td class="py-3 px-4">{{ sal.num_estudiantes }}</td>
-            <td class="py-3 px-4 text-secondary font-bold">{{ sal.progreso_promedio }}%</td>
-          </tr>
-        {% else %}
-          <tr>
-            <td colspan="3" class="py-3 px-4 text-sm text-gray-500">
-              Todavía no hay salones registrados para este docente.
-            </td>
-          </tr>
-        {% endfor %}
-        </tbody>
-      </table>
+<!-- ═══════════════════════════════════════
+     FILA: Acceso Rápido + Distribución
+     ═══════════════════════════════════════ -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-5">
+
+  <!-- ACCESO RÁPIDO: grid 2×2 -->
+  <div class="bg-white dark:bg-gray-800 rounded-2xl p-5 border border-gray-100 dark:border-gray-700 shadow-sm">
+    <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-4">Acceso Rápido</p>
+    <div class="grid grid-cols-2 gap-2.5">
+
+      <a href="{{ url_for('salones.gestion_salones') }}"
+         class="flex flex-col items-center gap-2.5 p-4 rounded-xl
+                bg-violet-50 dark:bg-violet-900/20
+                hover:bg-violet-100 dark:hover:bg-violet-900/40
+                border-2 border-transparent hover:border-violet-200 dark:hover:border-violet-700
+                transition-all group text-center">
+        <span class="w-11 h-11 rounded-xl bg-gradient-to-br from-violet-500 to-violet-600
+                     shadow-md shadow-violet-300/40 flex items-center justify-center
+                     group-hover:scale-105 transition-transform shrink-0">
+          <span class="material-symbols-outlined text-xl text-white">class</span>
+        </span>
+        <span class="text-xs font-bold text-violet-700 dark:text-violet-300 leading-tight">Salones</span>
+      </a>
+
+      <a href="{{ url_for('temas.gestion_temas') }}"
+         class="flex flex-col items-center gap-2.5 p-4 rounded-xl
+                bg-sky-50 dark:bg-sky-900/20
+                hover:bg-sky-100 dark:hover:bg-sky-900/40
+                border-2 border-transparent hover:border-sky-200 dark:hover:border-sky-700
+                transition-all group text-center">
+        <span class="w-11 h-11 rounded-xl bg-gradient-to-br from-sky-400 to-sky-600
+                     shadow-md shadow-sky-300/40 flex items-center justify-center
+                     group-hover:scale-105 transition-transform shrink-0">
+          <span class="material-symbols-outlined text-xl text-white">menu_book</span>
+        </span>
+        <span class="text-xs font-bold text-sky-700 dark:text-sky-300 leading-tight">Temas</span>
+      </a>
+
+      <a href="{{ url_for('ejercicios.gestion_ejercicios') }}"
+         class="flex flex-col items-center gap-2.5 p-4 rounded-xl
+                bg-amber-50 dark:bg-amber-900/20
+                hover:bg-amber-100 dark:hover:bg-amber-900/40
+                border-2 border-transparent hover:border-amber-200 dark:hover:border-amber-700
+                transition-all group text-center">
+        <span class="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600
+                     shadow-md shadow-amber-300/40 flex items-center justify-center
+                     group-hover:scale-105 transition-transform shrink-0">
+          <span class="material-symbols-outlined text-xl text-white">calculate</span>
+        </span>
+        <span class="text-xs font-bold text-amber-700 dark:text-amber-300 leading-tight">Ejercicios</span>
+      </a>
+
+      <a href="{{ url_for('evaluaciones.gestion_evaluaciones') }}"
+         class="flex flex-col items-center gap-2.5 p-4 rounded-xl
+                bg-rose-50 dark:bg-rose-900/20
+                hover:bg-rose-100 dark:hover:bg-rose-900/40
+                border-2 border-transparent hover:border-rose-200 dark:hover:border-rose-700
+                transition-all group text-center">
+        <span class="w-11 h-11 rounded-xl bg-gradient-to-br from-rose-500 to-rose-600
+                     shadow-md shadow-rose-300/40 flex items-center justify-center
+                     group-hover:scale-105 transition-transform shrink-0">
+          <span class="material-symbols-outlined text-xl text-white">assignment</span>
+        </span>
+        <span class="text-xs font-bold text-rose-700 dark:text-rose-300 leading-tight">Evaluaciones</span>
+      </a>
+
     </div>
   </div>
 
-  <!-- Rendimiento promedio por tema -->
-  <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-    <h3 class="text-lg font-bold mb-4">Rendimiento Promedio por Tema</h3>
+  <!-- DISTRIBUCIÓN DEL GRUPO: donut + lista filtrable -->
+  <div class="lg:col-span-2 bg-white dark:bg-gray-800 rounded-2xl p-5 border border-gray-100 dark:border-gray-700 shadow-sm">
+    <div class="flex items-center justify-between mb-4">
+      <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Distribución del Grupo</p>
+      <span class="text-[10px] text-gray-300 dark:text-gray-500">clic para filtrar · clic en alumno para ver reporte</span>
+    </div>
 
-    {% if temas %}
-      <div class="space-y-4">
-        {% for t in temas %}
-          <div class="flex items-center justify-between mb-1">
-            <span class="text-sm font-medium text-gray-700 dark:text-gray-200">
-              {{ t.nombre_tema or t.area }}
-            </span>
-            <span class="text-sm text-gray-500 dark:text-gray-400">
-              {{ t.porcentaje }}%
-            </span>
-          </div>
+    {% if estudiantes_chart %}
+    <div class="flex gap-5 items-start">
 
-          <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
-            <div
-              class="bg-primary h-2.5 rounded-full barra-tema"
-              data-porcentaje="{{ t.porcentaje }}"
-              style="width: 0%;"
-            ></div>
-          </div>
-        {% endfor %}
+      <!-- Donut + filtros -->
+      <div class="flex flex-col items-center gap-3 shrink-0" style="width:155px;">
+        <div style="width:130px;height:130px;">
+          <canvas id="chartEstudiantes" width="130" height="130"></canvas>
+        </div>
+        <div class="flex flex-col gap-1.5 w-full">
+          <button onclick="filtrarBanda('avanzado')" id="btn-avanzado"
+            class="filtro-btn flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border-2 border-transparent
+                   bg-emerald-50 dark:bg-emerald-900/20 hover:border-emerald-300 transition-all cursor-pointer w-full text-left">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+            <span class="text-[11px] font-bold text-emerald-700 dark:text-emerald-300 flex-1">Avanzado</span>
+            <span class="text-[11px] font-black text-emerald-600 bg-emerald-100 dark:bg-emerald-900/40 px-1.5 rounded-full">{{ avanzados }}</span>
+          </button>
+          <button onclick="filtrarBanda('progreso')" id="btn-progreso"
+            class="filtro-btn flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border-2 border-transparent
+                   bg-orange-50 dark:bg-orange-900/20 hover:border-orange-300 transition-all cursor-pointer w-full text-left">
+            <span class="w-2 h-2 rounded-full bg-orange-400 shrink-0"></span>
+            <span class="text-[11px] font-bold text-orange-700 dark:text-orange-300 flex-1">En progreso</span>
+            <span class="text-[11px] font-black text-orange-600 bg-orange-100 dark:bg-orange-900/40 px-1.5 rounded-full">{{ en_progreso }}</span>
+          </button>
+          <button onclick="filtrarBanda('ayuda')" id="btn-ayuda"
+            class="filtro-btn flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border-2 border-transparent
+                   bg-red-50 dark:bg-red-900/20 hover:border-red-300 transition-all cursor-pointer w-full text-left">
+            <span class="w-2 h-2 rounded-full bg-red-400 shrink-0"></span>
+            <span class="text-[11px] font-bold text-red-700 dark:text-red-300 flex-1">Necesita ayuda</span>
+            <span class="text-[11px] font-black text-red-600 bg-red-100 dark:bg-red-900/40 px-1.5 rounded-full">{{ necesita_ayuda }}</span>
+          </button>
+          <button onclick="filtrarBanda(null)" id="btn-todos"
+            class="text-[10px] text-gray-300 hover:text-indigo-500 transition-colors underline underline-offset-2 cursor-pointer text-center mt-0.5">
+            Ver todos
+          </button>
+        </div>
       </div>
+
+      <!-- Lista filtrable -->
+      <div class="flex-1 min-w-0">
+        <p id="lista-label" class="text-[10px] font-bold text-gray-300 uppercase tracking-widest mb-2">
+          Todos ({{ estudiantes_chart|length }})
+        </p>
+        <div id="lista-estudiantes" class="space-y-px max-h-72 overflow-y-auto pr-0.5">
+          {% for est in estudiantes_chart %}
+          {% if est.progreso >= 70 %}{% set banda = 'avanzado' %}
+          {% elif est.progreso >= 40 %}{% set banda = 'progreso' %}
+          {% else %}{% set banda = 'ayuda' %}{% endif %}
+          <a href="{{ url_for('reportes.reporte_progreso', id_estudiante=est.id_estudiante, id_salon=est.id_salon) }}"
+             class="estudiante-item flex items-center gap-2 px-2.5 py-1.5 rounded-lg
+                    hover:bg-indigo-50 dark:hover:bg-indigo-900/20
+                    border border-transparent hover:border-indigo-100 dark:hover:border-indigo-800
+                    transition-all cursor-pointer group"
+             data-banda="{{ banda }}">
+            <span class="text-[10px] text-gray-200 w-3.5 text-right shrink-0 select-none tabular-nums">{{ loop.index }}</span>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between gap-1">
+                <span class="text-[12px] font-semibold text-gray-700 dark:text-gray-200 truncate
+                             group-hover:text-indigo-700 dark:group-hover:text-indigo-300 transition-colors leading-tight">{{ est.nombre }}</span>
+                <span class="text-[11px] font-black shrink-0 tabular-nums ml-1
+                  {% if est.progreso >= 70 %}text-emerald-600
+                  {% elif est.progreso >= 40 %}text-orange-500
+                  {% else %}text-red-500{% endif %}">{{ est.progreso }}%</span>
+              </div>
+              <div class="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-1 mt-0.5 overflow-hidden">
+                <div class="h-1 rounded-full transition-all
+                  {% if est.progreso >= 70 %}bg-emerald-400
+                  {% elif est.progreso >= 40 %}bg-orange-400
+                  {% else %}bg-red-400{% endif %}"
+                  style="width:{{ est.progreso }}%;"></div>
+              </div>
+            </div>
+            <span class="material-symbols-outlined text-xs text-gray-200 group-hover:text-indigo-400 shrink-0 transition-colors">chevron_right</span>
+          </a>
+          {% endfor %}
+        </div>
+        <p id="lista-vacia" class="hidden text-xs text-gray-400 text-center py-4">Sin estudiantes en esta categoría.</p>
+      </div>
+
+    </div>
     {% else %}
-      <p class="text-sm text-gray-500">
-        Todavía no hay datos de rendimiento por tema.
-      </p>
+    <div class="flex flex-col items-center justify-center py-10 text-center">
+      <span class="material-symbols-outlined text-5xl text-gray-200 dark:text-gray-600 mb-3">group_off</span>
+      <p class="text-sm text-gray-400">Aún no hay estudiantes con actividad registrada.</p>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════
+     FILA: Mis Salones + Rendimiento por Tema
+     ═══════════════════════════════════════ -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
+
+  <!-- MIS SALONES -->
+  <div class="bg-white dark:bg-gray-800 rounded-2xl p-5 border border-gray-100 dark:border-gray-700 shadow-sm">
+    <div class="flex items-center gap-2 mb-4">
+      <span class="w-8 h-8 rounded-lg bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center shrink-0">
+        <span class="material-symbols-outlined text-violet-600 dark:text-violet-400 text-base">class</span>
+      </span>
+      <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Mis Salones</p>
+    </div>
+    {% if salones %}
+    <div class="space-y-2">
+      {% for sal in salones %}
+      <div class="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-700/40
+                  hover:bg-violet-50/50 dark:hover:bg-violet-900/10 transition-colors group">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center
+                    justify-center shrink-0 text-white font-black text-sm shadow-sm select-none">
+          {{ sal.salon[0] | upper if sal.salon else '?' }}
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center justify-between mb-1.5">
+            <p class="text-sm font-bold text-gray-800 dark:text-gray-100 truncate leading-tight">{{ sal.salon }}</p>
+            <span class="text-xs font-black ml-2 shrink-0 tabular-nums
+              {% if sal.progreso_promedio >= 70 %}text-emerald-600
+              {% elif sal.progreso_promedio >= 40 %}text-amber-500
+              {% else %}text-red-500{% endif %}">{{ sal.progreso_promedio }}%</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="flex-1 bg-gray-200 dark:bg-gray-600 rounded-full h-1.5 overflow-hidden">
+              <div class="h-1.5 rounded-full transition-all
+                {% if sal.progreso_promedio >= 70 %}bg-gradient-to-r from-emerald-400 to-emerald-500
+                {% elif sal.progreso_promedio >= 40 %}bg-gradient-to-r from-amber-400 to-amber-500
+                {% else %}bg-gradient-to-r from-red-400 to-red-500{% endif %}"
+                style="width:{{ sal.progreso_promedio }}%;"></div>
+            </div>
+            <span class="text-[10px] text-gray-400 shrink-0 tabular-nums">{{ sal.num_estudiantes }} alumnos</span>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="flex flex-col items-center justify-center py-8">
+      <span class="material-symbols-outlined text-4xl text-gray-200 dark:text-gray-600 mb-2">class</span>
+      <p class="text-sm text-gray-400">Sin salones registrados.</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- RENDIMIENTO POR TEMA / COMPETENCIA -->
+  <div class="bg-white dark:bg-gray-800 rounded-2xl p-5 border border-gray-100 dark:border-gray-700 shadow-sm">
+    <div class="flex items-center gap-2 mb-4">
+      <span class="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center shrink-0">
+        <span class="material-symbols-outlined text-indigo-600 dark:text-indigo-400 text-base">query_stats</span>
+      </span>
+      <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Rendimiento por Competencia</p>
+    </div>
+    {% if temas %}
+    <div class="space-y-4">
+      {% for t in temas %}
+      {% set etiqueta = t.area %}
+      {% if t.area == 'cantidad' %}{% set etiqueta = 'Resuelve problemas de cantidad' %}
+      {% elif t.area == 'regularidad_equivalencia_cambio' %}{% set etiqueta = 'Resuelve problemas de regularidad, equivalencia y cambio' %}
+      {% elif t.area == 'forma_movimiento_localizacion' %}{% set etiqueta = 'Resuelve problemas de forma, movimiento y localización' %}
+      {% elif t.area == 'gestion_datos_incertidumbre' %}{% set etiqueta = 'Resuelve problemas de gestión de datos e incertidumbre' %}
+      {% endif %}
+      <div class="group">
+        <div class="flex items-center justify-between mb-1.5 gap-2">
+          <div class="flex items-center gap-2 min-w-0">
+            <span class="w-5 h-5 rounded-md flex items-center justify-center shrink-0 text-[10px] font-black
+              {% if t.porcentaje >= 70 %}bg-emerald-100 text-emerald-600
+              {% elif t.porcentaje >= 40 %}bg-amber-100 text-amber-600
+              {% else %}bg-red-100 text-red-600{% endif %}">{{ loop.index }}</span>
+            <span class="text-xs font-semibold text-gray-700 dark:text-gray-200 leading-tight">{{ etiqueta }}</span>
+          </div>
+          <span class="text-xs font-black shrink-0 tabular-nums
+            {% if t.porcentaje >= 70 %}text-emerald-600
+            {% elif t.porcentaje >= 40 %}text-amber-500
+            {% else %}text-red-500{% endif %}">{{ t.porcentaje }}%</span>
+        </div>
+        <div class="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
+          <div class="barra-tema h-2.5 rounded-full transition-all duration-700 ease-out
+            {% if t.porcentaje >= 70 %}bg-gradient-to-r from-emerald-400 to-emerald-500
+            {% elif t.porcentaje >= 40 %}bg-gradient-to-r from-amber-400 to-amber-500
+            {% else %}bg-gradient-to-r from-red-400 to-red-500{% endif %}"
+            data-porcentaje="{{ t.porcentaje }}" style="width:0%;"></div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="flex flex-col items-center justify-center py-8">
+      <span class="material-symbols-outlined text-4xl text-gray-200 dark:text-gray-600 mb-2">query_stats</span>
+      <p class="text-sm text-gray-400">Sin datos de rendimiento por tema.</p>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════
+     ESTUDIANTES QUE REQUIEREN ATENCIÓN
+     ═══════════════════════════════════════ -->
+<div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
+
+  <!-- Header de sección con badge de urgencia -->
+  <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
+    <div class="flex items-center gap-2.5">
+      <span class="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-900/40 flex items-center justify-center shrink-0">
+        <span class="material-symbols-outlined text-red-500 dark:text-red-400 text-base">person_alert</span>
+      </span>
+      <div>
+        <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Requieren Atención</p>
+        <p class="text-[10px] text-gray-300 dark:text-gray-500">Estudiantes con menor progreso adaptativo</p>
+      </div>
+    </div>
+    {% if estudiantes_atencion %}
+    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-red-100 dark:bg-red-900/40 text-xs font-black text-red-600 dark:text-red-400 animate-pulse">
+      <span class="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0"></span>
+      {{ estudiantes_atencion | length }} alerta{{ 's' if estudiantes_atencion|length != 1 else '' }}
+    </span>
+    {% endif %}
+  </div>
+
+  <div class="p-5">
+    {% if estudiantes_atencion %}
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      {% for est in estudiantes_atencion %}
+      {% set iniciales = (est.nombre_completo.split()[0][0] ~ (est.nombre_completo.split()[-1][0] if est.nombre_completo.split()|length > 1 else '')) | upper %}
+      <div class="rounded-xl border border-red-100 dark:border-red-800/30
+                  bg-gradient-to-b from-red-50 to-white dark:from-red-900/10 dark:to-gray-800
+                  overflow-hidden flex flex-col hover:shadow-md hover:shadow-red-100/50 transition-shadow">
+        <div class="p-4 flex-1">
+          <!-- Cabecera estudiante -->
+          <div class="flex items-center gap-2.5 mb-3">
+            <span class="w-10 h-10 rounded-full bg-gradient-to-br from-red-400 to-red-600 flex items-center justify-center shrink-0 shadow-sm shadow-red-200/50">
+              <span class="text-xs font-black text-white">{{ iniciales }}</span>
+            </span>
+            <div class="min-w-0">
+              <p class="text-sm font-bold text-gray-800 dark:text-gray-100 truncate leading-tight">{{ est.nombre_completo }}</p>
+              <p class="text-[10px] text-red-500 font-semibold truncate leading-tight mt-0.5">{{ est.peor_etiqueta }}</p>
+            </div>
+          </div>
+
+          <!-- Competencia débil -->
+          {% if est.peor_area %}
+          <div class="mb-1">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Competencia más débil</span>
+              <span class="text-xs font-black text-red-500 tabular-nums">{{ est.peor_progreso }}%</span>
+            </div>
+            <div class="w-full bg-red-100 dark:bg-red-900/30 rounded-full h-2 overflow-hidden">
+              <div class="h-2 rounded-full bg-gradient-to-r from-red-400 to-red-500 transition-all duration-700"
+                   style="width: {{ est.peor_progreso }}%;"></div>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Botón de acción -->
+        <div class="px-4 pb-4">
+          <a href="{{ url_for('reportes.reporte_progreso', id_estudiante=est.id_estudiante, id_salon=est.id_salon) }}{% if est.peor_area %}&foco={{ est.peor_area }}{% endif %}"
+             class="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-xl
+                    bg-gradient-to-r from-red-500 to-rose-600
+                    hover:from-red-600 hover:to-rose-700
+                    text-white text-xs font-bold transition-all shadow-sm shadow-red-200/50
+                    hover:shadow-md hover:shadow-red-300/40">
+            <span class="material-symbols-outlined text-sm">bar_chart</span>
+            Ver análisis detallado
+          </a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% else %}
+    <div class="flex items-center gap-3 p-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/30">
+      <span class="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-800/40 flex items-center justify-center shrink-0">
+        <span class="material-symbols-outlined text-emerald-500 text-xl">check_circle</span>
+      </span>
+      <div>
+        <p class="text-sm font-bold text-emerald-700 dark:text-emerald-400">Excelente progreso general</p>
+        <p class="text-xs text-emerald-500 mt-0.5">Todos los estudiantes están avanzando satisfactoriamente.</p>
+      </div>
+    </div>
     {% endif %}
   </div>
 </div>
 
-<!-- Estudiantes que requieren atención -->
-<div class="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-  <h3 class="text-lg font-bold mb-4 text-accent">Estudiantes que Requieren Atención</h3>
-  {% if estudiantes_atencion %}
-    <ul class="space-y-3">
-      {% for est in estudiantes_atencion %}
-        <li class="flex items-center justify-between p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
-          <div>
-            <p class="font-semibold">{{ est.nombre_completo }}</p>
-            <p class="text-sm text-gray-500 dark:text-gray-400">
-              Dificultad en: {{ est.dificultad }}
-            </p>
-          </div>
-          <a
-            class="text-primary font-bold text-sm hover:underline"
-            href="{{ url_for('reportes.reporte_progreso',
-                             id_estudiante=est.id_estudiante,
-                             id_salon=est.id_salon) }}"
-          >
-            Ver Perfil
-          </a>
-        </li>
-      {% endfor %}
-    </ul>
-  {% else %}
-    <p class="text-sm text-gray-500">
-      Por ahora no hay estudiantes en nivel de "necesita ayuda".
-    </p>
-  {% endif %}
-</div>
-
-<!-- Script para ajustar el ancho de las barras de temas -->
+<!-- Animar barras al cargar -->
 <script>
   document.addEventListener('DOMContentLoaded', function () {
-    document.querySelectorAll('.barra-tema').forEach(function (el) {
-      var raw = parseFloat(el.getAttribute('data-porcentaje') || '0');
-      if (isNaN(raw)) raw = 0;
-      var pct = Math.max(0, Math.min(100, raw)); // clamp 0–100
-      el.style.width = pct + '%';
-    });
+    setTimeout(function () {
+      document.querySelectorAll('.barra-tema').forEach(function (el) {
+        var pct = Math.max(0, Math.min(100, parseFloat(el.getAttribute('data-porcentaje') || '0') || 0));
+        el.style.width = pct + '%';
+      });
+    }, 120);
   });
+</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+  /* ── Donut chart ── */
+  {% if estudiantes_chart %}
+  (function () {
+    const centerTextPlugin = {
+      id: 'centerText',
+      beforeDraw(chart) {
+        const { ctx, chartArea: { top, bottom, left, right } } = chart;
+        const cx = (left + right) / 2;
+        const cy = (top + bottom) / 2;
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = '700 18px Inter, sans-serif';
+        ctx.fillStyle = '#1f2937';
+        ctx.fillText('{{ total_estudiantes }}', cx, cy - 7);
+        ctx.font = '600 9px Inter, sans-serif';
+        ctx.fillStyle = '#9ca3af';
+        ctx.fillText('ALUMNOS', cx, cy + 9);
+        ctx.restore();
+      }
+    };
+    new Chart(document.getElementById('chartEstudiantes'), {
+      type: 'doughnut',
+      data: {
+        labels: ['Avanzado ≥70%', 'En progreso 40–69%', 'Necesita ayuda <40%'],
+        datasets: [{
+          data: [{{ avanzados }}, {{ en_progreso }}, {{ necesita_ayuda }}],
+          backgroundColor: ['#34d399', '#fb923c', '#f87171'],
+          borderWidth: 2,
+          borderColor: '#ffffff',
+          hoverOffset: 6,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        cutout: '68%',
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => ` ${ctx.raw} alumno${ctx.raw !== 1 ? 's' : ''} — ${ctx.label}`
+            }
+          }
+        },
+        onClick: (_, elements) => {
+          if (!elements.length) return;
+          filtrarBanda(['avanzado', 'progreso', 'ayuda'][elements[0].index]);
+        }
+      },
+      plugins: [centerTextPlugin]
+    });
+  })();
+  {% endif %}
+
+  /* ── Filtro de banda ── */
+  const _BORDES = { avanzado: 'border-emerald-300', progreso: 'border-orange-300', ayuda: 'border-red-300' };
+  const _LABELS = { avanzado: 'Avanzado ≥70%', progreso: 'En progreso 40–69%', ayuda: 'Necesita ayuda <40%' };
+  let _bandaActiva = null;
+
+  function filtrarBanda(banda) {
+    const items  = document.querySelectorAll('.estudiante-item');
+    const label  = document.getElementById('lista-label');
+    const vacia  = document.getElementById('lista-vacia');
+    const btnTds = document.getElementById('btn-todos');
+
+    document.querySelectorAll('.filtro-btn').forEach(b => {
+      Object.values(_BORDES).forEach(c => b.classList.remove(c));
+    });
+
+    if (!banda || banda === _bandaActiva) {
+      _bandaActiva = null;
+      items.forEach(el => el.style.display = '');
+      label.textContent = `Todos (${items.length})`;
+      vacia.classList.add('hidden');
+      btnTds.classList.remove('font-bold', 'text-indigo-500');
+      return;
+    }
+
+    _bandaActiva = banda;
+    const btn = document.getElementById('btn-' + banda);
+    if (btn) btn.classList.add(_BORDES[banda]);
+    btnTds.classList.add('font-bold', 'text-indigo-500');
+
+    let n = 0;
+    items.forEach(el => {
+      if (el.dataset.banda === banda) { el.style.display = ''; n++; }
+      else el.style.display = 'none';
+    });
+    label.textContent = `${_LABELS[banda]} (${n})`;
+    vacia.classList.toggle('hidden', n > 0);
+  }
 </script>
 {% endblock %}

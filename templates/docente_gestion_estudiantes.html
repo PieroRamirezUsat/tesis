@@ -1,119 +1,127 @@
 {% extends "docente_base.html" %}
 
 {% block contenido %}
-<div class="flex flex-col gap-6">
-  <!-- Título y botón -->
-  <div class="flex flex-wrap items-center justify-between gap-4">
-    <h1 class="text-3xl font-black leading-tight tracking-[-0.03em]">
-      Gestión de Estudiantes
-    </h1>
 
-    <button
-      type="button"
-      id="btn-abrir-modal-nuevo"
-      class="flex items-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 shadow-sm"
-    >
-      <span class="material-symbols-outlined text-base">add</span>
-      <span>Añadir Estudiante</span>
-    </button>
+<!-- ENCABEZADO -->
+<div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+  <div>
+    <p class="text-xs font-bold text-primary uppercase tracking-widest mb-0.5">Panel del Docente</p>
+    <h1 class="text-2xl font-black text-gray-900 dark:text-white leading-tight">Gestión de Estudiantes</h1>
+    <p class="text-sm text-gray-400 mt-0.5">Administra los alumnos de tus salones</p>
   </div>
+  <button type="button" id="btn-abrir-modal-nuevo"
+    class="flex items-center gap-2 px-4 py-2 rounded-xl
+           bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700
+           text-white text-sm font-bold shadow-lg shadow-blue-200/50 transition-all">
+    <span class="material-symbols-outlined text-base">person_add</span>
+    Añadir Estudiante
+  </button>
+</div>
 
-  <!-- Barra de búsqueda y filtro -->
-  <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl px-4 py-3 flex flex-wrap items-center gap-4">
-    <!-- Buscador -->
-    <div class="flex-1 min-w-[240px]">
-      <label class="flex flex-col w-full h-11">
-        <div class="flex w-full flex-1 items-center rounded-lg h-full bg-gray-100 dark:bg-gray-800 px-3">
-          <span class="material-symbols-outlined text-gray-500 mr-2">search</span>
-          <input
-            id="buscador-estudiantes"
-            type="text"
-            placeholder="Buscar por nombre o salón..."
-            class="flex-1 bg-transparent border-none focus:outline-none focus:ring-0 text-sm text-gray-800 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400"
-          />
-        </div>
-      </label>
-    </div>
-
-    <!-- Filtro de estado -->
-    <div class="flex-shrink-0">
-      <select
-        id="filtro-estado"
-        class="flex items-center justify-between gap-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 min-w-[160px]"
-      >
-        <option value="todos">Todos los estados</option>
-        <option value="activo">Solo activos</option>
-        <option value="inactivo">Solo inactivos</option>
-      </select>
-    </div>
+<!-- BARRA DE BÚSQUEDA Y FILTRO -->
+<div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm px-4 py-3 mb-4 flex flex-wrap items-center gap-3">
+  <div class="flex-1 min-w-[220px] flex items-center gap-2 bg-gray-50 dark:bg-gray-700/60 rounded-xl px-3 h-10">
+    <span class="material-symbols-outlined text-gray-400 text-[18px] shrink-0">search</span>
+    <input id="buscador-estudiantes" type="text" placeholder="Buscar por nombre o salón..."
+      class="flex-1 bg-transparent border-none focus:outline-none text-sm text-gray-800 dark:text-gray-100 placeholder:text-gray-400" />
   </div>
+  <select id="filtro-estado"
+    class="h-10 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400">
+    <option value="todos">Todos los estados</option>
+    <option value="activo">Solo activos</option>
+    <option value="inactivo">Solo inactivos</option>
+  </select>
+</div>
 
-  <!-- Tabla de estudiantes -->
-  <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-x-auto">
+<!-- TABLA DE ESTUDIANTES -->
+<div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
+  <div class="overflow-x-auto">
+    <div style="max-height: 528px; overflow-y: auto;">
     <table class="w-full text-sm text-left">
-      <thead class="border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950/40">
+      <thead class="sticky top-0 z-10 border-b border-gray-100 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-700/90">
         <tr>
-          <th class="px-6 py-3 font-medium text-gray-600 dark:text-gray-300">Nombre Completo</th>
-          <th class="px-6 py-3 font-medium text-gray-600 dark:text-gray-300">Salón</th>
-          <th class="px-6 py-3 font-medium text-gray-600 dark:text-gray-300">Grado</th>
-          <th class="px-6 py-3 font-medium text-gray-600 dark:text-gray-300 text-center">Progreso inicial</th>
-          <th class="px-6 py-3 font-medium text-gray-600 dark:text-gray-300">Estado</th>
-          <th class="px-6 py-3 font-medium text-gray-600 dark:text-gray-300 text-right">Acciones</th>
+          <th class="px-5 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest">Estudiante</th>
+          <th class="px-5 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest">Salón</th>
+          <th class="px-5 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest hidden md:table-cell">Grado</th>
+          <th class="px-5 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest">Estado</th>
+          <th class="px-5 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest text-right">Acciones</th>
         </tr>
       </thead>
       <tbody>
         {% if estudiantes %}
           {% for est in estudiantes %}
-          <tr
-            class="border-b last:border-b-0 border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900/60 transition-colors"
-            data-row-estudiante
-            data-nombre="{{ (est.nombre_completo ~ ' ' ~ est.correo)|lower }}"
-            data-salon="{{ est.nombre_salon|lower }}"
-            data-estado="{{ est.estado_estudiante|lower }}"
-          >
-            <td class="px-6 py-3 align-middle">
-              <p class="font-medium text-gray-900 dark:text-gray-100">{{ est.nombre_completo }}</p>
-              <p class="text-xs text-gray-500 dark:text-gray-400">{{ est.correo }}</p>
-            </td>
-            <td class="px-6 py-3 align-middle text-gray-700 dark:text-gray-300">
-              {{ est.nombre_salon }}
-            </td>
-            <td class="px-6 py-3 align-middle text-gray-700 dark:text-gray-300">
-              {{ est.grado }}
-            </td>
+          <tr class="border-b last:border-b-0 border-gray-50 dark:border-gray-700/60
+                     hover:bg-blue-50/40 dark:hover:bg-blue-900/10 transition-colors"
+              data-row-estudiante
+              data-nombre="{{ (est.nombre_completo ~ ' ' ~ est.correo)|lower }}"
+              data-salon="{{ est.nombre_salon|lower }}"
+              data-estado="{{ est.estado_estudiante|lower }}">
 
-            <!-- Progreso inicial (pill centrado) -->
-            <td class="px-6 py-3 align-middle">
-              <div class="flex justify-center">
-                <span class="inline-flex items-center gap-1 rounded-full bg-blue-50 text-blue-700 px-3 py-1 text-xs font-semibold">
-                  <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-                  {{ est.progreso_general }}%
-                </span>
+            <!-- Nombre + avatar -->
+            <td class="px-5 py-3 align-middle">
+              <div class="flex items-center gap-3">
+                <div class="img-thumb-wrapper relative shrink-0">
+                  <img src="{{ url_for('static', filename='fotos_perfil/user_' ~ est.id_usuario ~ '.jpg') }}"
+                       onerror="this.onerror=null;this.src='{{ url_for('static', filename='fotos_perfil/user_4.jpg') }}';"
+                       alt="{{ est.nombre_completo }}"
+                       class="h-9 w-9 rounded-full object-cover border-2 border-white dark:border-gray-600 shadow-sm cursor-zoom-in" />
+                  {% if est.estado_estudiante == 'activo' %}
+                  <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-white dark:border-gray-800"></span>
+                  {% endif %}
+                  <!-- Hover preview -->
+                  <div class="img-preview" style="top:-8px;">
+                    <div class="bg-white dark:bg-gray-900 rounded-2xl border-2 border-blue-200 shadow-2xl p-1.5">
+                      <img src="{{ url_for('static', filename='fotos_perfil/user_' ~ est.id_usuario ~ '.jpg') }}"
+                           onerror="this.onerror=null;this.src='{{ url_for('static', filename='fotos_perfil/user_4.jpg') }}';"
+                           alt="{{ est.nombre_completo }}"
+                           class="w-28 h-28 rounded-xl object-cover" />
+                      <p class="text-[10px] font-bold text-gray-600 dark:text-gray-300 text-center mt-1 truncate max-w-[112px]">{{ est.nombre_completo }}</p>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <p class="font-semibold text-gray-900 dark:text-gray-100 leading-tight">{{ est.nombre_completo }}</p>
+                  <p class="text-[11px] text-gray-400">{{ est.correo }}</p>
+                </div>
               </div>
             </td>
 
-            <td class="px-6 py-3 align-middle">
+            <!-- Salón -->
+            <td class="px-5 py-3 align-middle">
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300 text-xs font-semibold">
+                <span class="material-symbols-outlined text-[14px]">class</span>
+                {{ est.nombre_salon }}
+              </span>
+            </td>
+
+            <!-- Grado -->
+            <td class="px-5 py-3 align-middle hidden md:table-cell text-xs text-gray-500 dark:text-gray-400">
+              {{ est.grado }}
+            </td>
+
+            <!-- Estado -->
+            <td class="px-5 py-3 align-middle">
               {% if est.estado_estudiante == 'activo' %}
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                  Activo
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>Activo
                 </span>
               {% elif est.estado_estudiante == 'inactivo' %}
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-200 text-gray-700">
-                  Inactivo
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400">
+                  <span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span>Inactivo
                 </span>
               {% else %}
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-700">
                   {{ est.estado_estudiante|capitalize }}
                 </span>
               {% endif %}
             </td>
 
-            <td class="px-6 py-3 text-right align-middle">
-              <div class="inline-flex items-center gap-1.5">
-                <!-- Botón editar -->
-                <button
-                  type="button"
-                  class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+            <!-- Acciones -->
+            <td class="px-5 py-3 align-middle text-right">
+              <div class="inline-flex items-center gap-1">
+                <button type="button"
+                  class="p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors group"
+                  title="Editar estudiante"
                   data-accion="editar-estudiante"
                   data-id-estudiante="{{ est.id_estudiante }}"
                   data-id-usuario="{{ est.id_usuario }}"
@@ -126,23 +134,25 @@
                   data-comp-regularidad="{{ est.comp_regularidad }}"
                   data-comp-forma="{{ est.comp_forma }}"
                   data-comp-datos="{{ est.comp_datos }}"
-                  data-progreso-general="{{ est.progreso_general }}"
-                >
-                  <span class="material-symbols-outlined text-base text-gray-700 dark:text-gray-300">edit</span>
+                  data-progreso-general="{{ est.progreso_general }}">
+                  <span class="material-symbols-outlined text-[18px] text-blue-500 group-hover:text-blue-600">edit</span>
                 </button>
 
-                <!-- Botón baja -->
-                <form
-                  action="{{ url_for('docentes.baja_estudiante', id_estudiante=est.id_estudiante) }}"
-                  method="post"
-                  class="inline"
-                  onsubmit="return confirm('¿Seguro que deseas dar de baja a este estudiante?');"
-                >
-                  <button
-                    type="submit"
-                    class="p-2 rounded-full hover:bg-red-50 dark:hover:bg-red-900/40"
-                  >
-                    <span class="material-symbols-outlined text-base text-red-600">delete</span>
+                <form method="post"
+                      action="{{ url_for('docentes.subir_foto_estudiante', id_estudiante=est.id_estudiante) }}"
+                      enctype="multipart/form-data" class="inline">
+                  <label class="p-1.5 rounded-lg hover:bg-sky-50 dark:hover:bg-sky-900/30 cursor-pointer inline-flex transition-colors group"
+                         title="Cambiar foto">
+                    <span class="material-symbols-outlined text-[18px] text-sky-500 group-hover:text-sky-600">photo_camera</span>
+                    <input type="file" name="foto_estudiante" accept="image/jpeg,image/png" class="hidden" onchange="this.form.submit()" />
+                  </label>
+                </form>
+
+                <form action="{{ url_for('docentes.baja_estudiante', id_estudiante=est.id_estudiante) }}"
+                      method="post" class="inline"
+                      onsubmit="return confirm('¿Seguro que deseas dar de baja a este estudiante?');">
+                  <button type="submit" class="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors group" title="Dar de baja">
+                    <span class="material-symbols-outlined text-[18px] text-red-400 group-hover:text-red-600">person_remove</span>
                   </button>
                 </form>
               </div>
@@ -151,249 +161,169 @@
           {% endfor %}
         {% else %}
           <tr>
-            <td colspan="6" class="px-6 py-6 text-center text-gray-500 dark:text-gray-400">
-              Aún no tienes estudiantes registrados en tus salones.
+            <td colspan="5" class="px-6 py-12 text-center">
+              <span class="material-symbols-outlined text-5xl text-gray-200 dark:text-gray-600 block mb-2">group_off</span>
+              <p class="text-sm text-gray-400">Aún no tienes estudiantes registrados en tus salones.</p>
             </td>
           </tr>
         {% endif %}
       </tbody>
     </table>
+    </div>
   </div>
 </div>
 
 <!-- ================= MODAL NUEVO / EDITAR ESTUDIANTE ================= -->
+<div id="modal-estudiante-backdrop"
+  class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden flex items-center justify-center z-40 p-4">
+  <div id="modal-estudiante"
+    class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-2xl w-full mx-auto relative overflow-hidden">
 
-<div
-  id="modal-estudiante-backdrop"
-  class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden flex items-center justify-center z-40"
->
-  <div
-    id="modal-estudiante"
-    class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-2xl w-full mx-4 p-6 relative"
-  >
-    <h2 id="modal-estudiante-titulo" class="text-lg font-bold mb-4">
-      Añadir nuevo estudiante
-    </h2>
+    <!-- Header con color -->
+    <div class="bg-gradient-to-r from-blue-500 to-indigo-600 px-6 py-4 flex items-center justify-between">
+      <h2 id="modal-estudiante-titulo" class="text-base font-bold text-white">Añadir nuevo estudiante</h2>
+      <button type="button" id="btn-cerrar-modal"
+        class="w-7 h-7 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors">
+        <span class="material-symbols-outlined text-[16px] text-white">close</span>
+      </button>
+    </div>
 
-    <form id="form-estudiante" method="post" action="{{ url_for('docentes.crear_estudiante') }}" class="space-y-4">
-      <!-- Campo oculto para saber si es edición -->
-      <input type="hidden" name="id_estudiante" id="form-id-estudiante" />
-      <input type="hidden" name="id_usuario" id="form-id-usuario" />
+    <div class="p-6 max-h-[80vh] overflow-y-auto">
+      <form id="form-estudiante" method="post" action="{{ url_for('docentes.crear_estudiante') }}" class="space-y-4">
+        <input type="hidden" name="id_estudiante" id="form-id-estudiante" />
+        <input type="hidden" name="id_usuario" id="form-id-usuario" />
 
-      <!-- Seleccionar usuario existente -->
-      <div class="space-y-1" id="bloque-usuario-existente">
-        <label class="text-sm font-medium text-gray-700 dark:text-gray-200">
-          Usuario existente (opcional)
-        </label>
-        <select
-          name="id_usuario_existente"
-          id="select-usuario-existente"
-          class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm px-3 py-2"
-        >
-          <option value="">-- Selecciona un usuario existente --</option>
-          {% for u in usuarios_estudiantes %}
-          <option
-            value="{{ u.id_usuario }}"
-            data-nombre="{{ u.nombre }}"
-            data-apellidos="{{ u.apellidos }}"
-            data-correo="{{ u.correo }}"
-            data-grado="{{ u.grado }}"
-          >
-            {{ u.nombre_completo }} – {{ u.correo }}
-          </option>
-          {% endfor %}
-        </select>
-        <p class="text-xs text-gray-500 dark:text-gray-400">
-          Si eliges un usuario, se asociará a tu salón.  
-          Si lo dejas vacío, se creará un nuevo estudiante.
-        </p>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div class="space-y-1">
-          <label class="text-sm font-medium text-gray-700 dark:text-gray-200">Nombre(s)</label>
-          <input
-            type="text"
-            name="nombre"
-            id="form-nombre"
-            class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm"
-          />
+        <!-- Usuario existente -->
+        <div class="space-y-1" id="bloque-usuario-existente">
+          <label class="text-sm font-semibold text-gray-700 dark:text-gray-200">Usuario existente (opcional)</label>
+          <select name="id_usuario_existente" id="select-usuario-existente"
+            class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400">
+            <option value="">-- Selecciona un usuario existente --</option>
+            {% for u in usuarios_estudiantes %}
+            <option value="{{ u.id_usuario }}"
+              data-nombre="{{ u.nombre }}"
+              data-apellidos="{{ u.apellidos }}"
+              data-correo="{{ u.correo }}"
+              data-grado="{{ u.grado }}">
+              {{ u.nombre_completo }} – {{ u.correo }}
+            </option>
+            {% endfor %}
+          </select>
+          <p class="text-xs text-gray-400">Si dejas vacío, se creará un nuevo estudiante.</p>
         </div>
-        <div class="space-y-1">
-          <label class="text-sm font-medium text-gray-700 dark:text-gray-200">Apellidos</label>
-          <input
-            type="text"
-            name="apellidos"
-            id="form-apellidos"
-            class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm"
-          />
-        </div>
-      </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div class="space-y-1">
-          <label class="text-sm font-medium text-gray-700 dark:text-gray-200">Correo electrónico</label>
-          <input
-            type="email"
-            name="correo"
-            id="form-correo"
-            class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm"
-          />
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="space-y-1">
+            <label class="text-sm font-semibold text-gray-700 dark:text-gray-200">Nombre(s)</label>
+            <input type="text" name="nombre" id="form-nombre"
+              class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+          </div>
+          <div class="space-y-1">
+            <label class="text-sm font-semibold text-gray-700 dark:text-gray-200">Apellidos</label>
+            <input type="text" name="apellidos" id="form-apellidos"
+              class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+          </div>
         </div>
-        <div class="space-y-1">
-          <label class="text-sm font-medium text-gray-700 dark:text-gray-200">Grado / Sección</label>
-          <select
-            name="grado"
-            id="form-grado"
-            class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm"
-          >
-            <option value="3ro A">3ro de Secundaria - A</option>
-            <option value="3ro B">3ro de Secundaria - B</option>
-            <option value="3ro C">3ro de Secundaria - C</option>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="space-y-1">
+            <label class="text-sm font-semibold text-gray-700 dark:text-gray-200">Correo electrónico</label>
+            <input type="email" name="correo" id="form-correo"
+              class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+          </div>
+          <div class="space-y-1">
+            <label class="text-sm font-semibold text-gray-700 dark:text-gray-200">Grado / Sección</label>
+            <select name="grado" id="form-grado"
+              class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+              <option value="3ro A">3ro de Secundaria - A</option>
+              <option value="3ro B">3ro de Secundaria - B</option>
+              <option value="3ro C">3ro de Secundaria - C</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="bloque-password">
+          <div class="space-y-1">
+            <label class="text-sm font-semibold text-gray-700 dark:text-gray-200">Contraseña</label>
+            <input type="password" name="contrasena" id="form-contrasena"
+              class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+          </div>
+          <div class="space-y-1">
+            <label class="text-sm font-semibold text-gray-700 dark:text-gray-200">Confirmar contraseña</label>
+            <input type="password" name="contrasena_confirm" id="form-contrasena-confirm"
+              class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+          </div>
+        </div>
+
+        <!-- Estado (solo edición) -->
+        <div class="space-y-1 hidden" id="bloque-estado">
+          <label class="text-sm font-semibold text-gray-700 dark:text-gray-200">Estado del estudiante</label>
+          <select name="estado_estudiante" id="form-estado"
+            class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+            <option value="activo">Activo</option>
+            <option value="inactivo">Inactivo</option>
           </select>
         </div>
-      </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="bloque-password">
-        <div class="space-y-1">
-          <label class="text-sm font-medium text-gray-700 dark:text-gray-200">Contraseña</label>
-          <input
-            type="password"
-            name="contrasena"
-            id="form-contrasena"
-            class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm"
-          />
-        </div>
-        <div class="space-y-1">
-          <label class="text-sm font-medium text-gray-700 dark:text-gray-200">Confirmar contraseña</label>
-          <input
-            type="password"
-            name="contrasena_confirm"
-            id="form-contrasena-confirm"
-            class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm"
-          />
-        </div>
-      </div>
-
-      <!-- Estado (solo en edición) -->
-      <div class="space-y-1 hidden" id="bloque-estado">
-        <label class="text-sm font-medium text-gray-700 dark:text-gray-200">Estado del estudiante</label>
-        <select
-          name="estado_estudiante"
-          id="form-estado"
-          class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm"
-        >
-          <option value="activo">Activo</option>
-          <option value="inactivo">Inactivo</option>
-        </select>
-      </div>
-
-      <!-- Niveles iniciales MINEDU (solo en edición) -->
-      <div class="space-y-3 hidden" id="bloque-niveles">
-        <div class="flex items-center justify-between gap-2">
-          <div>
-            <p class="text-sm font-semibold text-gray-800 dark:text-gray-100">
-              Nivel inicial del estudiante (0 a 100)
-            </p>
-            <p class="text-xs text-gray-500 dark:text-gray-400">
-              Valores del examen diagnóstico por competencia de Álgebra del MINEDU.
-            </p>
+        <!-- Niveles diagnósticos (solo edición) -->
+        <div class="space-y-3 hidden" id="bloque-niveles">
+          <div class="flex items-center justify-between gap-2 py-2 border-t border-gray-100 dark:border-gray-800">
+            <div>
+              <p class="text-sm font-bold text-gray-800 dark:text-gray-100">Nivel diagnóstico (0–100)</p>
+              <p class="text-xs text-gray-400">Datos del examen MINEDU por competencia.</p>
+            </div>
+            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold bg-purple-50 text-purple-700">
+              <span class="w-1.5 h-1.5 rounded-full bg-purple-500 mr-1"></span>Diagnóstico
+            </span>
           </div>
-          <span class="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-semibold bg-purple-50 text-purple-700">
-            <span class="w-1.5 h-1.5 rounded-full bg-purple-500 mr-1"></span>
-            Diagnóstico presencial
-          </span>
-        </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div class="space-y-1">
+              <label class="text-xs font-semibold text-gray-600 dark:text-gray-300">Resuelve problemas de cantidad</label>
+              <input type="number" name="comp_cantidad" id="form-comp-cantidad" min="0" max="100"
+                class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+            </div>
+            <div class="space-y-1">
+              <label class="text-xs font-semibold text-gray-600 dark:text-gray-300">Regularidad, equivalencia y cambio</label>
+              <input type="number" name="comp_regularidad" id="form-comp-regularidad" min="0" max="100"
+                class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+            </div>
+            <div class="space-y-1">
+              <label class="text-xs font-semibold text-gray-600 dark:text-gray-300">Gestión de datos e incertidumbre</label>
+              <input type="number" name="comp_datos" id="form-comp-datos" min="0" max="100"
+                class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+            </div>
+            <div class="space-y-1">
+              <label class="text-xs font-semibold text-gray-600 dark:text-gray-300">Forma, movimiento y localización</label>
+              <input type="number" name="comp_forma" id="form-comp-forma" min="0" max="100"
+                class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+            </div>
+          </div>
+
           <div class="space-y-1">
-            <label class="text-xs font-medium text-gray-700 dark:text-gray-200">
-              Resuelve problemas de cantidad
-            </label>
-            <input
-              type="number"
-              name="comp_cantidad"
-              id="form-comp-cantidad"
-              min="0"
-              max="100"
-              class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm"
-            />
-          </div>
-          <div class="space-y-1">
-            <label class="text-xs font-medium text-gray-700 dark:text-gray-200">
-              Resuelve problemas de regularidad, equivalencia y cambio
-            </label>
-            <input
-              type="number"
-              name="comp_regularidad"
-              id="form-comp-regularidad"
-              min="0"
-              max="100"
-              class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm"
-            />
-          </div>
-          <div class="space-y-1">
-            <label class="text-xs font-medium text-gray-700 dark:text-gray-200">
-              Resuelve problemas de gestión de datos e incertidumbre
-            </label>
-            <input
-              type="number"
-              name="comp_datos"
-              id="form-comp-datos"
-              min="0"
-              max="100"
-              class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm"
-            />
-          </div>
-          <div class="space-y-1">
-            <label class="text-xs font-medium text-gray-700 dark:text-gray-200">
-              Resuelve problemas de forma, movimiento y localización
-            </label>
-            <input
-              type="number"
-              name="comp_forma"
-              id="form-comp-forma"
-              min="0"
-              max="100"
-              class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm"
-            />
+            <label class="text-xs font-semibold text-gray-600 dark:text-gray-300">Progreso general (promedio)</label>
+            <input type="number" id="form-progreso-general" readonly
+              class="w-full rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/70 px-3 py-2 text-sm text-gray-500" />
           </div>
         </div>
 
-        <div class="space-y-1">
-          <label class="text-xs font-medium text-gray-700 dark:text-gray-200">
-            Progreso general (promedio automático)
-          </label>
-          <input
-            type="number"
-            id="form-progreso-general"
-            class="w-full rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/70 px-3 py-2 text-sm text-gray-700 dark:text-gray-200"
-            readonly
-          />
+        <div class="flex justify-end gap-3 pt-2">
+          <button type="button" id="btn-cerrar-modal-inner"
+            class="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-900 hover:bg-gray-50">
+            Cancelar
+          </button>
+          <button type="submit"
+            class="px-5 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white text-sm font-bold shadow-sm transition-all">
+            Guardar
+          </button>
         </div>
-      </div>
-
-      <div class="flex justify-end gap-3 pt-2">
-        <button
-          type="button"
-          id="btn-cerrar-modal"
-          class="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-900"
-        >
-          Cancelar
-        </button>
-        <button
-          type="submit"
-          class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold"
-        >
-          Guardar
-        </button>
-      </div>
-    </form>
+      </form>
+    </div>
   </div>
 </div>
 
-<!-- ================= SCRIPTS ================= -->
 <script>
+  // ---- Filtros de tabla ----
   const inputBuscar = document.getElementById("buscador-estudiantes");
   const filtroEstado = document.getElementById("filtro-estado");
   const filasEst = document.querySelectorAll("[data-row-estudiante]");
@@ -401,27 +331,18 @@
   function aplicarFiltros() {
     const q = inputBuscar ? inputBuscar.value.toLowerCase() : "";
     const estadoFiltro = filtroEstado ? filtroEstado.value : "todos";
-
     filasEst.forEach((row) => {
       const texto = (row.dataset.nombre + " " + row.dataset.salon).toLowerCase();
       const estadoRow = (row.dataset.estado || "").toLowerCase();
-
       const coincideTexto = texto.includes(q);
-      const coincideEstado =
-        estadoFiltro === "todos" || estadoFiltro === estadoRow;
-
+      const coincideEstado = estadoFiltro === "todos" || estadoFiltro === estadoRow;
       row.style.display = coincideTexto && coincideEstado ? "" : "none";
     });
   }
+  inputBuscar?.addEventListener("input", aplicarFiltros);
+  filtroEstado?.addEventListener("change", aplicarFiltros);
 
-  if (inputBuscar) {
-    inputBuscar.addEventListener("input", aplicarFiltros);
-  }
-  if (filtroEstado) {
-    filtroEstado.addEventListener("change", aplicarFiltros);
-  }
-
-  // ---------- Modal ----------
+  // ---- Modal ----
   const backdrop = document.getElementById("modal-estudiante-backdrop");
   const tituloModal = document.getElementById("modal-estudiante-titulo");
   const form = document.getElementById("form-estudiante");
@@ -457,7 +378,6 @@
 
   function calcularProgresoGeneral() {
     if (!inputProgresoGeneral) return;
-
     const valores = [];
     [inputCompCantidad, inputCompRegularidad, inputCompForma, inputCompDatos].forEach((inp) => {
       const v = inp.value.trim();
@@ -466,13 +386,8 @@
         if (!isNaN(n)) valores.push(Math.max(0, Math.min(100, n)));
       }
     });
-
-    if (!valores.length) {
-      inputProgresoGeneral.value = "";
-      return;
-    }
-    const promedio = Math.round(valores.reduce((a, b) => a + b, 0) / valores.length);
-    inputProgresoGeneral.value = promedio;
+    if (!valores.length) { inputProgresoGeneral.value = ""; return; }
+    inputProgresoGeneral.value = Math.round(valores.reduce((a, b) => a + b, 0) / valores.length);
   }
 
   [inputCompCantidad, inputCompRegularidad, inputCompForma, inputCompDatos].forEach((inp) => {
@@ -481,8 +396,7 @@
       if (inp.value !== "") {
         let n = parseInt(inp.value, 10);
         if (isNaN(n)) n = 0;
-        n = Math.max(0, Math.min(100, n));
-        inp.value = n;
+        inp.value = Math.max(0, Math.min(100, n));
       }
       calcularProgresoGeneral();
     });
@@ -491,7 +405,6 @@
   function abrirModalNuevo() {
     tituloModal.textContent = "Añadir nuevo estudiante";
     form.action = "{{ url_for('docentes.crear_estudiante') }}";
-
     campoIdEst.value = "";
     campoIdUsr.value = "";
     campoNombre.value = "";
@@ -499,44 +412,26 @@
     campoCorreo.value = "";
     campoGrado.value = "3ro A";
     campoEstado.value = "activo";
-    if (selectUsuarioExistente) {
-      selectUsuarioExistente.value = "";
-    }
-
+    if (selectUsuarioExistente) selectUsuarioExistente.value = "";
     limpiarNiveles();
-
     bloqueEstado.classList.add("hidden");
     bloquePassword.classList.remove("hidden");
     bloqueUsuarioExistente.classList.remove("hidden");
     bloqueNiveles.classList.add("hidden");
-
     backdrop.classList.remove("hidden");
   }
 
   function abrirModalEditar(btn) {
     tituloModal.textContent = "Editar estudiante";
-
     const idEst = btn.dataset.idEstudiante;
-    const idUsr = btn.dataset.idUsuario;
-    const nombre = btn.dataset.nombre;
-    const apellidos = btn.dataset.apellidos;
-    const correo = btn.dataset.correo;
-    const grado = btn.dataset.grado || "3ro A";
-    const estado = btn.dataset.estado || "activo";
-
     campoIdEst.value = idEst;
-    campoIdUsr.value = idUsr;
-    campoNombre.value = nombre;
-    campoApellidos.value = apellidos;
-    campoCorreo.value = correo;
-    campoGrado.value = grado;
-    campoEstado.value = estado;
-
-    if (selectUsuarioExistente) {
-      selectUsuarioExistente.value = "";
-    }
-
-    // Niveles diagnósticos
+    campoIdUsr.value = btn.dataset.idUsuario;
+    campoNombre.value = btn.dataset.nombre;
+    campoApellidos.value = btn.dataset.apellidos;
+    campoCorreo.value = btn.dataset.correo;
+    campoGrado.value = btn.dataset.grado || "3ro A";
+    campoEstado.value = btn.dataset.estado || "activo";
+    if (selectUsuarioExistente) selectUsuarioExistente.value = "";
     if (inputCompCantidad) {
       inputCompCantidad.value = btn.dataset.compCantidad || "";
       inputCompRegularidad.value = btn.dataset.compRegularidad || "";
@@ -544,59 +439,50 @@
       inputCompDatos.value = btn.dataset.compDatos || "";
       inputProgresoGeneral.value = btn.dataset.progresoGeneral || "";
     }
-
-    // En edición: mostrar estado + niveles; ocultar usuario existente / password
     bloqueEstado.classList.remove("hidden");
     bloquePassword.classList.add("hidden");
     bloqueUsuarioExistente.classList.add("hidden");
-    bloqueNiveles.classList.add("hidden");
-    // Solo mostramos bloque de niveles si ya hay ID (siempre en edición)
     bloqueNiveles.classList.remove("hidden");
-
     form.action = "{{ url_for('docentes.editar_estudiante', id_estudiante=0) }}".replace("0", idEst);
-
     backdrop.classList.remove("hidden");
   }
 
-  document.getElementById("btn-abrir-modal-nuevo")
-    ?.addEventListener("click", abrirModalNuevo);
+  function cerrarModal() { backdrop.classList.add("hidden"); }
 
-  document.getElementById("btn-cerrar-modal")
-    ?.addEventListener("click", () => backdrop.classList.add("hidden"));
-
-  backdrop.addEventListener("click", (e) => {
-    if (e.target === backdrop) {
-      backdrop.classList.add("hidden");
-    }
-  });
-
+  document.getElementById("btn-abrir-modal-nuevo")?.addEventListener("click", abrirModalNuevo);
+  document.getElementById("btn-cerrar-modal")?.addEventListener("click", cerrarModal);
+  document.getElementById("btn-cerrar-modal-inner")?.addEventListener("click", cerrarModal);
+  backdrop.addEventListener("click", (e) => { if (e.target === backdrop) cerrarModal(); });
   document.querySelectorAll("[data-accion='editar-estudiante']").forEach((btn) => {
     btn.addEventListener("click", () => abrirModalEditar(btn));
   });
 
-  // Autocompletar cuando eliges un usuario existente (solo en "nuevo")
   if (selectUsuarioExistente) {
     selectUsuarioExistente.addEventListener("change", () => {
       const opt = selectUsuarioExistente.selectedOptions[0];
       if (!opt || !opt.value) {
-        campoNombre.value = "";
-        campoApellidos.value = "";
-        campoCorreo.value = "";
-        campoGrado.value = "3ro A";
-        bloquePassword.classList.remove("hidden");
-        return;
+        campoNombre.value = ""; campoApellidos.value = ""; campoCorreo.value = ""; campoGrado.value = "3ro A";
+        bloquePassword.classList.remove("hidden"); return;
       }
-
       campoNombre.value = opt.dataset.nombre || "";
       campoApellidos.value = opt.dataset.apellidos || "";
       campoCorreo.value = opt.dataset.correo || "";
-      if (opt.dataset.grado) {
-        campoGrado.value = opt.dataset.grado;
-      }
-
-      // Usuario existente -> no pedimos contraseña nueva
+      if (opt.dataset.grado) campoGrado.value = opt.dataset.grado;
       bloquePassword.classList.add("hidden");
     });
   }
 </script>
+
+<style>
+  .img-thumb-wrapper { position: relative; }
+  .img-preview {
+    display: none;
+    position: absolute;
+    left: calc(100% + 10px);
+    top: 50%;
+    transform: translateY(-40%);
+    z-index: 9999;
+  }
+  .img-thumb-wrapper:hover .img-preview { display: block; }
+</style>
 {% endblock %}

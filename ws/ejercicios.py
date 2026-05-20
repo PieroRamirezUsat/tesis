@@ -35,11 +35,12 @@ def gestion_ejercicios():
     # Ejercicios con su competencia
     cur.execute(
         """
-        SELECT 
+        SELECT
             e.id_ejercicio,       -- 0
             e.descripcion,        -- 1
             e.id_competencia,     -- 2
-            c.descripcion AS nombre_competencia  -- 3
+            c.descripcion AS nombre_competencia,  -- 3
+            e.imagen_url          -- 4
         FROM ejercicios e
         JOIN competencias c ON c.id_competencia = e.id_competencia
         ORDER BY e.id_ejercicio DESC
@@ -53,6 +54,7 @@ def gestion_ejercicios():
             "descripcion": f[1],
             "id_competencia": f[2],
             "nombre_competencia": f[3],
+            "imagen_url": f[4],
         }
         for f in filas_ej
     ]
@@ -62,12 +64,22 @@ def gestion_ejercicios():
         """
         SELECT id_competencia, area
         FROM competencias
-        ORDER BY area
+        ORDER BY id_competencia
         """
     )
     filas_comp = cur.fetchall()
+    _AREA_LABELS = {
+        "cantidad": "Resuelve problemas de cantidad",
+        "regularidad_equivalencia_cambio": "Regularidad, equivalencia y cambio",
+        "forma_movimiento_localizacion": "Forma, movimiento y localización",
+        "gestion_datos_incertidumbre": "Gestión de datos e incertidumbre",
+    }
     competencias = [
-        {"id_competencia": f[0], "area": f[1]}
+        {
+            "id_competencia": f[0],
+            "area": f[1],
+            "nombre": _AREA_LABELS.get(f[1], f[1].replace("_", " ").title()),
+        }
         for f in filas_comp
     ]
 

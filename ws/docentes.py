@@ -11,37 +11,23 @@ from flask import (
 )
 from db import get_db
 import os
+from ws.utils import url_foto_usuario
 
 bp_docentes = Blueprint("docentes", __name__, url_prefix="/docente")
 
-# URL por defecto para avatar (la misma del diseño)
-DEFAULT_AVATAR = (
-    "https://lh3.googleusercontent.com/aida-public/"
-    "AB6AXuAMcTpY7WPWyqTFerHL4BxjKgr5N_14O8GAKfI7r_NIgzL0NKqd-48r2aSd0Y5m4DgWy0lnuHKz49QTvCVhQfKWBsIo8x1LNHu7-x49dAG8TtGPDSXo-enbcuPi6-6SPDGTeiPfbbv2ql13IwnPZmaA5VIlHM7l2zOTM0796EiGKjSNDHHHM2K-qvsgadUZEcjlzhlAkQEQEwvmnTPculFqkF2t2UWnHpAyZsmsZrPJ_oxzxjw1Z0TkFHtNW4UQsUbbU_ZwFVKhcI"
-)
 
 # -------------------------------------------------------------------
 # Utilidades de foto de perfil
 # -------------------------------------------------------------------
 def _fs_path_foto_usuario(id_usuario: int) -> str:
-    """
-    Ruta física donde se guardará la foto:
-    static/fotos_perfil/user_<id>.jpg
-    """
+    """Ruta física de la foto: static/fotos_perfil/user_<id>.jpg"""
     base_path = os.path.join(current_app.root_path, "static", "fotos_perfil")
     os.makedirs(base_path, exist_ok=True)
     return os.path.join(base_path, f"user_{id_usuario}.jpg")
 
 
 def _url_foto_usuario(id_usuario: int) -> str:
-    """
-    Devuelve la URL que verá el navegador.
-    Si no existe foto guardada, devuelve el avatar por defecto.
-    """
-    fs_path = _fs_path_foto_usuario(id_usuario)
-    if os.path.exists(fs_path):
-        return url_for("static", filename=f"fotos_perfil/user_{id_usuario}.jpg")
-    return DEFAULT_AVATAR
+    return url_foto_usuario(current_app.root_path, id_usuario)
 
 
 # -------------------------------------------------------------------
@@ -129,77 +115,49 @@ def _metricas_dashboard(id_usuario: int):
 
     # ==========================================================
     # 1) Totales y porcentajes por nivel de desempeño
-    #    Usamos progreso_general (0–100) con umbrales:
-    #    >=70  → avanzado
-    #    40–69 → en progreso
-    #    <40   → necesita ayuda
+    #    Usa la misma fórmula adaptativa que el gráfico y reportes:
+    #    progreso = ((nivel-1)/6)*70 + (puntaje/100)*30
+    #    >=70 → avanzado | 40-69 → en progreso | <40 → necesita ayuda
     # ==========================================================
-
-    # TOTAL estudiantes del docente
     cur.execute(
         """
-        SELECT COUNT(DISTINCT e.id_estudiante)
-        FROM estudiante e
-        JOIN estudiante_salones es ON es.id_estudiante = e.id_estudiante
-        JOIN docente_salones ds ON ds.id_salon = es.id_salon
-        WHERE ds.id_docente = %s
+        SELECT
+            COUNT(*)                                                           AS total,
+            SUM(CASE WHEN progreso >= 70              THEN 1 ELSE 0 END)      AS avanzados,
+            SUM(CASE WHEN progreso >= 40 AND progreso < 70 THEN 1 ELSE 0 END) AS en_progreso,
+            SUM(CASE WHEN progreso < 40               THEN 1 ELSE 0 END)      AS necesita_ayuda
+        FROM (
+            SELECT
+                e.id_estudiante,
+                COALESCE(ROUND(AVG(
+                    ((nec.nivel_actual::float - 1) / 6.0) * 70.0 +
+                    (nec.promedio_puntaje / 100.0) * 30.0
+                ))::int, 0) AS progreso
+            FROM estudiante e
+            JOIN estudiante_salones es ON es.id_estudiante = e.id_estudiante
+            JOIN docente_salones ds    ON ds.id_salon      = es.id_salon
+            LEFT JOIN nivel_estudiante_competencia nec ON nec.id_estudiante = e.id_estudiante
+            WHERE ds.id_docente = %s
+            GROUP BY e.id_estudiante
+        ) subq
         """,
         (id_docente,),
     )
-    total_estudiantes = cur.fetchone()[0] or 0
-
-    # Avanzados
-    cur.execute(
-        """
-        SELECT COUNT(DISTINCT e.id_estudiante)
-        FROM estudiante e
-        JOIN estudiante_salones es ON es.id_estudiante = e.id_estudiante
-        JOIN docente_salones ds ON ds.id_salon = es.id_salon
-        WHERE ds.id_docente = %s
-          AND e.progreso_general >= 70
-        """,
-        (id_docente,),
-    )
-    avanzados = cur.fetchone()[0] or 0
-
-    # En progreso (40–69)
-    cur.execute(
-        """
-        SELECT COUNT(DISTINCT e.id_estudiante)
-        FROM estudiante e
-        JOIN estudiante_salones es ON es.id_estudiante = e.id_estudiante
-        JOIN docente_salones ds ON ds.id_salon = es.id_salon
-        WHERE ds.id_docente = %s
-          AND e.progreso_general BETWEEN 40 AND 69
-        """,
-        (id_docente,),
-    )
-    en_progreso = cur.fetchone()[0] or 0
-
-    # Necesitan ayuda (<40)
-    cur.execute(
-        """
-        SELECT COUNT(DISTINCT e.id_estudiante)
-        FROM estudiante e
-        JOIN estudiante_salones es ON es.id_estudiante = e.id_estudiante
-        JOIN docente_salones ds ON ds.id_salon = es.id_salon
-        WHERE ds.id_docente = %s
-          AND e.progreso_general < 40
-        """,
-        (id_docente,),
-    )
-    necesita_ayuda = cur.fetchone()[0] or 0
+    band_row = cur.fetchone()
+    total_estudiantes = int(band_row[0] or 0)
+    avanzados         = int(band_row[1] or 0)
+    en_progreso       = int(band_row[2] or 0)
+    necesita_ayuda    = int(band_row[3] or 0)
 
     if total_estudiantes > 0:
-        porc_avanzado = round(avanzados * 100 / total_estudiantes)
-        porc_en_progreso = round(en_progreso * 100 / total_estudiantes)
-        porc_necesita_ayuda = round(necesita_ayuda * 100 / total_estudiantes)
+        porc_avanzado      = round(avanzados      * 100 / total_estudiantes)
+        porc_en_progreso   = round(en_progreso    * 100 / total_estudiantes)
+        porc_necesita_ayuda= round(necesita_ayuda * 100 / total_estudiantes)
     else:
         porc_avanzado = porc_en_progreso = porc_necesita_ayuda = 0
 
-    # Seguridad extra: clamp 0–100
-    porc_avanzado = max(0, min(100, porc_avanzado))
-    porc_en_progreso = max(0, min(100, porc_en_progreso))
+    porc_avanzado       = max(0, min(100, porc_avanzado))
+    porc_en_progreso    = max(0, min(100, porc_en_progreso))
     porc_necesita_ayuda = max(0, min(100, porc_necesita_ayuda))
 
     # ==========================================================
@@ -278,32 +236,106 @@ def _metricas_dashboard(id_usuario: int):
         """
         SELECT
             e.id_estudiante,
-            MIN(es.id_salon) AS id_salon,
+            MIN(es.id_salon)                            AS id_salon,
             u.nombre,
             u.apellidos,
-            COALESCE(ROUND(MIN(nec.promedio_puntaje * 25), 0), 0) AS peor_pct
+            COALESCE(
+                ROUND(AVG(
+                    ((nec.nivel_actual::float - 1) / 6.0) * 70.0 +
+                    (nec.promedio_puntaje / 100.0) * 30.0
+                ))::int, 0
+            )                                           AS progreso_general,
+            (
+                SELECT c2.area
+                FROM nivel_estudiante_competencia nec2
+                JOIN competencias c2 ON c2.id_competencia = nec2.id_competencia
+                WHERE nec2.id_estudiante = e.id_estudiante
+                ORDER BY (
+                    ((nec2.nivel_actual::float - 1) / 6.0) * 70.0 +
+                    (nec2.promedio_puntaje / 100.0) * 30.0
+                ) ASC
+                LIMIT 1
+            )                                           AS peor_area,
+            (
+                SELECT COALESCE(
+                    ROUND(
+                        ((nec2.nivel_actual::float - 1) / 6.0) * 70.0 +
+                        (nec2.promedio_puntaje / 100.0) * 30.0
+                    )::int, 0)
+                FROM nivel_estudiante_competencia nec2
+                WHERE nec2.id_estudiante = e.id_estudiante
+                ORDER BY (
+                    ((nec2.nivel_actual::float - 1) / 6.0) * 70.0 +
+                    (nec2.promedio_puntaje / 100.0) * 30.0
+                ) ASC
+                LIMIT 1
+            )                                           AS peor_progreso
         FROM estudiante e
         JOIN usuarios u ON u.id_usuario = e.id_usuario
         JOIN estudiante_salones es ON es.id_estudiante = e.id_estudiante
         JOIN docente_salones ds ON ds.id_salon = es.id_salon
-        JOIN nivel_estudiante_competencia nec
-              ON nec.id_estudiante = e.id_estudiante
+        LEFT JOIN nivel_estudiante_competencia nec ON nec.id_estudiante = e.id_estudiante
         WHERE ds.id_docente = %s
         GROUP BY e.id_estudiante, u.nombre, u.apellidos
-        ORDER BY peor_pct ASC
+        ORDER BY progreso_general ASC
         LIMIT 3
         """,
         (id_docente,),
     )
+    _ETIQUETAS_AREA = {
+        "cantidad":                       "Resuelve problemas de cantidad",
+        "regularidad_equivalencia_cambio": "Regularidad, equiv. y cambio",
+        "forma_movimiento_localizacion":   "Forma, movimiento y localiz.",
+        "gestion_datos_incertidumbre":     "Gestión de datos e incert.",
+    }
     est_rows = cur.fetchall()
     estudiantes_atencion = [
         {
-            "id_estudiante": row[0],
-            "id_salon": row[1],
+            "id_estudiante":  row[0],
+            "id_salon":       row[1],
             "nombre_completo": f"{row[2]} {row[3]}",
-            "dificultad": "Competencias de álgebra",
+            "peor_area":      row[5],
+            "peor_progreso":  int(row[6]) if row[6] is not None else 0,
+            "peor_etiqueta":  _ETIQUETAS_AREA.get(row[5], "Competencias de álgebra") if row[5] else "Sin datos de competencia",
         }
         for row in est_rows
+    ]
+
+    # ==========================================================
+    # 5) Todos los estudiantes con su progreso (para el gráfico)
+    #    Usa la misma fórmula adaptativa que la página de Reportes:
+    #    porcentaje = ((nivel_actual-1)/6)*70 + (promedio_puntaje/100)*30
+    # ==========================================================
+    cur.execute(
+        """
+        SELECT
+            u.nombre || ' ' || u.apellidos AS nombre_completo,
+            COALESCE(
+                ROUND(
+                    AVG(
+                        ((nec.nivel_actual::float - 1) / 6.0) * 70.0 +
+                        (nec.promedio_puntaje / 100.0) * 30.0
+                    )
+                )::int,
+                0
+            ) AS progreso,
+            e.id_estudiante,
+            MIN(es.id_salon) AS id_salon
+        FROM estudiante e
+        JOIN usuarios u                ON u.id_usuario     = e.id_usuario
+        JOIN estudiante_salones es     ON es.id_estudiante = e.id_estudiante
+        JOIN docente_salones ds        ON ds.id_salon      = es.id_salon
+        LEFT JOIN nivel_estudiante_competencia nec
+                                       ON nec.id_estudiante = e.id_estudiante
+        WHERE ds.id_docente = %s
+        GROUP BY e.id_estudiante, u.nombre, u.apellidos
+        ORDER BY progreso ASC, u.apellidos
+        """,
+        (id_docente,),
+    )
+    estudiantes_chart = [
+        {"nombre": r[0], "progreso": r[1], "id_estudiante": r[2], "id_salon": r[3]}
+        for r in cur.fetchall()
     ]
 
     cur.close()
@@ -319,6 +351,7 @@ def _metricas_dashboard(id_usuario: int):
         "avanzados": avanzados,
         "en_progreso": en_progreso,
         "necesita_ayuda": necesita_ayuda,
+        "estudiantes_chart": estudiantes_chart,
     }
 
 
@@ -360,9 +393,13 @@ def dashboard():
         porc_avanzado=met["porc_avanzado"],
         porc_en_progreso=met["porc_en_progreso"],
         porc_necesita_ayuda=met["porc_necesita_ayuda"],
+        avanzados=met["avanzados"],
+        en_progreso=met["en_progreso"],
+        necesita_ayuda=met["necesita_ayuda"],
         salones=met["salones"],
         temas=met["temas"],
         estudiantes_atencion=met["estudiantes_atencion"],
+        estudiantes_chart=met["estudiantes_chart"],
         offset_progreso=offset_progreso,
         offset_ayuda=offset_ayuda,
         active_page="dashboard",

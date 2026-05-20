@@ -36,8 +36,9 @@ def create_app():
 app = create_app()
 
 if __name__ == "__main__":
+    import os as _os
     app.run(
-        host="0.0.0.0",   # <- IMPORTANTE, no dejar 127.0.0.1
+        host="0.0.0.0",
         port=5000,
-        debug=True
+        debug=_os.environ.get("FLASK_DEBUG", "false").lower() == "true"
     )
