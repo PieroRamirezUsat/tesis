@@ -427,17 +427,35 @@ def eliminar_evaluacion(id_evaluacion):
 
     conn = get_db()
     cur = conn.cursor()
-    cur.execute(
-        """
-        DELETE FROM evaluaciones
-        WHERE id_evaluacion = %s
-          AND id_salon IN (SELECT id_salon FROM docente_salones WHERE id_docente = %s)
-        """,
-        (id_evaluacion, id_docente),
-    )
-    conn.commit()
-    cur.close()
-    flash("Evaluación eliminada.", "success")
+    try:
+        # Verificar que la evaluación pertenece a un salón del docente
+        cur.execute(
+            """
+            SELECT id_evaluacion FROM evaluaciones
+            WHERE id_evaluacion = %s
+              AND id_salon IN (SELECT id_salon FROM docente_salones WHERE id_docente = %s)
+            """,
+            (id_evaluacion, id_docente),
+        )
+        if not cur.fetchone():
+            flash("No tienes permiso para eliminar esta evaluación.", "danger")
+            return redirect(url_for("evaluaciones.gestion_evaluaciones"))
+
+        # Borrar registros dependientes antes de eliminar la evaluación
+        cur.execute("DELETE FROM evaluacion_respuestas WHERE id_evaluacion = %s", (id_evaluacion,))
+        cur.execute("DELETE FROM evaluacion_resultados  WHERE id_evaluacion = %s", (id_evaluacion,))
+        cur.execute("DELETE FROM evaluacion_grupos       WHERE id_evaluacion = %s", (id_evaluacion,))
+        cur.execute("DELETE FROM evaluaciones            WHERE id_evaluacion = %s", (id_evaluacion,))
+
+        conn.commit()
+        flash("Evaluación eliminada.", "success")
+    except Exception as e:
+        conn.rollback()
+        print("ERROR eliminar evaluacion:", e)
+        flash("No se pudo eliminar la evaluación.", "danger")
+    finally:
+        cur.close()
+
     return redirect(url_for("evaluaciones.gestion_evaluaciones"))
 
 
