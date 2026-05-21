@@ -648,6 +648,11 @@ def ejercicios_evaluacion(id_evaluacion):
         except Exception:
             pass
 
+    # Si no hay asignación por grupo, mostramos num_preguntas ejercicios aleatorios
+    pool = list(catalogo.values())
+    random.shuffle(pool)
+    muestra_aleatoria = pool[:num_preguntas]
+
     return render_template(
         "docente_evaluaciones.html",
         titulo_pagina="Ejercicios de Evaluación",
@@ -657,7 +662,7 @@ def ejercicios_evaluacion(id_evaluacion):
             "num_grupos": num_grupos, "num_preguntas": num_preguntas,
         },
         ejercicios_por_grupo=ejercicios_por_grupo,
-        todos_ejercicios=list(catalogo.values()),
+        todos_ejercicios=muestra_aleatoria,
         salones=[], evaluaciones=[], activa_por_salon={},
     )
 
@@ -866,19 +871,28 @@ def desarrollos_evaluacion_pdf(id_evaluacion, id_estudiante):
     nombre_est = row[0] if row else "Estudiante"
 
     # Respuestas con desarrollo: primero evaluacion_respuestas + join, luego fallback Android
+    # Usamos subquery escalar para desarrollo_url para evitar filas duplicadas cuando
+    # el estudiante tiene múltiples intentos en respuestas_estudiantes para el mismo ejercicio.
     cur.execute(
         """
         SELECT ej.descripcion, oe.es_correcta, er.fecha,
-               rs.desarrollo_url
+               (SELECT rs.desarrollo_url
+                FROM respuestas_estudiantes rs
+                WHERE rs.id_ejercicio = er.id_ejercicio
+                  AND rs.id_estudiante = er.id_estudiante
+                  AND rs.desarrollo_url IS NOT NULL
+                ORDER BY rs.fecha DESC
+                LIMIT 1) AS desarrollo_url
         FROM evaluacion_respuestas er
         JOIN ejercicios ej ON ej.id_ejercicio = er.id_ejercicio
         LEFT JOIN opciones_ejercicio oe ON oe.id_opcion = er.id_opcion
-        LEFT JOIN respuestas_estudiantes rs
-               ON rs.id_ejercicio = er.id_ejercicio
-              AND rs.id_estudiante = er.id_estudiante
-              AND rs.desarrollo_url IS NOT NULL
         WHERE er.id_evaluacion = %s AND er.id_estudiante = %s
-          AND rs.desarrollo_url IS NOT NULL
+          AND EXISTS (
+              SELECT 1 FROM respuestas_estudiantes rs2
+              WHERE rs2.id_ejercicio = er.id_ejercicio
+                AND rs2.id_estudiante = er.id_estudiante
+                AND rs2.desarrollo_url IS NOT NULL
+          )
         ORDER BY er.fecha ASC
         """,
         (id_evaluacion, id_estudiante),

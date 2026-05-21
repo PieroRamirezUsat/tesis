@@ -71,9 +71,16 @@
                     {% endif %}
                   </div>
                   <div class="min-w-0">
-                    <p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate leading-snug">
-                      {{ e.descripcion }}
-                    </p>
+                    <div class="text-thumb-wrapper relative">
+                      <p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate leading-snug cursor-help">
+                        {{ e.descripcion }}
+                      </p>
+                      <div class="text-preview">
+                        <div class="bg-white dark:bg-gray-900 rounded-xl border-2 border-amber-300 shadow-2xl p-3 w-72">
+                          <p class="text-xs text-gray-700 dark:text-gray-200 leading-relaxed whitespace-normal">{{ e.descripcion }}</p>
+                        </div>
+                      </div>
+                    </div>
                     <p class="text-[11px] text-gray-400 sm:hidden mt-0.5">{{ e.nombre_competencia }}</p>
                   </div>
                 </div>
@@ -234,6 +241,16 @@
     right: calc(100% + 8px);
   }
   .img-thumb-wrapper:hover .img-preview { display: block; }
+
+  .text-thumb-wrapper { position: relative; }
+  .text-preview {
+    display: none;
+    position: absolute;
+    left: 0;
+    top: calc(100% + 4px);
+    z-index: 9999;
+  }
+  .text-thumb-wrapper:hover .text-preview { display: block; }
 </style>
 
 <script>
