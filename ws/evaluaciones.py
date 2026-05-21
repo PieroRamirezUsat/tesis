@@ -685,10 +685,10 @@ def detalle_estudiante_evaluacion(id_evaluacion, id_estudiante):
         """
         SELECT
             ej.descripcion,
-            oe.texto_opcion,
+            oe.descripcion AS texto_opcion,
             er.es_correcta,
             er.fecha,
-            (SELECT oe2.texto_opcion
+            (SELECT oe2.descripcion
              FROM opciones_ejercicio oe2
              WHERE oe2.id_ejercicio = ej.id_ejercicio AND oe2.es_correcta = TRUE
              LIMIT 1) AS respuesta_correcta
