@@ -2,6 +2,22 @@ from flask import Blueprint, render_template, session, redirect, url_for, reques
 from db import get_db
 import json, random
 
+
+def _format_duracion_seg(segundos) -> str:
+    """Convierte segundos a '4m 32s'. Retorna '—' si es None o negativo."""
+    if segundos is None or segundos < 0:
+        return "—"
+    segundos = int(segundos)
+    minutos = segundos // 60
+    seg = segundos % 60
+    if minutos >= 60:
+        h = minutos // 60
+        m = minutos % 60
+        return f"{h}h {m}m"
+    if minutos == 0:
+        return f"{seg}s"
+    return f"{minutos}m {seg}s"
+
 bp_evaluaciones = Blueprint("evaluaciones", __name__, url_prefix="/docente/evaluaciones")
 
 LETRAS_GRUPO = ['A', 'B', 'C', 'D', 'E', 'F']
@@ -537,6 +553,26 @@ def resultados_evaluacion(id_evaluacion):
         }
         for r in cur.fetchall()
     ]
+
+    # Duración: suma del tiempo_respuesta por alumno en modo evaluación
+    student_ids = [r["id_estudiante"] for r in resultados]
+    duraciones = {}
+    if student_ids:
+        cur.execute(
+            """
+            SELECT id_estudiante,
+                   SUM(COALESCE(tiempo_respuesta, 0))::int AS total_seg
+            FROM respuestas_estudiantes
+            WHERE id_estudiante = ANY(%s) AND modo = 'evaluacion'
+            GROUP BY id_estudiante
+            """,
+            (student_ids,),
+        )
+        for row in cur.fetchall():
+            duraciones[row[0]] = row[1]
+    for r in resultados:
+        r["duracion"] = _format_duracion_seg(duraciones.get(r["id_estudiante"]))
+
     cur.close()
 
     return render_template(
@@ -698,7 +734,7 @@ def detalle_estudiante_evaluacion(id_evaluacion, id_estudiante):
             "fecha_fin": row_res[4],
         }
 
-    # Respuestas por ejercicio (tabla evaluacion_respuestas)
+    # Respuestas por ejercicio — primero desde evaluacion_respuestas (flujo web)
     cur.execute(
         """
         SELECT
@@ -706,10 +742,14 @@ def detalle_estudiante_evaluacion(id_evaluacion, id_estudiante):
             oe.descripcion AS texto_opcion,
             er.es_correcta,
             er.fecha,
-            (SELECT oe2.descripcion
-             FROM opciones_ejercicio oe2
+            (SELECT oe2.descripcion FROM opciones_ejercicio oe2
              WHERE oe2.id_ejercicio = ej.id_ejercicio AND oe2.es_correcta = TRUE
-             LIMIT 1) AS respuesta_correcta
+             LIMIT 1) AS respuesta_correcta,
+            (SELECT rs.id_respuesta FROM respuestas_estudiantes rs
+             WHERE rs.id_ejercicio = er.id_ejercicio
+               AND rs.id_estudiante = er.id_estudiante
+               AND rs.desarrollo_url IS NOT NULL
+             ORDER BY rs.fecha DESC LIMIT 1) AS id_respuesta_dev
         FROM evaluacion_respuestas er
         JOIN ejercicios ej ON ej.id_ejercicio = er.id_ejercicio
         LEFT JOIN opciones_ejercicio oe ON oe.id_opcion = er.id_opcion
@@ -718,15 +758,42 @@ def detalle_estudiante_evaluacion(id_evaluacion, id_estudiante):
         """,
         (id_evaluacion, id_estudiante),
     )
+    rows_ev = cur.fetchall()
+
+    # Fallback Android: respuestas_estudiantes con modo='evaluacion'
+    if not rows_ev:
+        cur.execute(
+            """
+            SELECT
+                ej.descripcion,
+                oe.descripcion AS texto_opcion,
+                oe.es_correcta,
+                r.fecha,
+                (SELECT oe2.descripcion FROM opciones_ejercicio oe2
+                 WHERE oe2.id_ejercicio = ej.id_ejercicio AND oe2.es_correcta = TRUE
+                 LIMIT 1) AS respuesta_correcta,
+                CASE WHEN r.desarrollo_url IS NOT NULL THEN r.id_respuesta ELSE NULL END
+                    AS id_respuesta_dev
+            FROM respuestas_estudiantes r
+            JOIN ejercicios ej ON ej.id_ejercicio = r.id_ejercicio
+            LEFT JOIN opciones_ejercicio oe ON oe.id_opcion = r.id_opcion
+            WHERE r.id_estudiante = %s AND r.modo = 'evaluacion'
+            ORDER BY r.fecha ASC
+            """,
+            (id_estudiante,),
+        )
+        rows_ev = cur.fetchall()
+
     respuestas = [
         {
-            "ejercicio": r[0] or "—",
-            "opcion_elegida": r[1] or "Sin respuesta",
-            "es_correcta": bool(r[2]),
-            "fecha": r[3],
+            "ejercicio":          r[0] or "—",
+            "opcion_elegida":     r[1] or "Sin respuesta",
+            "es_correcta":        bool(r[2]),
+            "fecha":              r[3],
             "respuesta_correcta": r[4] or "—",
+            "id_respuesta_dev":   r[5],
         }
-        for r in cur.fetchall()
+        for r in rows_ev
     ]
     cur.close()
 
@@ -736,6 +803,7 @@ def detalle_estudiante_evaluacion(id_evaluacion, id_estudiante):
         active_page="evaluaciones",
         evaluacion_detalle_est={
             "id_evaluacion": id_evaluacion,
+            "id_estudiante": id_estudiante,
             "titulo": titulo_ev,
             "estado": estado_ev,
             "salon": nombre_salon,
@@ -745,4 +813,232 @@ def detalle_estudiante_evaluacion(id_evaluacion, id_estudiante):
         },
         respuestas_est=respuestas,
         salones=[], evaluaciones=[], activa_por_salon={},
+    )
+
+
+@bp_evaluaciones.route("/<int:id_evaluacion>/estudiante/<int:id_estudiante>/desarrollos-pdf")
+def desarrollos_evaluacion_pdf(id_evaluacion, id_estudiante):
+    """PDF con los desarrollos (fotos de trabajo) del estudiante en esta evaluación."""
+    from flask import send_file, current_app
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib import colors
+    from reportlab.lib.units import cm
+    from reportlab.platypus import (
+        SimpleDocTemplate, Table, TableStyle,
+        Paragraph, Spacer, Image, HRFlowable
+    )
+    from reportlab.lib.styles import ParagraphStyle
+    from reportlab.lib.enums import TA_CENTER
+    from io import BytesIO
+    from datetime import datetime
+    import os
+
+    id_docente = _get_id_docente()
+    if not id_docente:
+        return redirect(url_for("auth.login"))
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    # Datos de la evaluación y del estudiante
+    cur.execute(
+        """
+        SELECT ev.titulo, s.nombre_salon
+        FROM evaluaciones ev
+        JOIN salones s ON s.id_salon = ev.id_salon
+        JOIN docente_salones ds ON ds.id_salon = ev.id_salon
+        WHERE ev.id_evaluacion = %s AND ds.id_docente = %s
+        """,
+        (id_evaluacion, id_docente),
+    )
+    ev = cur.fetchone()
+    if not ev:
+        flash("Evaluación no encontrada.", "danger")
+        cur.close()
+        return redirect(url_for("evaluaciones.gestion_evaluaciones"))
+    titulo_ev, nombre_salon = ev
+
+    cur.execute(
+        "SELECT u.nombre || ' ' || u.apellidos FROM estudiante e JOIN usuarios u ON u.id_usuario = e.id_usuario WHERE e.id_estudiante = %s",
+        (id_estudiante,),
+    )
+    row = cur.fetchone()
+    nombre_est = row[0] if row else "Estudiante"
+
+    # Respuestas con desarrollo: primero evaluacion_respuestas + join, luego fallback Android
+    cur.execute(
+        """
+        SELECT ej.descripcion, oe.es_correcta, er.fecha,
+               rs.desarrollo_url
+        FROM evaluacion_respuestas er
+        JOIN ejercicios ej ON ej.id_ejercicio = er.id_ejercicio
+        LEFT JOIN opciones_ejercicio oe ON oe.id_opcion = er.id_opcion
+        LEFT JOIN respuestas_estudiantes rs
+               ON rs.id_ejercicio = er.id_ejercicio
+              AND rs.id_estudiante = er.id_estudiante
+              AND rs.desarrollo_url IS NOT NULL
+        WHERE er.id_evaluacion = %s AND er.id_estudiante = %s
+          AND rs.desarrollo_url IS NOT NULL
+        ORDER BY er.fecha ASC
+        """,
+        (id_evaluacion, id_estudiante),
+    )
+    respuestas = cur.fetchall()
+
+    if not respuestas:
+        cur.execute(
+            """
+            SELECT ej.descripcion, oe.es_correcta, r.fecha, r.desarrollo_url
+            FROM respuestas_estudiantes r
+            JOIN ejercicios ej ON ej.id_ejercicio = r.id_ejercicio
+            LEFT JOIN opciones_ejercicio oe ON oe.id_opcion = r.id_opcion
+            WHERE r.id_estudiante = %s AND r.modo = 'evaluacion'
+              AND r.desarrollo_url IS NOT NULL
+            ORDER BY oe.es_correcta DESC NULLS LAST, r.fecha ASC
+            """,
+            (id_estudiante,),
+        )
+        respuestas = cur.fetchall()
+    cur.close()
+
+    # ---- Helpers PDF ----
+    PAGE_W = A4[0] - 4 * cm
+    AZUL   = colors.HexColor("#1A5276")
+    VERDE  = colors.HexColor("#1E8449")
+    ROJO   = colors.HexColor("#C0392B")
+    CELDA  = colors.HexColor("#BDC3C7")
+    VERDE_SUAVE = colors.HexColor("#D5F5E3")
+    ROJO_SUAVE  = colors.HexColor("#FADBD8")
+
+    def st(name, **kw):
+        d = dict(fontName="Helvetica", fontSize=9, textColor=colors.black, leading=12)
+        d.update(kw)
+        return ParagraphStyle(name, **d)
+
+    st_titulo = st("t",  fontSize=13, fontName="Helvetica-Bold", textColor=AZUL)
+    st_subtit = st("s",  fontSize=10, fontName="Helvetica-Bold", textColor=AZUL)
+    st_normal = st("n")
+    st_pie    = st("p",  fontSize=7, textColor=colors.HexColor("#7F8C8D"), alignment=TA_CENTER)
+    st_center = st("c",  alignment=TA_CENTER)
+
+    fecha_hoy = datetime.now().strftime("%d/%m/%Y %H:%M")
+    story = []
+
+    logo_path = os.path.join(current_app.root_path, "static", "logo_colegio.png")
+
+    texto_cab = Table(
+        [
+            [Paragraph("INSTITUCIÓN EDUCATIVA \"27 DE DICIEMBRE\"", st_titulo)],
+            [Paragraph(f"Informe de Desarrollos — Evaluación: {titulo_ev}", st_subtit)],
+            [Paragraph(f"Estudiante: {nombre_est}  ·  Salón: {nombre_salon}  ·  {fecha_hoy}", st_normal)],
+        ],
+        colWidths=[PAGE_W - (3.2 * cm if os.path.exists(logo_path) else 0)],
+    )
+    texto_cab.setStyle(TableStyle([
+        ("LEFTPADDING",   (0,0),(-1,-1), 8),
+        ("TOPPADDING",    (0,0),(-1,-1), 1),
+        ("BOTTOMPADDING", (0,0),(-1,-1), 1),
+    ]))
+    if os.path.exists(logo_path):
+        img_logo = Image(logo_path, width=2.8*cm, height=2.8*cm)
+        cab = Table([[img_logo, texto_cab]], colWidths=[3.2*cm, PAGE_W-3.2*cm])
+    else:
+        cab = Table([[texto_cab]], colWidths=[PAGE_W])
+    cab.setStyle(TableStyle([
+        ("VALIGN",      (0,0),(-1,-1),"MIDDLE"),
+        ("LEFTPADDING", (0,0),(-1,-1), 0),
+        ("RIGHTPADDING",(0,0),(-1,-1), 0),
+        ("TOPPADDING",  (0,0),(-1,-1), 0),
+        ("BOTTOMPADDING",(0,0),(-1,-1), 0),
+    ]))
+    story.append(cab)
+    story.append(HRFlowable(width=PAGE_W, thickness=2, color=ROJO, spaceAfter=10))
+
+    from ws.reportes import _resolver_imagen
+
+    def agregar_grupo(lista, es_correcto):
+        if not lista:
+            return
+        titulo_sec = "✓  RESPUESTAS CORRECTAS" if es_correcto else "✗  RESPUESTAS INCORRECTAS"
+        color_fondo = VERDE_SUAVE if es_correcto else ROJO_SUAVE
+        color_texto = VERDE if es_correcto else ROJO
+        sec_h = Table([[Paragraph(titulo_sec, ParagraphStyle(
+            "sh", fontSize=11, fontName="Helvetica-Bold", textColor=color_texto, leading=14))]],
+            colWidths=[PAGE_W])
+        sec_h.setStyle(TableStyle([
+            ("BACKGROUND",    (0,0),(-1,-1), color_fondo),
+            ("LEFTPADDING",   (0,0),(-1,-1), 10),
+            ("TOPPADDING",    (0,0),(-1,-1), 6),
+            ("BOTTOMPADDING", (0,0),(-1,-1), 6),
+            ("BOX",           (0,0),(-1,-1), 0.5, CELDA),
+        ]))
+        story.append(sec_h)
+        story.append(Spacer(1, 8))
+        for desc, _, fecha_r, dev_url in lista:
+            fecha_str = fecha_r.strftime("%d/%m/%Y %H:%M") if fecha_r else "—"
+            info = Table(
+                [[Paragraph(f"<b>{desc or '—'}</b>", st_normal),
+                  Paragraph(fecha_str, ParagraphStyle("fd", fontSize=8, textColor=colors.HexColor("#555"), alignment=TA_CENTER))]],
+                colWidths=[PAGE_W - 4*cm, 4*cm])
+            info.setStyle(TableStyle([
+                ("BACKGROUND",    (0,0),(-1,-1), color_fondo),
+                ("BOX",           (0,0),(-1,-1), 0.5, CELDA),
+                ("VALIGN",        (0,0),(-1,-1), "MIDDLE"),
+                ("LEFTPADDING",   (0,0),(-1,-1), 8),
+                ("RIGHTPADDING",  (0,0),(-1,-1), 8),
+                ("TOPPADDING",    (0,0),(-1,-1), 5),
+                ("BOTTOMPADDING", (0,0),(-1,-1), 5),
+            ]))
+            story.append(info)
+            dev_path = _resolver_imagen(current_app, dev_url) if dev_url else None
+            if dev_path:
+                try:
+                    rl_img = Image(dev_path)
+                    scale = min((PAGE_W) / rl_img.drawWidth, (12*cm) / rl_img.drawHeight)
+                    rl_img.drawWidth *= scale
+                    rl_img.drawHeight *= scale
+                    wrapper = Table([[rl_img]], colWidths=[PAGE_W])
+                    wrapper.setStyle(TableStyle([
+                        ("ALIGN",(0,0),(-1,-1),"CENTER"),
+                        ("LEFTPADDING",(0,0),(-1,-1),0),
+                        ("RIGHTPADDING",(0,0),(-1,-1),0),
+                        ("TOPPADDING",(0,0),(-1,-1),4),
+                        ("BOTTOMPADDING",(0,0),(-1,-1),4),
+                        ("BOX",(0,0),(-1,-1),0.3,CELDA),
+                    ]))
+                    story.append(wrapper)
+                except Exception:
+                    story.append(Paragraph("(imagen no disponible)", st_normal))
+            else:
+                story.append(Paragraph("Sin imagen de desarrollo.", st_normal))
+            story.append(Spacer(1, 10))
+
+    correctas   = [r for r in respuestas if r[1]]
+    incorrectas = [r for r in respuestas if not r[1]]
+    agregar_grupo(correctas,   True)
+    if correctas and incorrectas:
+        story.append(Spacer(1, 6))
+    agregar_grupo(incorrectas, False)
+
+    if not respuestas:
+        story.append(Paragraph("Este estudiante no tiene desarrollos guardados para esta evaluación.", st_center))
+
+    story.append(Spacer(1, 12))
+    story.append(HRFlowable(width=PAGE_W, thickness=0.5, color=CELDA, spaceAfter=4))
+    story.append(Paragraph(
+        f"Informe de evaluación generado el {fecha_hoy} — Sistema Tutor Adaptativo · I.E. \"27 de Diciembre\"",
+        st_pie,
+    ))
+
+    buf = BytesIO()
+    SimpleDocTemplate(
+        buf, pagesize=A4,
+        leftMargin=2*cm, rightMargin=2*cm,
+        topMargin=1.5*cm, bottomMargin=1.5*cm,
+        title=f"Desarrollos Evaluación - {nombre_est}",
+    ).build(story)
+    buf.seek(0)
+    return send_file(
+        buf, mimetype="application/pdf", as_attachment=True,
+        download_name=f"desarrollos_eval_{nombre_est.replace(' ','_')}_{datetime.now().strftime('%Y%m%d')}.pdf",
     )

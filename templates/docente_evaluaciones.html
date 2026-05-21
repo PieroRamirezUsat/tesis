@@ -123,27 +123,65 @@
     {% endfor %}
 
     {% else %}
-    <!-- Sin grupos: selección aleatoria por estudiante -->
-    <div class="flex flex-col items-center text-center py-10 gap-4">
-      <div class="w-16 h-16 rounded-2xl bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center">
-        <span class="material-symbols-outlined text-amber-500" style="font-size:32px">shuffle</span>
-      </div>
-      <div class="max-w-md">
-        <p class="text-sm font-bold text-gray-700 dark:text-gray-200 mb-1">Selección aleatoria por estudiante</p>
-        <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
-          Esta evaluación tiene <strong class="text-gray-700 dark:text-gray-200">{{ evaluacion_ejercicios.num_preguntas }} preguntas</strong>
-          que se eligen aleatoriamente del catálogo completo al momento en que cada estudiante inicia la prueba.
-          Cada alumno recibe un conjunto diferente de ejercicios.
-        </p>
-      </div>
-      <div class="flex items-start gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800/40 rounded-xl px-4 py-3 max-w-sm text-left">
-        <span class="material-symbols-outlined text-amber-500 shrink-0 mt-0.5" style="font-size:16px">lightbulb</span>
-        <p class="text-xs text-amber-700 dark:text-amber-400">
-          Para ver qué ejercicios recibe cada grupo, activa la evaluación con <strong>2, 3 o 4 grupos de trabajo</strong>.
-          Cada grupo recibirá ejercicios diferentes para evitar copia.
-        </p>
+    <!-- Sin grupos: mostrar catálogo completo con aviso -->
+    <div class="flex items-start gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800/40 rounded-xl px-4 py-3 mb-4">
+      <span class="material-symbols-outlined text-amber-500 shrink-0 mt-0.5" style="font-size:16px">shuffle</span>
+      <p class="text-xs text-amber-700 dark:text-amber-400">
+        Selección aleatoria — <strong>{{ evaluacion_ejercicios.num_preguntas }} preguntas</strong> se asignan al azar por estudiante.
+        Activa con 2–4 grupos para fijar ejercicios distintos por grupo y evitar copia.
+        El siguiente listado muestra el <strong>banco completo</strong> disponible.
+      </p>
+    </div>
+    {% if todos_ejercicios %}
+    <div class="rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden">
+      <div style="max-height: 420px; overflow-y: auto;">
+      <table class="w-full text-sm text-left">
+        <thead class="sticky top-0 z-10 bg-gray-50 dark:bg-gray-700/90 border-b border-gray-100 dark:border-gray-700">
+          <tr>
+            <th class="px-4 py-2.5 text-[11px] font-bold text-gray-400 uppercase tracking-widest w-8">#</th>
+            <th class="px-4 py-2.5 text-[11px] font-bold text-gray-400 uppercase tracking-widest">Enunciado</th>
+            <th class="px-4 py-2.5 text-[11px] font-bold text-gray-400 uppercase tracking-widest hidden sm:table-cell">Competencia</th>
+            <th class="px-4 py-2.5 text-[11px] font-bold text-gray-400 uppercase tracking-widest text-center w-12">Img</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-50 dark:divide-gray-700/60">
+          {% for ej in todos_ejercicios %}
+          <tr class="hover:bg-indigo-50/30 dark:hover:bg-indigo-900/10 transition-colors">
+            <td class="px-4 py-3 text-xs text-gray-400 tabular-nums">{{ loop.index }}</td>
+            <td class="px-4 py-3 text-sm font-medium text-gray-800 dark:text-gray-200 max-w-sm">
+              <span class="line-clamp-2">{{ ej.descripcion }}</span>
+            </td>
+            <td class="px-4 py-3 hidden sm:table-cell" style="min-width:180px">
+              <span class="inline-flex items-center px-2 py-0.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 text-[11px] font-semibold leading-tight">
+                {{ AREAS_EVAL.get(ej.competencia, ej.competencia) }}
+              </span>
+            </td>
+            <td class="px-4 py-3 text-center">
+              <div class="img-thumb-wrapper relative inline-block">
+                {% if ej.imagen_url %}
+                <img src="{{ ej.imagen_url }}" alt=""
+                     class="w-7 h-7 rounded-full object-cover border-2 border-indigo-200 shadow-sm cursor-zoom-in" />
+                <div class="img-preview img-preview-left">
+                  <div class="bg-white dark:bg-gray-900 rounded-2xl border-2 border-indigo-300 shadow-2xl p-1.5 w-48">
+                    <img src="{{ ej.imagen_url }}" alt="Vista ampliada" class="w-full rounded-xl object-contain max-h-44" />
+                  </div>
+                </div>
+                {% else %}
+                <div class="w-7 h-7 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center mx-auto">
+                  <span class="material-symbols-outlined text-gray-300 dark:text-gray-600" style="font-size:14px">image</span>
+                </div>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
       </div>
     </div>
+    {% else %}
+    <p class="text-sm text-gray-400 text-center py-8">El banco de ejercicios está vacío.</p>
+    {% endif %}
     {% endif %}
   </div>
 </div>
@@ -226,6 +264,7 @@
             <th class="px-4 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest text-center">Total</th>
             <th class="px-4 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest text-center">Puntaje</th>
             <th class="px-4 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest text-center">Estado</th>
+            <th class="px-4 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest text-center">Tiempo</th>
             <th class="px-4 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest text-center">Finalizado</th>
             <th class="px-4 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest text-center">Detalle</th>
           </tr>
@@ -262,6 +301,11 @@
                 </span>
               {% endif %}
             </td>
+            <td class="px-4 py-3 text-center">
+              <span class="inline-block px-2 py-0.5 rounded-lg bg-slate-50 text-slate-600 text-xs font-mono font-bold border border-slate-200">
+                {{ r.duracion }}
+              </span>
+            </td>
             <td class="px-4 py-3 text-center text-xs text-gray-400">
               {% if r.fecha_fin %}{{ r.fecha_fin.strftime('%d/%m/%Y %H:%M') }}{% else %}—{% endif %}
             </td>
@@ -287,11 +331,16 @@
 
 {% elif evaluacion_detalle_est %}
 <!-- ====== VISTA: DETALLE POR ESTUDIANTE ====== -->
-<div class="mb-4 flex items-center gap-3">
+<div class="mb-4 flex items-center gap-3 flex-wrap">
   <a href="{{ url_for('evaluaciones.resultados_evaluacion', id_evaluacion=evaluacion_detalle_est.id_evaluacion) }}"
      class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-sm font-semibold text-gray-600 dark:text-gray-300 transition-colors">
     <span class="material-symbols-outlined text-base">arrow_back</span>
     Volver a resultados
+  </a>
+  <a href="{{ url_for('evaluaciones.desarrollos_evaluacion_pdf', id_evaluacion=evaluacion_detalle_est.id_evaluacion, id_estudiante=evaluacion_detalle_est.id_estudiante) }}"
+     class="inline-flex items-center gap-2 px-4 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white text-sm font-bold shadow-sm transition-all">
+    <span class="material-symbols-outlined text-base">picture_as_pdf</span>
+    Exportar desarrollos PDF
   </a>
 </div>
 
@@ -343,6 +392,7 @@
             <th class="px-4 py-3">Respuesta elegida</th>
             <th class="px-4 py-3">Respuesta correcta</th>
             <th class="px-4 py-3 text-center w-28">Resultado</th>
+            <th class="px-4 py-3 text-center w-28">Desarrollo</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-50 dark:divide-gray-700/60">
@@ -364,6 +414,18 @@
                 <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-100 text-red-700 text-xs font-bold">
                   <span class="material-symbols-outlined text-xs">cancel</span>Incorrecto
                 </span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3 text-center">
+              {% if r.id_respuesta_dev %}
+              <a href="{{ url_for('reportes.ver_imagen_respuesta', id_respuesta=r.id_respuesta_dev) }}"
+                 target="_blank"
+                 class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-violet-50 text-violet-600 border border-violet-200 text-xs font-bold hover:bg-violet-100 transition-colors"
+                 title="Ver desarrollo de {{ evaluacion_detalle_est.nombre_estudiante }}">
+                <span class="material-symbols-outlined text-sm">draw</span>Ver
+              </a>
+              {% else %}
+              <span class="text-gray-300 text-xs">—</span>
               {% endif %}
             </td>
           </tr>
