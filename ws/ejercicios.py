@@ -22,6 +22,20 @@ def allowed_file(filename: str) -> bool:
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED
 
 
+def _migrate_nivel_logro(conn):
+    """Agrega columna nivel_logro a ejercicios si no existe."""
+    cur = conn.cursor()
+    try:
+        cur.execute(
+            "ALTER TABLE ejercicios ADD COLUMN IF NOT EXISTS nivel_logro SMALLINT"
+        )
+        conn.commit()
+    except Exception:
+        conn.rollback()
+    finally:
+        cur.close()
+
+
 # ===================== LISTADO =====================
 @bp_ejercicios.route("/")
 def gestion_ejercicios():
@@ -30,6 +44,7 @@ def gestion_ejercicios():
         return redirect(url_for("auth.login"))
 
     conn = get_db()
+    _migrate_nivel_logro(conn)
     cur = conn.cursor()
 
     # Ejercicios con su competencia
@@ -40,7 +55,8 @@ def gestion_ejercicios():
             e.descripcion,        -- 1
             e.id_competencia,     -- 2
             c.descripcion AS nombre_competencia,  -- 3
-            e.imagen_url          -- 4
+            e.imagen_url,         -- 4
+            e.nivel_logro         -- 5
         FROM ejercicios e
         JOIN competencias c ON c.id_competencia = e.id_competencia
         ORDER BY e.id_ejercicio DESC
@@ -55,6 +71,7 @@ def gestion_ejercicios():
             "id_competencia": f[2],
             "nombre_competencia": f[3],
             "imagen_url": f[4],
+            "nivel_logro": f[5],
         }
         for f in filas_ej
     ]
@@ -107,6 +124,8 @@ def crear_ejercicio():
     descripcion = request.form.get("descripcion", "").strip()
     id_competencia = request.form.get("id_competencia")
     pista = request.form.get("pista", "").strip()
+    nivel_logro_raw = request.form.get("nivel_logro", "").strip()
+    nivel_logro = int(nivel_logro_raw) if nivel_logro_raw.isdigit() and 1 <= int(nivel_logro_raw) <= 7 else None
 
     # Letra A/B/C/D marcada como correcta
     respuesta = request.form.get("opcion_correcta")
@@ -152,19 +171,20 @@ def crear_ejercicio():
                 SET descripcion = %s,
                     respuesta_correcta = %s,
                     id_competencia = %s,
-                    pista = %s
+                    pista = %s,
+                    nivel_logro = %s
                 WHERE id_ejercicio = %s
                 """,
-                (descripcion, respuesta, id_competencia, pista, id_ej),
+                (descripcion, respuesta, id_competencia, pista, nivel_logro, id_ej),
             )
         else:
             cur.execute(
                 """
-                INSERT INTO ejercicios (descripcion, respuesta_correcta, id_competencia, pista)
-                VALUES (%s, %s, %s, %s)
+                INSERT INTO ejercicios (descripcion, respuesta_correcta, id_competencia, pista, nivel_logro)
+                VALUES (%s, %s, %s, %s, %s)
                 RETURNING id_ejercicio
                 """,
-                (descripcion, respuesta, id_competencia, pista),
+                (descripcion, respuesta, id_competencia, pista, nivel_logro),
             )
             id_ej = cur.fetchone()[0]
 
@@ -334,12 +354,13 @@ def detalle_ejercicio_json(id_ejercicio):
 
     cur.execute(
         """
-        SELECT 
+        SELECT
             id_ejercicio,
             descripcion,
             id_competencia,
             respuesta_correcta,
-            pista
+            pista,
+            nivel_logro
         FROM ejercicios
         WHERE id_ejercicio = %s
         """,
@@ -370,9 +391,10 @@ def detalle_ejercicio_json(id_ejercicio):
         "id_ejercicio": ej[0],
         "descripcion": ej[1],
         "id_competencia": ej[2],
-        "respuesta_correcta": ej[3],  # 'A','B','C','D'
+        "respuesta_correcta": ej[3],
         "pista": ej[4],
-        "opciones": opciones,         # {"A": "texto", ...}
+        "nivel_logro": ej[5],
+        "opciones": opciones,
     }
 
     return jsonify(data)

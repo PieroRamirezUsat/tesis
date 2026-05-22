@@ -197,15 +197,6 @@ def crear_tema():
 
     titulo = (request.form.get("titulo_tema") or "").strip()
     descripcion = (request.form.get("descripcion_tema") or "").strip()
-    nivel_str = request.form.get("nivel_tema", "1")
-
-    try:
-        nivel = int(nivel_str)
-    except ValueError:
-        nivel = 1
-
-    if nivel not in (1, 2, 3):
-        nivel = 1
 
     if not titulo:
         flash("El título del tema es obligatorio.", "error")
@@ -215,11 +206,11 @@ def crear_tema():
     cur = conn.cursor()
     cur.execute(
         """
-        INSERT INTO competencias (descripcion, area, nivel)
-        VALUES (%s, %s, %s)
+        INSERT INTO competencias (descripcion, area)
+        VALUES (%s, %s)
         RETURNING id_competencia
         """,
-        (descripcion, titulo, nivel),
+        (descripcion, titulo),
     )
     nuevo_id = cur.fetchone()[0]
     conn.commit()
@@ -237,15 +228,6 @@ def actualizar_tema(id_competencia):
 
     titulo = (request.form.get("titulo_tema") or "").strip()
     descripcion = (request.form.get("descripcion_tema") or "").strip()
-    nivel_str = request.form.get("nivel_tema", "1")
-
-    try:
-        nivel = int(nivel_str)
-    except ValueError:
-        nivel = 1
-
-    if nivel not in (1, 2, 3):
-        nivel = 1
 
     if not titulo:
         flash("El título del tema es obligatorio.", "error")
@@ -257,11 +239,10 @@ def actualizar_tema(id_competencia):
         """
         UPDATE competencias
         SET area = %s,
-            descripcion = %s,
-            nivel = %s
+            descripcion = %s
         WHERE id_competencia = %s
         """,
-        (titulo, descripcion, nivel, id_competencia),
+        (titulo, descripcion, id_competencia),
     )
     conn.commit()
     cur.close()
