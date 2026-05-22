@@ -33,12 +33,47 @@
       </select>
     </div>
 
+    <!-- Barra de acciones masivas (aparece al seleccionar) -->
+    <div id="barra-seleccion" class="hidden px-4 py-2.5 bg-red-50 dark:bg-red-900/20 border-b border-red-100 dark:border-red-800 flex items-center justify-between gap-3 flex-wrap">
+      <span class="text-sm font-semibold text-red-700 dark:text-red-400 flex items-center gap-1.5">
+        <span class="material-symbols-outlined text-[18px]">check_box</span>
+        <span id="txt-seleccion">0 seleccionados</span>
+      </span>
+      <div class="flex items-center gap-2">
+        <form id="form-eliminar-sel" method="post"
+              action="{{ url_for('ejercicios.eliminar_seleccion') }}"
+              onsubmit="return confirmarEliminacion()">
+          <input type="hidden" name="eliminar_todos" value="0" />
+          <div id="inputs-ids-sel"></div>
+          <button type="submit"
+                  class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-500 hover:bg-red-600 text-white text-xs font-semibold transition-colors">
+            <span class="material-symbols-outlined text-[16px]">delete_sweep</span>
+            Eliminar seleccionados
+          </button>
+        </form>
+        <form method="post" action="{{ url_for('ejercicios.eliminar_seleccion') }}"
+              onsubmit="return confirm('⚠️ ¿Eliminar TODOS los ejercicios del banco? Esta acción no se puede deshacer.')">
+          <input type="hidden" name="eliminar_todos" value="1" />
+          <button type="submit"
+                  class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-900 text-white text-xs font-semibold transition-colors">
+            <span class="material-symbols-outlined text-[16px]">delete_forever</span>
+            Eliminar todos
+          </button>
+        </form>
+      </div>
+    </div>
+
     <!-- Tabla -->
     <div class="overflow-x-auto">
       <div style="max-height: 440px; overflow-y: auto;">
       <table class="w-full text-sm text-left">
         <thead class="sticky top-0 z-10 border-b border-gray-100 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-700/90">
           <tr>
+            <th class="px-3 py-3 w-10 text-center">
+              <input type="checkbox" id="chk-all"
+                     class="w-4 h-4 rounded border-gray-300 text-red-500 focus:ring-red-400 cursor-pointer"
+                     title="Seleccionar todos" />
+            </th>
             <th class="px-5 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest">Ejercicio</th>
             <th class="px-5 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest hidden sm:table-cell">Competencia</th>
             <th class="px-5 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest text-right">Acciones</th>
@@ -53,6 +88,10 @@
                 data-id-comp="{{ e.id_competencia }}"
                 data-comp-nombre="{{ e.nombre_competencia }}"
                 data-texto="{{ (e.descripcion ~ ' ' ~ e.nombre_competencia)|lower }}">
+              <td class="px-3 py-3 w-10 text-center">
+                <input type="checkbox" class="chk-ejercicio w-4 h-4 rounded border-gray-300 text-red-500 focus:ring-red-400 cursor-pointer"
+                       value="{{ e.id_ejercicio }}" />
+              </td>
               <td class="px-5 py-3 max-w-xs">
                 <div class="flex items-center gap-3">
                   <div class="img-thumb-wrapper relative shrink-0">
@@ -113,7 +152,7 @@
             {% endfor %}
           {% else %}
             <tr>
-              <td colspan="3" class="px-5 py-12 text-center">
+              <td colspan="4" class="px-5 py-12 text-center">
                 <span class="material-symbols-outlined text-5xl text-gray-200 dark:text-gray-600 block mb-2">calculate</span>
                 <p class="text-sm text-gray-400">Aún no has registrado ejercicios.</p>
               </td>
@@ -306,7 +345,57 @@
     });
   });
 
-  // ── Distribución + coloreado de badges ──────────────────────────────────
+  // ── Selección múltiple ───────────────────────────────────────────────────
+  const chkAll    = document.getElementById("chk-all");
+  const barrasel  = document.getElementById("barra-seleccion");
+  const txtSel    = document.getElementById("txt-seleccion");
+  const inputsIds = document.getElementById("inputs-ids-sel");
+
+  function getChecks() {
+    return document.querySelectorAll(".chk-ejercicio:checked");
+  }
+
+  function actualizarBarra() {
+    const checked = getChecks();
+    const n = checked.length;
+    if (n > 0) {
+      barrasel.classList.remove("hidden");
+      txtSel.textContent = n === 1 ? "1 seleccionado" : `${n} seleccionados`;
+      // Reconstruir inputs hidden con los IDs seleccionados
+      inputsIds.innerHTML = "";
+      checked.forEach(chk => {
+        const inp = document.createElement("input");
+        inp.type  = "hidden";
+        inp.name  = "ids[]";
+        inp.value = chk.value;
+        inputsIds.appendChild(inp);
+      });
+    } else {
+      barrasel.classList.add("hidden");
+    }
+    // Actualizar estado del chk-all
+    const total = document.querySelectorAll(".chk-ejercicio").length;
+    chkAll.indeterminate = n > 0 && n < total;
+    chkAll.checked = total > 0 && n === total;
+  }
+
+  chkAll?.addEventListener("change", () => {
+    document.querySelectorAll(".chk-ejercicio").forEach(chk => {
+      chk.checked = chkAll.checked;
+    });
+    actualizarBarra();
+  });
+
+  document.querySelectorAll(".chk-ejercicio").forEach(chk => {
+    chk.addEventListener("change", actualizarBarra);
+  });
+
+  function confirmarEliminacion() {
+    const n = getChecks().length;
+    return confirm(`¿Eliminar ${n} ejercicio(s) seleccionado(s)? Esta acción no se puede deshacer.`);
+  }
+
+  // ── Distribución + coloreado de badges ───────────────────────────────────
   (function renderStats() {
     const PALETA = [
       { bar: '#F59E0B', badgeBg: '#FEF3C7', badgeColor: '#92400E' },  // amber

@@ -276,6 +276,53 @@ def eliminar_ejercicio(id_ejercicio):
 
     return redirect(url_for("ejercicios.gestion_ejercicios"))
 
+# ===================== ELIMINAR SELECCIÓN / TODOS =====================
+@bp_ejercicios.route("/eliminar-seleccion", methods=["POST"])
+def eliminar_seleccion():
+    if "user_id" not in session or session.get("user_rol") != "docente":
+        return redirect(url_for("auth.login"))
+
+    eliminar_todos = request.form.get("eliminar_todos") == "1"
+    ids_raw = request.form.getlist("ids[]")
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    try:
+        if eliminar_todos:
+            cur.execute("SELECT id_ejercicio FROM ejercicios")
+            ids = [r[0] for r in cur.fetchall()]
+        else:
+            ids = [int(i) for i in ids_raw if str(i).strip().isdigit()]
+
+        if not ids:
+            flash("No se seleccionó ningún ejercicio.", "warning")
+            cur.close()
+            return redirect(url_for("ejercicios.gestion_ejercicios"))
+
+        cur.execute(
+            "DELETE FROM opciones_ejercicio WHERE id_ejercicio = ANY(%s)", (ids,)
+        )
+        for id_ej in ids:
+            ruta = os.path.join(UPLOAD_FOLDER, f"ej_{id_ej}.jpg")
+            if os.path.exists(ruta):
+                os.remove(ruta)
+        cur.execute("DELETE FROM ejercicios WHERE id_ejercicio = ANY(%s)", (ids,))
+        conn.commit()
+
+        n = len(ids)
+        msg = f"Se eliminaron todos los ejercicios ({n})." if eliminar_todos else f"Se eliminaron {n} ejercicio(s)."
+        flash(msg, "success")
+    except Exception as e:
+        conn.rollback()
+        print("ERROR eliminar selección:", e)
+        flash("Error al eliminar los ejercicios.", "danger")
+    finally:
+        cur.close()
+
+    return redirect(url_for("ejercicios.gestion_ejercicios"))
+
+
 # ===================== DETALLE JSON (para EDITAR) =====================
 @bp_ejercicios.route("/detalle/<int:id_ejercicio>")
 def detalle_ejercicio_json(id_ejercicio):
