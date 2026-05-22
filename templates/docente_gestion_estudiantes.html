@@ -193,22 +193,27 @@
         <input type="hidden" name="id_estudiante" id="form-id-estudiante" />
         <input type="hidden" name="id_usuario" id="form-id-usuario" />
 
-        <!-- Usuario existente -->
+        <!-- Usuario existente – autocomplete -->
         <div class="space-y-1" id="bloque-usuario-existente">
           <label class="text-sm font-semibold text-gray-700 dark:text-gray-200">Usuario existente (opcional)</label>
-          <select name="id_usuario_existente" id="select-usuario-existente"
-            class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400">
-            <option value="">-- Selecciona un usuario existente --</option>
-            {% for u in usuarios_estudiantes %}
-            <option value="{{ u.id_usuario }}"
-              data-nombre="{{ u.nombre }}"
-              data-apellidos="{{ u.apellidos }}"
-              data-correo="{{ u.correo }}"
-              data-grado="{{ u.grado }}">
-              {{ u.nombre_completo }} – {{ u.correo }}
-            </option>
-            {% endfor %}
-          </select>
+          <input type="hidden" name="id_usuario_existente" id="id-usuario-existente-val" value="" />
+          <div class="relative">
+            <div class="flex items-center gap-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 h-10 focus-within:ring-2 focus-within:ring-blue-400 transition-shadow">
+              <span class="material-symbols-outlined text-gray-400 text-[18px] shrink-0">search</span>
+              <input type="text" id="input-buscar-usuario"
+                placeholder="Escribe nombre o correo del alumno..."
+                autocomplete="off"
+                class="flex-1 bg-transparent border-none focus:outline-none text-sm text-gray-800 dark:text-gray-100 placeholder:text-gray-400 min-w-0" />
+              <button type="button" id="btn-clear-usuario"
+                class="hidden shrink-0 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+                title="Limpiar selección">
+                <span class="material-symbols-outlined text-[18px]">close</span>
+              </button>
+            </div>
+            <div id="dropdown-usuarios"
+              class="hidden absolute z-50 left-0 right-0 mt-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl max-h-52 overflow-y-auto">
+            </div>
+          </div>
           <p class="text-xs text-gray-400">Si dejas vacío, se creará un nuevo estudiante.</p>
         </div>
 
@@ -358,7 +363,6 @@
   const bloqueEstado = document.getElementById("bloque-estado");
   const bloquePassword = document.getElementById("bloque-password");
   const bloqueUsuarioExistente = document.getElementById("bloque-usuario-existente");
-  const selectUsuarioExistente = document.getElementById("select-usuario-existente");
   const bloqueNiveles = document.getElementById("bloque-niveles");
 
   const inputCompCantidad = document.getElementById("form-comp-cantidad");
@@ -412,7 +416,7 @@
     campoCorreo.value = "";
     campoGrado.value = "3ro A";
     campoEstado.value = "activo";
-    if (selectUsuarioExistente) selectUsuarioExistente.value = "";
+    limpiarAutocomplete();
     limpiarNiveles();
     bloqueEstado.classList.add("hidden");
     bloquePassword.classList.remove("hidden");
@@ -431,7 +435,7 @@
     campoCorreo.value = btn.dataset.correo;
     campoGrado.value = btn.dataset.grado || "3ro A";
     campoEstado.value = btn.dataset.estado || "activo";
-    if (selectUsuarioExistente) selectUsuarioExistente.value = "";
+    limpiarAutocomplete();
     if (inputCompCantidad) {
       inputCompCantidad.value = btn.dataset.compCantidad || "";
       inputCompRegularidad.value = btn.dataset.compRegularidad || "";
@@ -457,20 +461,100 @@
     btn.addEventListener("click", () => abrirModalEditar(btn));
   });
 
-  if (selectUsuarioExistente) {
-    selectUsuarioExistente.addEventListener("change", () => {
-      const opt = selectUsuarioExistente.selectedOptions[0];
-      if (!opt || !opt.value) {
-        campoNombre.value = ""; campoApellidos.value = ""; campoCorreo.value = ""; campoGrado.value = "3ro A";
-        bloquePassword.classList.remove("hidden"); return;
-      }
-      campoNombre.value = opt.dataset.nombre || "";
-      campoApellidos.value = opt.dataset.apellidos || "";
-      campoCorreo.value = opt.dataset.correo || "";
-      if (opt.dataset.grado) campoGrado.value = opt.dataset.grado;
-      bloquePassword.classList.add("hidden");
-    });
+  // ── Autocomplete usuario existente ───────────────────────────────────────
+  const USUARIOS_AC = {{ usuarios_estudiantes | tojson }};
+  const inputBuscarUsr  = document.getElementById("input-buscar-usuario");
+  const dropdownUsr  = document.getElementById("dropdown-usuarios");
+  const hiddenUsrId  = document.getElementById("id-usuario-existente-val");
+  const btnClearUsr  = document.getElementById("btn-clear-usuario");
+
+  function renderDropdown(lista) {
+    if (!lista.length) {
+      dropdownUsr.innerHTML = '<p class="px-4 py-3 text-sm text-gray-400">Sin resultados.</p>';
+    } else {
+      dropdownUsr.innerHTML = lista.map(u => `
+        <button type="button"
+          class="w-full text-left px-4 py-2.5 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors border-b last:border-b-0 border-gray-50 dark:border-gray-800"
+          data-id="${u.id_usuario}"
+          data-nombre="${u.nombre}"
+          data-apellidos="${u.apellidos}"
+          data-correo="${u.correo}"
+          data-grado="${u.grado || ''}">
+          <span class="font-semibold text-sm text-gray-800 dark:text-gray-100">${u.nombre} ${u.apellidos}</span>
+          <span class="ml-2 text-[11px] text-gray-400">${u.correo}</span>
+        </button>`).join('');
+      dropdownUsr.querySelectorAll("button[data-id]").forEach(btn => {
+        btn.addEventListener("mousedown", (e) => { e.preventDefault(); seleccionarUsuario(btn); });
+      });
+    }
+    dropdownUsr.classList.remove("hidden");
   }
+
+  function seleccionarUsuario(btn) {
+    hiddenUsrId.value = btn.dataset.id;
+    inputBuscarUsr.value = `${btn.dataset.nombre} ${btn.dataset.apellidos}`;
+    campoNombre.value = btn.dataset.nombre;
+    campoApellidos.value = btn.dataset.apellidos;
+    campoCorreo.value = btn.dataset.correo;
+    if (btn.dataset.grado) campoGrado.value = btn.dataset.grado;
+    bloquePassword.classList.add("hidden");
+    btnClearUsr.classList.remove("hidden");
+    dropdownUsr.classList.add("hidden");
+  }
+
+  function limpiarAutocomplete() {
+    if (hiddenUsrId) hiddenUsrId.value = "";
+    if (inputBuscarUsr) inputBuscarUsr.value = "";
+    if (btnClearUsr) btnClearUsr.classList.add("hidden");
+    if (dropdownUsr) dropdownUsr.classList.add("hidden");
+    bloquePassword?.classList.remove("hidden");
+  }
+
+  inputBuscarUsr?.addEventListener("input", () => {
+    const q = inputBuscarUsr.value.toLowerCase().trim();
+    if (!q) {
+      hiddenUsrId.value = "";
+      btnClearUsr.classList.add("hidden");
+      dropdownUsr.classList.add("hidden");
+      bloquePassword.classList.remove("hidden");
+      return;
+    }
+    btnClearUsr.classList.remove("hidden");
+    const filtrado = USUARIOS_AC.filter(u =>
+      `${u.nombre} ${u.apellidos}`.toLowerCase().includes(q) ||
+      (u.correo || "").toLowerCase().includes(q)
+    );
+    renderDropdown(filtrado);
+  });
+
+  inputBuscarUsr?.addEventListener("focus", () => {
+    const q = inputBuscarUsr.value.toLowerCase().trim();
+    if (q.length >= 1) {
+      const filtrado = USUARIOS_AC.filter(u =>
+        `${u.nombre} ${u.apellidos}`.toLowerCase().includes(q) ||
+        (u.correo || "").toLowerCase().includes(q)
+      );
+      renderDropdown(filtrado);
+    }
+  });
+
+  inputBuscarUsr?.addEventListener("blur", () => {
+    setTimeout(() => dropdownUsr?.classList.add("hidden"), 150);
+  });
+
+  btnClearUsr?.addEventListener("click", () => {
+    limpiarAutocomplete();
+    campoNombre.value = "";
+    campoApellidos.value = "";
+    campoCorreo.value = "";
+    campoGrado.value = "3ro A";
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest("#bloque-usuario-existente")) {
+      dropdownUsr?.classList.add("hidden");
+    }
+  });
 </script>
 
 <style>
