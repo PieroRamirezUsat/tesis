@@ -6,6 +6,16 @@ from werkzeug.utils import secure_filename
 from db import get_db
 from .docentes import bp_docentes  # usamos el mismo Blueprint
 
+# Tabla score→nivel compartida con la API REST (fórmula unificada)
+_BRACKETS = [(0,21,1),(22,35,2),(36,49,3),(50,64,4),(65,78,5),(79,92,6),(93,100,7)]
+
+def _score_to_nivel(score):
+    s = max(0.0, min(100.0, float(score or 0)))
+    for lo, hi, nivel in _BRACKETS:
+        if lo <= s <= hi:
+            return nivel
+    return 7
+
 
 def _obtener_id_docente_desde_sesion():
     """
@@ -43,34 +53,8 @@ def gestion_estudiantes():
     # ============================
     # Estudiantes de los salones
     # ============================
-    # Usamos la misma lógica de progreso que /progreso/resumen:
-    # - Ejercicio distinto correcto = peso 1.0
-    # - Repeticiones correctas      = peso 0.30
     cur.execute(
         """
-        WITH prog AS (
-            SELECT
-                e.id_estudiante,
-                COUNT(DISTINCT ex.id_ejercicio) AS total_ejercicios,
-                COUNT(
-                    DISTINCT CASE
-                        WHEN o.es_correcta = TRUE THEN r.id_ejercicio
-                    END
-                ) AS distintos_correctos,
-                COUNT(
-                    CASE
-                        WHEN o.es_correcta = TRUE THEN 1
-                    END
-                ) AS correctos_totales
-            FROM estudiante e
-            LEFT JOIN respuestas_estudiantes r
-              ON r.id_estudiante = e.id_estudiante
-            LEFT JOIN opciones_ejercicio o
-              ON o.id_opcion = r.id_opcion
-            LEFT JOIN ejercicios ex
-              ON ex.id_ejercicio = r.id_ejercicio
-            GROUP BY e.id_estudiante
-        )
         SELECT
             e.id_estudiante,
             u.id_usuario,
@@ -87,30 +71,33 @@ def gestion_estudiantes():
             COALESCE(e.forma_movimiento_localizacion, 0)     AS comp_forma,
             COALESCE(e.gestion_datos_incertidumbre, 0)       AS comp_datos,
 
-            -- Progreso calculado dinámicamente por ejercicios resueltos
+            -- Progreso general: (min(nivel,6)-1)*20 promediado en las 4 competencias
             COALESCE(
-                CASE
-                    WHEN prog.total_ejercicios > 0 THEN
-                        ROUND(
-                            (
-                                prog.distintos_correctos * 1.0 +
-                                GREATEST(
-                                    prog.correctos_totales - prog.distintos_correctos,
-                                    0
-                                ) * 0.30
-                            ) / prog.total_ejercicios * 100
-                        )
-                    ELSE 0
-                END,
+                (SELECT ROUND(AVG((LEAST(nec.nivel_actual, 6) - 1) * 20.0))::int
+                 FROM nivel_estudiante_competencia nec
+                 WHERE nec.id_estudiante = e.id_estudiante
+                   AND nec.id_competencia BETWEEN 1 AND 4),
                 0
-            ) AS progreso_general
+            ) AS progreso_general,
+
+            -- Sin diagnóstico: ninguna de las 4 notas fue asignada todavía
+            (e.cantidad IS NULL
+             AND e.regularidad_equivalencia_cambio IS NULL
+             AND e.forma_movimiento_localizacion   IS NULL
+             AND e.gestion_datos_incertidumbre     IS NULL) AS sin_diagnostico,
+
+            -- Diagnóstico bloqueado: el alumno ya tiene respuestas registradas
+            EXISTS(
+                SELECT 1 FROM respuestas_estudiantes r
+                WHERE r.id_estudiante = e.id_estudiante
+            ) AS diag_bloqueado
+
         FROM docente_salones ds
         JOIN salones s             ON s.id_salon = ds.id_salon
         JOIN estudiante_salones es ON es.id_salon = s.id_salon
         JOIN estudiante e          ON e.id_estudiante = es.id_estudiante
         JOIN usuarios u            ON u.id_usuario = e.id_usuario
-        LEFT JOIN prog             ON prog.id_estudiante = e.id_estudiante
-        WHERE ds.id_docente = %s
+        WHERE ds.id_docente = %s AND e.estado_estudiante = 'activo'
         ORDER BY u.apellidos, u.nombre
         """,
         (id_docente,),
@@ -120,20 +107,22 @@ def gestion_estudiantes():
 
     estudiantes = [
         {
-            "id_estudiante": r[0],
-            "id_usuario": r[1],
-            "nombre": r[2],
-            "apellidos": r[3],
-            "correo": r[4],
-            "grado": r[5],
-            "estado_estudiante": r[6],
-            "nombre_salon": r[7],
-            "comp_cantidad": r[8],
+            "id_estudiante":    r[0],
+            "id_usuario":       r[1],
+            "nombre":           r[2],
+            "apellidos":        r[3],
+            "correo":           r[4],
+            "grado":            r[5],
+            "estado_estudiante":r[6],
+            "nombre_salon":     r[7],
+            "comp_cantidad":    r[8],
             "comp_regularidad": r[9],
-            "comp_forma": r[10],
-            "comp_datos": r[11],
+            "comp_forma":       r[10],
+            "comp_datos":       r[11],
             "progreso_general": r[12],
-            "nombre_completo": f"{r[2]} {r[3]}",
+            "sin_diagnostico":  bool(r[13]),
+            "diag_bloqueado":   bool(r[14]),
+            "nombre_completo":  f"{r[3]}, {r[2]}",
         }
         for r in rows
     ]
@@ -168,6 +157,62 @@ def gestion_estudiantes():
         for r in usuarios_rows
     ]
 
+    # ============================
+    # Salones del docente (para select Grado/Sección dinámico + distribución)
+    # ============================
+    cur.execute(
+        """
+        SELECT s.nombre_salon,
+               COUNT(DISTINCT es.id_estudiante) FILTER (WHERE e.estado_estudiante = 'activo') AS total_activos
+        FROM salones s
+        JOIN docente_salones ds    ON ds.id_salon = s.id_salon
+        LEFT JOIN estudiante_salones es ON es.id_salon = s.id_salon
+        LEFT JOIN estudiante e     ON e.id_estudiante = es.id_estudiante
+        WHERE ds.id_docente = %s
+        GROUP BY s.nombre_salon
+        ORDER BY s.nombre_salon
+        """,
+        (id_docente,),
+    )
+    salones_rows = cur.fetchall()
+    salones_docente = [r[0] for r in salones_rows]
+    distribucion_salones = [
+        {"nombre": r[0], "total": r[1] or 0}
+        for r in salones_rows
+    ]
+
+    # ============================
+    # Estudiantes dados de baja (inactivos) — invisibles en la tabla principal
+    # ============================
+    cur.execute(
+        """
+        SELECT
+            u.nombre,
+            u.apellidos,
+            u.correo,
+            e.grado,
+            s.nombre_salon
+        FROM docente_salones ds
+        JOIN salones s              ON s.id_salon      = ds.id_salon
+        JOIN estudiante_salones es  ON es.id_salon     = s.id_salon
+        JOIN estudiante e           ON e.id_estudiante = es.id_estudiante
+        JOIN usuarios u             ON u.id_usuario    = e.id_usuario
+        WHERE ds.id_docente = %s AND e.estado_estudiante = 'inactivo'
+        ORDER BY u.apellidos, u.nombre
+        LIMIT 15
+        """,
+        (id_docente,),
+    )
+    estudiantes_inactivos = [
+        {
+            "nombre_completo": f"{r[1]}, {r[0]}",
+            "correo": r[2],
+            "grado": r[3],
+            "nombre_salon": r[4],
+        }
+        for r in cur.fetchall()
+    ]
+
     cur.close()
 
     return render_template(
@@ -176,6 +221,9 @@ def gestion_estudiantes():
         active_page="estudiantes",
         estudiantes=estudiantes,
         usuarios_estudiantes=usuarios_estudiantes,
+        salones_docente=salones_docente,
+        distribucion_salones=distribucion_salones,
+        estudiantes_inactivos=estudiantes_inactivos,
     )
 
 
@@ -246,9 +294,9 @@ def crear_estudiante():
         row_est = cur.fetchone()
         if row_est:
             id_estudiante = row_est[0]
-            # Actualizar grado
+            # Reactivar si estaba de baja y actualizar grado
             cur.execute(
-                "UPDATE estudiante SET grado = %s WHERE id_estudiante = %s",
+                "UPDATE estudiante SET grado = %s, estado_estudiante = 'activo' WHERE id_estudiante = %s",
                 (grado, id_estudiante),
             )
         else:
@@ -407,60 +455,61 @@ def editar_estudiante(id_estudiante):
         (nombre, apellidos, correo, id_usuario),
     )
 
-    # Actualizar estudiante + niveles diagnósticos iniciales (MINEDU)
+    # ¿El alumno ya tiene actividad? → diagnóstico queda bloqueado
     cur.execute(
-        """
-        UPDATE estudiante
-        SET grado = %s,
-            estado_estudiante              = %s,
-            cantidad                       = COALESCE(%s, cantidad),
-            regularidad_equivalencia_cambio= COALESCE(%s, regularidad_equivalencia_cambio),
-            forma_movimiento_localizacion  = COALESCE(%s, forma_movimiento_localizacion),
-            gestion_datos_incertidumbre    = COALESCE(%s, gestion_datos_incertidumbre)
-        WHERE id_estudiante = %s
-        """,
-        (
-            grado,
-            estado_estudiante,
-            comp_cantidad,
-            comp_regularidad,
-            comp_forma,
-            comp_datos,
-            id_estudiante,
-        ),
+        "SELECT EXISTS(SELECT 1 FROM respuestas_estudiantes WHERE id_estudiante = %s) AS tiene",
+        (id_estudiante,),
     )
+    diag_bloqueado = bool((cur.fetchone() or (False,))[0])
 
-    # Actualizar contraseña si corresponde
-    if contrasena:
-        hash_pwd = generate_password_hash(contrasena)
+    if diag_bloqueado:
+        # Solo actualizar datos personales y grado/estado — NO el diagnóstico
         cur.execute(
-            "UPDATE usuarios SET contrasena = %s WHERE id_usuario = %s",
-            (hash_pwd, id_usuario),
+            """
+            UPDATE estudiante
+            SET grado = %s, estado_estudiante = %s
+            WHERE id_estudiante = %s
+            """,
+            (grado, estado_estudiante, id_estudiante),
+        )
+        if (comp_cantidad is not None or comp_regularidad is not None
+                or comp_forma is not None or comp_datos is not None):
+            flash(
+                "Los datos personales fueron actualizados. "
+                "Las notas de diagnóstico no se pueden modificar porque "
+                "el alumno ya ha realizado actividades en la aplicación.",
+                "warning",
+            )
+        else:
+            flash("Estudiante actualizado correctamente.", "success")
+    else:
+        # Sin actividad → se puede actualizar el diagnóstico completo
+        cur.execute(
+            """
+            UPDATE estudiante
+            SET grado = %s,
+                estado_estudiante              = %s,
+                cantidad                       = COALESCE(%s, cantidad),
+                regularidad_equivalencia_cambio= COALESCE(%s, regularidad_equivalencia_cambio),
+                forma_movimiento_localizacion  = COALESCE(%s, forma_movimiento_localizacion),
+                gestion_datos_incertidumbre    = COALESCE(%s, gestion_datos_incertidumbre)
+            WHERE id_estudiante = %s
+            """,
+            (grado, estado_estudiante,
+             comp_cantidad, comp_regularidad, comp_forma, comp_datos,
+             id_estudiante),
         )
 
-    # ——— Sincronizar diagnóstico inicial → nivel_estudiante_competencia ———
-    # Convierte score 0-100 a nivel_actual 1-7 y hace upsert en NEC,
-    # para que la app móvil y los reportes reflejen el diagnóstico del profesor.
-    comp_scores = {
-        "cantidad": comp_cantidad,
-        "regularidad_equivalencia_cambio": comp_regularidad,
-        "forma_movimiento_localizacion": comp_forma,
-        "gestion_datos_incertidumbre": comp_datos,
-    }
-    comp_scores_validos = {k: v for k, v in comp_scores.items() if v is not None}
-
-    if comp_scores_validos:
-        cur.execute(
-            "SELECT id_competencia, area FROM competencias WHERE area = ANY(%s)",
-            (list(comp_scores_validos.keys()),),
-        )
-        area_to_id = {row[1]: row[0] for row in cur.fetchall()}
-
-        for area, score in comp_scores_validos.items():
-            id_comp = area_to_id.get(area)
-            if not id_comp:
-                continue
-            nivel_actual = max(1, min(7, int(score * 6 / 100) + 1))
+        # Sincronizar → NEC y puntajes diagnóstico
+        comp_map = [
+            (1, comp_cantidad),
+            (2, comp_regularidad),
+            (3, comp_forma),
+            (4, comp_datos),
+        ]
+        for id_comp, score in comp_map:
+            s = score if score is not None else 0
+            nivel_actual = _score_to_nivel(s)
             cur.execute(
                 """
                 INSERT INTO nivel_estudiante_competencia
@@ -468,17 +517,32 @@ def editar_estudiante(id_estudiante):
                      promedio_puntaje, ejercicios_considerados, fecha_ultimo_update)
                 VALUES (%s, %s, %s, %s, 0, NOW())
                 ON CONFLICT (id_estudiante, id_competencia) DO UPDATE SET
-                    nivel_actual            = EXCLUDED.nivel_actual,
-                    promedio_puntaje        = EXCLUDED.promedio_puntaje,
-                    fecha_ultimo_update     = EXCLUDED.fecha_ultimo_update
+                    nivel_actual        = EXCLUDED.nivel_actual,
+                    promedio_puntaje    = EXCLUDED.promedio_puntaje,
+                    fecha_ultimo_update = EXCLUDED.fecha_ultimo_update
                 """,
-                (id_estudiante, id_comp, nivel_actual, float(score)),
+                (id_estudiante, id_comp, nivel_actual, float(s)),
             )
+            if score is not None:
+                cur.execute(
+                    """
+                    INSERT INTO puntajes (puntaje, id_competencia, id_estudiante)
+                    VALUES (%s, %s, %s)
+                    """,
+                    (score, id_comp, id_estudiante),
+                )
+        flash("Estudiante actualizado correctamente.", "success")
+
+    # Contraseña (siempre permitida)
+    if contrasena:
+        hash_pwd = generate_password_hash(contrasena)
+        cur.execute(
+            "UPDATE usuarios SET contrasena = %s WHERE id_usuario = %s",
+            (hash_pwd, id_usuario),
+        )
 
     conn.commit()
     cur.close()
-
-    flash("Estudiante actualizado correctamente.", "success")
     return redirect(url_for("docentes.gestion_estudiantes"))
 
 
@@ -497,6 +561,62 @@ def baja_estudiante(id_estudiante):
     cur.close()
 
     flash("Estudiante dado de baja.", "success")
+    return redirect(url_for("docentes.gestion_estudiantes"))
+
+
+@bp_docentes.route("/estudiantes/baja-seleccion", methods=["POST"])
+def baja_seleccion_estudiantes():
+    id_docente = _obtener_id_docente_desde_sesion()
+    if id_docente is None:
+        return redirect(url_for("auth.login"))
+
+    baja_todos = request.form.get("baja_todos") == "1"
+    ids_raw = request.form.getlist("ids[]")
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    try:
+        if baja_todos:
+            cur.execute(
+                """
+                SELECT DISTINCT e.id_estudiante
+                FROM estudiante e
+                JOIN estudiante_salones es ON es.id_estudiante = e.id_estudiante
+                JOIN docente_salones ds    ON ds.id_salon      = es.id_salon
+                WHERE ds.id_docente = %s AND e.estado_estudiante = 'activo'
+                """,
+                (id_docente,),
+            )
+            ids = [r[0] for r in cur.fetchall()]
+        else:
+            ids = [int(i) for i in ids_raw if str(i).strip().isdigit()]
+
+        if not ids:
+            flash("No se seleccionó ningún estudiante activo.", "warning")
+            cur.close()
+            return redirect(url_for("docentes.gestion_estudiantes"))
+
+        cur.execute(
+            "UPDATE estudiante SET estado_estudiante = 'inactivo' WHERE id_estudiante = ANY(%s)",
+            (ids,),
+        )
+        conn.commit()
+
+        n = len(ids)
+        msg = (
+            f"Se dieron de baja todos los estudiantes ({n})."
+            if baja_todos
+            else f"Se dieron de baja {n} estudiante(s)."
+        )
+        flash(msg, "success")
+    except Exception as e:
+        conn.rollback()
+        print("ERROR baja selección estudiantes:", e)
+        flash("Error al dar de baja los estudiantes.", "danger")
+    finally:
+        cur.close()
+
     return redirect(url_for("docentes.gestion_estudiantes"))
 
 

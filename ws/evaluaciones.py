@@ -2,6 +2,16 @@ from flask import Blueprint, render_template, session, redirect, url_for, reques
 from db import get_db
 import json, random
 
+# Tabla score→nivel compartida con la API REST y gestionar_estudiante
+_BRACKETS = [(0,21,1),(22,35,2),(36,49,3),(50,64,4),(65,78,5),(79,92,6),(93,100,7)]
+
+def _score_to_nivel(score):
+    s = max(0.0, min(100.0, float(score or 0)))
+    for lo, hi, nivel in _BRACKETS:
+        if lo <= s <= hi:
+            return nivel
+    return 7
+
 
 def _format_duracion_seg(segundos) -> str:
     """Convierte segundos a '4m 32s'. Retorna '—' si es None o negativo."""
@@ -360,14 +370,75 @@ def cerrar_evaluacion(id_evaluacion):
 
     conn = get_db()
     cur = conn.cursor()
+
+    # Verificar que la evaluación pertenece al docente
     cur.execute(
         """
-        UPDATE evaluaciones SET estado = 'cerrada'
-        WHERE id_evaluacion = %s
-          AND id_salon IN (SELECT id_salon FROM docente_salones WHERE id_docente = %s)
+        SELECT 1 FROM evaluaciones ev
+        JOIN docente_salones ds ON ds.id_salon = ev.id_salon
+        WHERE ev.id_evaluacion = %s AND ds.id_docente = %s
         """,
         (id_evaluacion, id_docente),
     )
+    if not cur.fetchone():
+        flash("Evaluación no encontrada.", "danger")
+        cur.close()
+        return redirect(url_for("evaluaciones.gestion_evaluaciones"))
+
+    cur.execute(
+        "UPDATE evaluaciones SET estado = 'cerrada' WHERE id_evaluacion = %s",
+        (id_evaluacion,),
+    )
+
+    # Sincronizar puntajes por competencia → nivel_estudiante_competencia
+    # Para cada estudiante que completó la evaluación, calculamos su % correcto
+    # por competencia basándonos en las respuestas registradas.
+    cur.execute(
+        """
+        SELECT
+            er.id_estudiante,
+            ej.id_competencia,
+            COUNT(*) FILTER (WHERE ev_r.es_correcta = TRUE)  AS correctas,
+            COUNT(*)                                          AS total
+        FROM evaluacion_respuestas ev_r
+        JOIN ejercicios ej ON ej.id_ejercicio = ev_r.id_ejercicio
+        JOIN evaluacion_resultados er
+            ON er.id_evaluacion = ev_r.id_evaluacion
+           AND er.id_estudiante = ev_r.id_estudiante
+           AND er.estado = 'completado'
+        WHERE ev_r.id_evaluacion = %s
+          AND ej.id_competencia IS NOT NULL
+        GROUP BY er.id_estudiante, ej.id_competencia
+        """,
+        (id_evaluacion,),
+    )
+    filas_comp = cur.fetchall()
+
+    for id_est, id_comp, correctas, total in filas_comp:
+        puntaje = round(correctas / total * 100) if total else 0
+        nivel = _score_to_nivel(puntaje)
+        cur.execute(
+            """
+            INSERT INTO nivel_estudiante_competencia
+                (id_estudiante, id_competencia, nivel_actual,
+                 promedio_puntaje, ejercicios_considerados, fecha_ultimo_update)
+            VALUES (%s, %s, %s, %s, %s, NOW())
+            ON CONFLICT (id_estudiante, id_competencia) DO UPDATE SET
+                nivel_actual            = EXCLUDED.nivel_actual,
+                promedio_puntaje        = EXCLUDED.promedio_puntaje,
+                ejercicios_considerados = EXCLUDED.ejercicios_considerados,
+                fecha_ultimo_update     = EXCLUDED.fecha_ultimo_update
+            """,
+            (id_est, id_comp, nivel, float(puntaje), total),
+        )
+        cur.execute(
+            """
+            INSERT INTO puntajes (puntaje, id_competencia, id_estudiante)
+            VALUES (%s, %s, %s)
+            """,
+            (puntaje, id_comp, id_est),
+        )
+
     conn.commit()
     cur.close()
     flash("Evaluación cerrada.", "success")

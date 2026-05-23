@@ -9,41 +9,62 @@
     <h1 class="text-2xl font-black text-gray-900 dark:text-white leading-tight">Gestión de Estudiantes</h1>
     <p class="text-sm text-gray-400 mt-0.5">Administra los alumnos de tus salones</p>
   </div>
-  <button type="button" id="btn-abrir-modal-nuevo"
-    class="flex items-center gap-2 px-4 py-2 rounded-xl
-           bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700
-           text-white text-sm font-bold shadow-lg shadow-blue-200/50 transition-all">
-    <span class="material-symbols-outlined text-base">person_add</span>
-    Añadir Estudiante
+  <div class="flex items-center gap-2">
+    <button type="button" id="btn-abrir-modal-nuevo"
+      class="flex items-center gap-2 px-4 py-2 rounded-xl
+             bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700
+             text-white text-sm font-bold shadow-lg shadow-blue-200/50 transition-all">
+      <span class="material-symbols-outlined text-base">person_add</span>
+      Añadir Estudiante
+    </button>
+  </div>
+</div>
+
+<!-- Barra de acción masiva (aparece cuando hay selección) -->
+<div id="barra-seleccion"
+  class="hidden mb-4 flex items-center justify-between gap-3 bg-orange-50 dark:bg-orange-900/20
+         border border-orange-200 dark:border-orange-700 rounded-2xl px-5 py-3">
+  <div class="flex items-center gap-2 text-sm font-semibold text-orange-700 dark:text-orange-300">
+    <span class="material-symbols-outlined text-[18px]">checklist</span>
+    <span id="txt-seleccionados">0 estudiante(s) seleccionado(s)</span>
+  </div>
+  <button type="button" id="btn-baja-seleccion"
+    class="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600
+           text-white text-sm font-bold transition-colors">
+    <span class="material-symbols-outlined text-base">person_remove</span>
+    Dar de baja seleccionados
   </button>
 </div>
 
-<!-- BARRA DE BÚSQUEDA Y FILTRO -->
+<!-- Form oculto para baja masiva -->
+<form id="form-baja-seleccion" method="post"
+      action="{{ url_for('docentes.baja_seleccion_estudiantes') }}" class="hidden">
+  <input type="hidden" name="baja_todos" id="input-baja-todos" value="0" />
+</form>
+
+<!-- BARRA DE BÚSQUEDA -->
 <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm px-4 py-3 mb-4 flex flex-wrap items-center gap-3">
   <div class="flex-1 min-w-[220px] flex items-center gap-2 bg-gray-50 dark:bg-gray-700/60 rounded-xl px-3 h-10">
     <span class="material-symbols-outlined text-gray-400 text-[18px] shrink-0">search</span>
-    <input id="buscador-estudiantes" type="text" placeholder="Buscar por nombre o salón..."
+    <input id="buscador-estudiantes" type="text" placeholder="Buscar por apellido, nombre o salón..."
       class="flex-1 bg-transparent border-none focus:outline-none text-sm text-gray-800 dark:text-gray-100 placeholder:text-gray-400" />
   </div>
-  <select id="filtro-estado"
-    class="h-10 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400">
-    <option value="todos">Todos los estados</option>
-    <option value="activo">Solo activos</option>
-    <option value="inactivo">Solo inactivos</option>
-  </select>
 </div>
 
 <!-- TABLA DE ESTUDIANTES -->
 <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
   <div class="overflow-x-auto">
-    <div style="max-height: 528px; overflow-y: auto;">
+    <div style="min-height: 200px; max-height: 528px; overflow-y: auto;">
     <table class="w-full text-sm text-left">
       <thead class="sticky top-0 z-10 border-b border-gray-100 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-700/90">
         <tr>
+          <th class="px-4 py-3 w-10">
+            <input type="checkbox" id="check-todos"
+              class="w-4 h-4 rounded border-gray-300 text-blue-500 cursor-pointer" />
+          </th>
           <th class="px-5 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest">Estudiante</th>
           <th class="px-5 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest">Salón</th>
           <th class="px-5 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest hidden md:table-cell">Grado</th>
-          <th class="px-5 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest">Estado</th>
           <th class="px-5 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest text-right">Acciones</th>
         </tr>
       </thead>
@@ -56,6 +77,12 @@
               data-nombre="{{ (est.nombre_completo ~ ' ' ~ est.correo)|lower }}"
               data-salon="{{ est.nombre_salon|lower }}"
               data-estado="{{ est.estado_estudiante|lower }}">
+
+            <!-- Checkbox selección -->
+            <td class="px-4 py-3 align-middle w-10">
+              <input type="checkbox" name="ids[]" value="{{ est.id_estudiante }}"
+                class="check-est w-4 h-4 rounded border-gray-300 text-blue-500 cursor-pointer" />
+            </td>
 
             <!-- Nombre + avatar -->
             <td class="px-5 py-3 align-middle">
@@ -99,23 +126,6 @@
               {{ est.grado }}
             </td>
 
-            <!-- Estado -->
-            <td class="px-5 py-3 align-middle">
-              {% if est.estado_estudiante == 'activo' %}
-                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
-                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>Activo
-                </span>
-              {% elif est.estado_estudiante == 'inactivo' %}
-                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400">
-                  <span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span>Inactivo
-                </span>
-              {% else %}
-                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-700">
-                  {{ est.estado_estudiante|capitalize }}
-                </span>
-              {% endif %}
-            </td>
-
             <!-- Acciones -->
             <td class="px-5 py-3 align-middle text-right">
               <div class="inline-flex items-center gap-1">
@@ -134,7 +144,9 @@
                   data-comp-regularidad="{{ est.comp_regularidad }}"
                   data-comp-forma="{{ est.comp_forma }}"
                   data-comp-datos="{{ est.comp_datos }}"
-                  data-progreso-general="{{ est.progreso_general }}">
+                  data-progreso-general="{{ est.progreso_general }}"
+                  data-diag-bloqueado="{{ 'true' if est.diag_bloqueado else 'false' }}"
+                  data-sin-diagnostico="{{ 'true' if est.sin_diagnostico else 'false' }}">
                   <span class="material-symbols-outlined text-[18px] text-blue-500 group-hover:text-blue-600">edit</span>
                 </button>
 
@@ -171,6 +183,114 @@
     </table>
     </div>
   </div>
+</div>
+
+<!-- ================= INFORMACIÓN EXCLUSIVA DE GESTIÓN ================= -->
+<div class="mt-5 grid grid-cols-1 md:grid-cols-3 gap-4">
+
+  <!-- Tarjeta 1: Alumnos por salón (el dashboard solo muestra total combinado) -->
+  <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-5">
+    <div class="flex items-center gap-2 mb-3">
+      <span class="material-symbols-outlined text-violet-500 text-[20px]">class</span>
+      <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Alumnos por salón</p>
+    </div>
+    {% if distribucion_salones %}
+    <div class="space-y-3">
+      {% set max_alumnos = distribucion_salones | map(attribute='total') | max %}
+      {% for salon in distribucion_salones %}
+      <div>
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-xs font-semibold text-gray-700 dark:text-gray-200 truncate">{{ salon.nombre }}</span>
+          <span class="text-xs font-black text-violet-600 dark:text-violet-400 ml-2 shrink-0">{{ salon.total }}</span>
+        </div>
+        <div class="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2">
+          <div class="h-2 rounded-full bg-gradient-to-r from-violet-400 to-purple-500"
+               style="width: {{ ((salon.total / (max_alumnos if max_alumnos > 0 else 1)) * 100) | round | int }}%"></div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-xs text-gray-400 text-center py-4">Sin salones asignados.</p>
+    {% endif %}
+  </div>
+
+  <!-- Tarjeta 2: Sin diagnóstico inicial (exclusiva — no existe en ninguna otra pantalla) -->
+  <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-5">
+    <div class="flex items-center gap-2 mb-3">
+      <span class="material-symbols-outlined text-orange-400 text-[20px]">assignment_late</span>
+      <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Sin diagnóstico MINEDU</p>
+    </div>
+    {% set sin_diag = estudiantes | selectattr('sin_diagnostico') | list %}
+    {% if sin_diag %}
+    <p class="text-[10px] text-gray-400 mb-2">Haz clic en un alumno para ingresar su diagnóstico.</p>
+    <div class="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+      {% for est in sin_diag %}
+      <button type="button"
+        class="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg
+               hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors group text-left"
+        data-accion="editar-estudiante"
+        data-id-estudiante="{{ est.id_estudiante }}"
+        data-id-usuario="{{ est.id_usuario }}"
+        data-nombre="{{ est.nombre }}"
+        data-apellidos="{{ est.apellidos }}"
+        data-correo="{{ est.correo }}"
+        data-grado="{{ est.grado }}"
+        data-estado="{{ est.estado_estudiante }}"
+        data-comp-cantidad="{{ est.comp_cantidad }}"
+        data-comp-regularidad="{{ est.comp_regularidad }}"
+        data-comp-forma="{{ est.comp_forma }}"
+        data-comp-datos="{{ est.comp_datos }}"
+        data-progreso-general="{{ est.progreso_general }}"
+        data-diag-bloqueado="{{ 'true' if est.diag_bloqueado else 'false' }}"
+        data-sin-diagnostico="true">
+        <span class="w-1.5 h-1.5 rounded-full bg-orange-400 shrink-0 mt-0.5"></span>
+        <div class="min-w-0 flex-1">
+          <p class="text-xs font-semibold text-gray-800 dark:text-gray-100 truncate
+                     group-hover:text-orange-700 dark:group-hover:text-orange-300 transition-colors">
+            {{ est.nombre_completo }}
+          </p>
+          <p class="text-[10px] text-gray-400 truncate">{{ est.nombre_salon }}</p>
+        </div>
+        <span class="material-symbols-outlined text-[14px] text-orange-400 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">edit</span>
+      </button>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="flex flex-col items-center justify-center py-5 text-center">
+      <span class="material-symbols-outlined text-3xl text-emerald-300 dark:text-emerald-700 mb-1">fact_check</span>
+      <p class="text-xs text-gray-400">Todos los alumnos tienen<br>diagnóstico inicial registrado.</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Tarjeta 3: Dados de baja (invisibles en la tabla principal que solo muestra activos) -->
+  <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-5">
+    <div class="flex items-center gap-2 mb-3">
+      <span class="material-symbols-outlined text-red-400 text-[20px]">person_off</span>
+      <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Dados de baja</p>
+    </div>
+    {% if estudiantes_inactivos %}
+    <p class="text-[10px] text-gray-400 mb-2">No aparecen en la tabla. Edita al alumno y cambia su estado a <strong>Activo</strong> para reactivarlo.</p>
+    <div class="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+      {% for est in estudiantes_inactivos %}
+      <div class="flex items-center gap-2">
+        <span class="w-1.5 h-1.5 rounded-full bg-red-400 shrink-0"></span>
+        <div class="min-w-0">
+          <p class="text-xs font-semibold text-gray-700 dark:text-gray-300 truncate">{{ est.nombre_completo }}</p>
+          <p class="text-[10px] text-gray-400 truncate">{{ est.nombre_salon }} · {{ est.grado }}</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="flex flex-col items-center justify-center py-5 text-center">
+      <span class="material-symbols-outlined text-3xl text-gray-200 dark:text-gray-700 mb-1">group_remove</span>
+      <p class="text-xs text-gray-400">No hay alumnos dados de baja<br>en tus salones.</p>
+    </div>
+    {% endif %}
+  </div>
+
 </div>
 
 <!-- ================= MODAL NUEVO / EDITAR ESTUDIANTE ================= -->
@@ -240,9 +360,13 @@
             <label class="text-sm font-semibold text-gray-700 dark:text-gray-200">Grado / Sección</label>
             <select name="grado" id="form-grado"
               class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
-              <option value="3ro A">3ro de Secundaria - A</option>
-              <option value="3ro B">3ro de Secundaria - B</option>
-              <option value="3ro C">3ro de Secundaria - C</option>
+              {% if salones_docente %}
+                {% for salon in salones_docente %}
+                <option value="{{ salon }}">{{ salon }}</option>
+                {% endfor %}
+              {% else %}
+                <option value="">Sin salones asignados</option>
+              {% endif %}
             </select>
           </div>
         </div>
@@ -272,6 +396,33 @@
 
         <!-- Niveles diagnósticos (solo edición) -->
         <div class="space-y-3 hidden" id="bloque-niveles">
+
+          <!-- Banner candado (se muestra cuando diag_bloqueado=true) -->
+          <div id="banner-diag-bloqueado"
+            class="hidden items-center gap-3 px-4 py-3 rounded-xl
+                   bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700">
+            <span class="material-symbols-outlined text-amber-500 text-[22px] shrink-0">lock</span>
+            <div>
+              <p class="text-xs font-bold text-amber-700 dark:text-amber-400">Diagnóstico bloqueado</p>
+              <p class="text-[11px] text-amber-600 dark:text-amber-300">
+                El alumno ya ha realizado actividades. Las notas de diagnóstico no pueden modificarse para no afectar su medición de competencias.
+              </p>
+            </div>
+          </div>
+
+          <!-- Banner sin diagnóstico (se muestra cuando sin_diagnostico=true) -->
+          <div id="banner-sin-diagnostico"
+            class="hidden items-center gap-3 px-4 py-3 rounded-xl
+                   bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700">
+            <span class="material-symbols-outlined text-orange-500 text-[22px] shrink-0">assignment_late</span>
+            <div>
+              <p class="text-xs font-bold text-orange-700 dark:text-orange-400">Diagnóstico pendiente</p>
+              <p class="text-[11px] text-orange-600 dark:text-orange-300">
+                Ingresa las 4 notas para que el alumno pueda acceder al repaso y evaluaciones.
+              </p>
+            </div>
+          </div>
+
           <div class="flex items-center justify-between gap-2 py-2 border-t border-gray-100 dark:border-gray-800">
             <div>
               <p class="text-sm font-bold text-gray-800 dark:text-gray-100">Nivel diagnóstico (0–100)</p>
@@ -287,21 +438,25 @@
               <label class="text-xs font-semibold text-gray-600 dark:text-gray-300">Resuelve problemas de cantidad</label>
               <input type="number" name="comp_cantidad" id="form-comp-cantidad" min="0" max="100"
                 class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+              <div id="badge-comp-cantidad" class="hidden items-center gap-1.5 mt-0.5 text-[11px]"></div>
             </div>
             <div class="space-y-1">
               <label class="text-xs font-semibold text-gray-600 dark:text-gray-300">Regularidad, equivalencia y cambio</label>
               <input type="number" name="comp_regularidad" id="form-comp-regularidad" min="0" max="100"
                 class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+              <div id="badge-comp-regularidad" class="hidden items-center gap-1.5 mt-0.5 text-[11px]"></div>
             </div>
             <div class="space-y-1">
               <label class="text-xs font-semibold text-gray-600 dark:text-gray-300">Gestión de datos e incertidumbre</label>
               <input type="number" name="comp_datos" id="form-comp-datos" min="0" max="100"
                 class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+              <div id="badge-comp-datos" class="hidden items-center gap-1.5 mt-0.5 text-[11px]"></div>
             </div>
             <div class="space-y-1">
               <label class="text-xs font-semibold text-gray-600 dark:text-gray-300">Forma, movimiento y localización</label>
               <input type="number" name="comp_forma" id="form-comp-forma" min="0" max="100"
                 class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+              <div id="badge-comp-forma" class="hidden items-center gap-1.5 mt-0.5 text-[11px]"></div>
             </div>
           </div>
 
@@ -330,22 +485,16 @@
 <script>
   // ---- Filtros de tabla ----
   const inputBuscar = document.getElementById("buscador-estudiantes");
-  const filtroEstado = document.getElementById("filtro-estado");
   const filasEst = document.querySelectorAll("[data-row-estudiante]");
 
   function aplicarFiltros() {
     const q = inputBuscar ? inputBuscar.value.toLowerCase() : "";
-    const estadoFiltro = filtroEstado ? filtroEstado.value : "todos";
     filasEst.forEach((row) => {
       const texto = (row.dataset.nombre + " " + row.dataset.salon).toLowerCase();
-      const estadoRow = (row.dataset.estado || "").toLowerCase();
-      const coincideTexto = texto.includes(q);
-      const coincideEstado = estadoFiltro === "todos" || estadoFiltro === estadoRow;
-      row.style.display = coincideTexto && coincideEstado ? "" : "none";
+      row.style.display = texto.includes(q) ? "" : "none";
     });
   }
   inputBuscar?.addEventListener("input", aplicarFiltros);
-  filtroEstado?.addEventListener("change", aplicarFiltros);
 
   // ---- Modal ----
   const backdrop = document.getElementById("modal-estudiante-backdrop");
@@ -365,36 +514,87 @@
   const bloqueUsuarioExistente = document.getElementById("bloque-usuario-existente");
   const bloqueNiveles = document.getElementById("bloque-niveles");
 
-  const inputCompCantidad = document.getElementById("form-comp-cantidad");
-  const inputCompRegularidad = document.getElementById("form-comp-regularidad");
-  const inputCompForma = document.getElementById("form-comp-forma");
-  const inputCompDatos = document.getElementById("form-comp-datos");
-  const inputProgresoGeneral = document.getElementById("form-progreso-general");
+  const inputCompCantidad   = document.getElementById("form-comp-cantidad");
+  const inputCompRegularidad= document.getElementById("form-comp-regularidad");
+  const inputCompForma      = document.getElementById("form-comp-forma");
+  const inputCompDatos      = document.getElementById("form-comp-datos");
+  const inputProgresoGeneral= document.getElementById("form-progreso-general");
+
+  const badgeCompCantidad   = document.getElementById("badge-comp-cantidad");
+  const badgeCompRegularidad= document.getElementById("badge-comp-regularidad");
+  const badgeCompForma      = document.getElementById("badge-comp-forma");
+  const badgeCompDatos      = document.getElementById("badge-comp-datos");
+
+  // ── Tablas de conversión (igual que la API REST) ──────────────────────────
+  const DIAG_BRACKETS = [[0,21,1],[22,35,2],[36,49,3],[50,64,4],[65,78,5],[79,92,6],[93,100,7]];
+  const DIAG_PCT    = {1:0,  2:20,  3:40,  4:60,  5:80,  6:100, 7:100};
+  const DIAG_NOMBRE = {1:"Iniciando",2:"Básico",3:"En progreso",4:"Intermedio",5:"Avanzado",6:"Experto",7:"Maestro"};
+  const DIAG_COLOR  = {
+    1:"bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400",
+    2:"bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400",
+    3:"bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+    4:"bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
+    5:"bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400",
+    6:"bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+    7:"bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+  };
+
+  function diagScoreToNivel(score) {
+    const s = Math.max(0, Math.min(100, score));
+    for (const [lo, hi, n] of DIAG_BRACKETS) { if (s >= lo && s <= hi) return n; }
+    return 7;
+  }
+
+  function actualizarBadge(inputEl, badgeEl) {
+    if (!badgeEl) return;
+    const v = inputEl.value.trim();
+    if (v === "") { badgeEl.classList.add("hidden"); badgeEl.classList.remove("flex"); return; }
+    const score  = Math.max(0, Math.min(100, parseInt(v, 10) || 0));
+    const nivel  = diagScoreToNivel(score);
+    const pct    = DIAG_PCT[nivel];
+    const nombre = DIAG_NOMBRE[nivel];
+    const color  = DIAG_COLOR[nivel];
+    badgeEl.innerHTML =
+      `<span class="inline-flex items-center px-1.5 py-0.5 rounded-md font-black text-[10px] ${color}">N${nivel}</span>` +
+      `<span class="font-medium text-gray-500 dark:text-gray-400">${nombre}</span>` +
+      `<span class="text-gray-300 dark:text-gray-600">·</span>` +
+      `<span class="font-black text-gray-700 dark:text-gray-200">${pct}%</span>` +
+      `<span class="text-gray-400 dark:text-gray-500">en app</span>`;
+    badgeEl.classList.remove("hidden");
+    badgeEl.classList.add("flex");
+  }
+
+  const _compPares = [
+    [inputCompCantidad,    badgeCompCantidad],
+    [inputCompRegularidad, badgeCompRegularidad],
+    [inputCompForma,       badgeCompForma],
+    [inputCompDatos,       badgeCompDatos],
+  ];
 
   function limpiarNiveles() {
     if (!inputCompCantidad) return;
-    inputCompCantidad.value = "";
-    inputCompRegularidad.value = "";
-    inputCompForma.value = "";
-    inputCompDatos.value = "";
+    _compPares.forEach(([inp, bdg]) => {
+      inp.value = "";
+      if (bdg) { bdg.classList.add("hidden"); bdg.classList.remove("flex"); }
+    });
     inputProgresoGeneral.value = "";
   }
 
   function calcularProgresoGeneral() {
     if (!inputProgresoGeneral) return;
-    const valores = [];
-    [inputCompCantidad, inputCompRegularidad, inputCompForma, inputCompDatos].forEach((inp) => {
+    const progresos = [];
+    _compPares.forEach(([inp]) => {
       const v = inp.value.trim();
       if (v !== "") {
-        const n = parseInt(v, 10);
-        if (!isNaN(n)) valores.push(Math.max(0, Math.min(100, n)));
+        const score = Math.max(0, Math.min(100, parseInt(v, 10) || 0));
+        progresos.push(DIAG_PCT[diagScoreToNivel(score)]);
       }
     });
-    if (!valores.length) { inputProgresoGeneral.value = ""; return; }
-    inputProgresoGeneral.value = Math.round(valores.reduce((a, b) => a + b, 0) / valores.length);
+    if (!progresos.length) { inputProgresoGeneral.value = ""; return; }
+    inputProgresoGeneral.value = Math.round(progresos.reduce((a, b) => a + b, 0) / progresos.length);
   }
 
-  [inputCompCantidad, inputCompRegularidad, inputCompForma, inputCompDatos].forEach((inp) => {
+  _compPares.forEach(([inp, bdg]) => {
     if (!inp) return;
     inp.addEventListener("input", () => {
       if (inp.value !== "") {
@@ -402,6 +602,7 @@
         if (isNaN(n)) n = 0;
         inp.value = Math.max(0, Math.min(100, n));
       }
+      actualizarBadge(inp, bdg);
       calcularProgresoGeneral();
     });
   });
@@ -414,7 +615,7 @@
     campoNombre.value = "";
     campoApellidos.value = "";
     campoCorreo.value = "";
-    campoGrado.value = "3ro A";
+    campoGrado.selectedIndex = 0;
     campoEstado.value = "activo";
     limpiarAutocomplete();
     limpiarNiveles();
@@ -425,24 +626,53 @@
     backdrop.classList.remove("hidden");
   }
 
+  const bannerBloqueado   = document.getElementById("banner-diag-bloqueado");
+  const bannerSinDiag     = document.getElementById("banner-sin-diagnostico");
+  const inputsComp        = [inputCompCantidad, inputCompRegularidad, inputCompForma, inputCompDatos];
+
+  function setDiagReadonly(readonly) {
+    inputsComp.forEach(inp => {
+      if (!inp) return;
+      inp.readOnly = readonly;
+      inp.tabIndex = readonly ? -1 : 0;
+      inp.classList.toggle("opacity-50", readonly);
+      inp.classList.toggle("cursor-not-allowed", readonly);
+      inp.classList.toggle("bg-gray-100", readonly);
+      inp.classList.toggle("dark:bg-gray-700", readonly);
+    });
+  }
+
   function abrirModalEditar(btn) {
     tituloModal.textContent = "Editar estudiante";
-    const idEst = btn.dataset.idEstudiante;
-    campoIdEst.value = idEst;
-    campoIdUsr.value = btn.dataset.idUsuario;
-    campoNombre.value = btn.dataset.nombre;
+    const idEst         = btn.dataset.idEstudiante;
+    const diagBloqueado = btn.dataset.diagBloqueado === "true";
+    const sinDiag       = btn.dataset.sinDiagnostico === "true";
+
+    campoIdEst.value   = idEst;
+    campoIdUsr.value   = btn.dataset.idUsuario;
+    campoNombre.value  = btn.dataset.nombre;
     campoApellidos.value = btn.dataset.apellidos;
-    campoCorreo.value = btn.dataset.correo;
-    campoGrado.value = btn.dataset.grado || "3ro A";
-    campoEstado.value = btn.dataset.estado || "activo";
+    campoCorreo.value  = btn.dataset.correo;
+    campoGrado.value   = btn.dataset.grado || campoGrado.options[0]?.value || "";
+    campoEstado.value  = btn.dataset.estado || "activo";
     limpiarAutocomplete();
+
     if (inputCompCantidad) {
-      inputCompCantidad.value = btn.dataset.compCantidad || "";
+      inputCompCantidad.value    = btn.dataset.compCantidad    || "";
       inputCompRegularidad.value = btn.dataset.compRegularidad || "";
-      inputCompForma.value = btn.dataset.compForma || "";
-      inputCompDatos.value = btn.dataset.compDatos || "";
-      inputProgresoGeneral.value = btn.dataset.progresoGeneral || "";
+      inputCompForma.value       = btn.dataset.compForma       || "";
+      inputCompDatos.value       = btn.dataset.compDatos       || "";
+      _compPares.forEach(([inp, bdg]) => actualizarBadge(inp, bdg));
+      calcularProgresoGeneral();
     }
+
+    // Banners y bloqueo de campos según estado del diagnóstico
+    bannerBloqueado.classList.toggle("hidden",   !diagBloqueado);
+    bannerBloqueado.classList.toggle("flex",      diagBloqueado);
+    bannerSinDiag.classList.toggle("hidden",     !sinDiag || diagBloqueado);
+    bannerSinDiag.classList.toggle("flex",        sinDiag && !diagBloqueado);
+    setDiagReadonly(diagBloqueado);
+
     bloqueEstado.classList.remove("hidden");
     bloquePassword.classList.add("hidden");
     bloqueUsuarioExistente.classList.add("hidden");
@@ -451,7 +681,12 @@
     backdrop.classList.remove("hidden");
   }
 
-  function cerrarModal() { backdrop.classList.add("hidden"); }
+  function cerrarModal() {
+    backdrop.classList.add("hidden");
+    bannerBloqueado.classList.add("hidden");  bannerBloqueado.classList.remove("flex");
+    bannerSinDiag.classList.add("hidden");    bannerSinDiag.classList.remove("flex");
+    setDiagReadonly(false);
+  }
 
   document.getElementById("btn-abrir-modal-nuevo")?.addEventListener("click", abrirModalNuevo);
   document.getElementById("btn-cerrar-modal")?.addEventListener("click", cerrarModal);
@@ -460,6 +695,58 @@
   document.querySelectorAll("[data-accion='editar-estudiante']").forEach((btn) => {
     btn.addEventListener("click", () => abrirModalEditar(btn));
   });
+
+  // ── Selección múltiple y baja masiva ────────────────────────────────────
+  const checkTodos      = document.getElementById("check-todos");
+  const barraSeleccion  = document.getElementById("barra-seleccion");
+  const txtSeleccionados= document.getElementById("txt-seleccionados");
+  const formBaja        = document.getElementById("form-baja-seleccion");
+  const inputBajaTodos  = document.getElementById("input-baja-todos");
+
+  function actualizarBarra() {
+    const checks = document.querySelectorAll(".check-est:checked");
+    const n = checks.length;
+    if (n > 0) {
+      txtSeleccionados.textContent = `${n} estudiante(s) seleccionado(s)`;
+      barraSeleccion.classList.remove("hidden");
+    } else {
+      barraSeleccion.classList.add("hidden");
+    }
+    // sincronizar check-todos
+    const todos = document.querySelectorAll(".check-est");
+    const visibles = [...todos].filter(c => c.closest("tr").style.display !== "none");
+    checkTodos.checked = visibles.length > 0 && visibles.every(c => c.checked);
+    checkTodos.indeterminate = n > 0 && n < visibles.length;
+  }
+
+  checkTodos?.addEventListener("change", () => {
+    const visibles = [...document.querySelectorAll(".check-est")]
+      .filter(c => c.closest("tr").style.display !== "none");
+    visibles.forEach(c => { c.checked = checkTodos.checked; });
+    actualizarBarra();
+  });
+
+  document.querySelectorAll(".check-est").forEach(c => {
+    c.addEventListener("change", actualizarBarra);
+  });
+
+  // Baja de seleccionados
+  document.getElementById("btn-baja-seleccion")?.addEventListener("click", () => {
+    const ids = [...document.querySelectorAll(".check-est:checked")].map(c => c.value);
+    if (!ids.length) return;
+    if (!confirm(`¿Seguro que deseas dar de baja a ${ids.length} estudiante(s) seleccionado(s)?`)) return;
+
+    // Insertar inputs en el form y enviar
+    formBaja.querySelectorAll("input[name='ids[]']").forEach(i => i.remove());
+    ids.forEach(id => {
+      const inp = document.createElement("input");
+      inp.type = "hidden"; inp.name = "ids[]"; inp.value = id;
+      formBaja.appendChild(inp);
+    });
+    inputBajaTodos.value = "0";
+    formBaja.submit();
+  });
+
 
   // ── Autocomplete usuario existente ───────────────────────────────────────
   const USUARIOS_AC = {{ usuarios_estudiantes | tojson }};
@@ -547,7 +834,7 @@
     campoNombre.value = "";
     campoApellidos.value = "";
     campoCorreo.value = "";
-    campoGrado.value = "3ro A";
+    campoGrado.selectedIndex = 0;
   });
 
   document.addEventListener("click", (e) => {

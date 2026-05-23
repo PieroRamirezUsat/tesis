@@ -7,18 +7,15 @@ DEFAULT_AVATAR = (
 )
 
 
-def calcular_progreso(nivel_actual: int, promedio_puntaje: float) -> int:
+def calcular_progreso(nivel_actual: int, promedio_puntaje: float = 0) -> int:
     """
     Calcula el porcentaje de progreso en una competencia.
 
-    nivel_actual     : nivel adaptativo del estudiante (1–7).
-    promedio_puntaje : promedio de puntaje en ejercicios de esa competencia (0–100).
-
-    Fórmula:
-        porcentaje = ((nivel_actual - 1) / 6) * 70   ← peso del nivel  (70 %)
-                   + (promedio_puntaje / 100)  * 30   ← peso del puntaje (30 %)
+    nivel_actual : nivel adaptativo del estudiante (1–7).
+    Meta: nivel 6. Fórmula: (min(nivel, 6) - 1) / 5 × 100
+      nivel 1 → 0 %, nivel 2 → 20 %, …, nivel 6 → 100 %, nivel 7 → 100 %
     """
-    pct = ((nivel_actual - 1) / 6) * 70 + (promedio_puntaje / 100) * 30
+    pct = (min(nivel_actual, 6) - 1) / 5 * 100
     return max(0, min(100, int(round(pct))))
 
 

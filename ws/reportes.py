@@ -115,7 +115,7 @@ def reporte_progreso():
         FROM estudiante e
         JOIN usuarios u             ON u.id_usuario = e.id_usuario
         JOIN estudiante_salones es  ON es.id_estudiante = e.id_estudiante
-        WHERE es.id_salon = %s
+        WHERE es.id_salon = %s AND e.estado_estudiante = 'activo'
         ORDER BY nombre_completo
         """,
         (id_salon_sel,),
@@ -470,7 +470,7 @@ def exportar_pdf():
         FROM estudiante e
         JOIN usuarios u             ON u.id_usuario = e.id_usuario
         JOIN estudiante_salones es  ON es.id_estudiante = e.id_estudiante
-        WHERE es.id_salon = %s
+        WHERE es.id_salon = %s AND e.estado_estudiante = 'activo'
         ORDER BY nombre_completo
         """,
         (id_salon_sel,),

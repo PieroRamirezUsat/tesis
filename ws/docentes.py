@@ -115,9 +115,8 @@ def _metricas_dashboard(id_usuario: int):
 
     # ==========================================================
     # 1) Totales y porcentajes por nivel de desempeño
-    #    Usa la misma fórmula adaptativa que el gráfico y reportes:
-    #    progreso = ((nivel-1)/6)*70 + (puntaje/100)*30
-    #    >=70 → avanzado | 40-69 → en progreso | <40 → necesita ayuda
+    #    progreso = AVG((min(nivel,6)-1)*20) por las 4 competencias
+    #    100% → avanzado | 50-99% → en progreso | <50% → necesita ayuda
     # ==========================================================
     cur.execute(
         """
@@ -129,16 +128,17 @@ def _metricas_dashboard(id_usuario: int):
         FROM (
             SELECT
                 e.id_estudiante,
-                COALESCE(ROUND(AVG(
-                    ((nec.nivel_actual::float - 1) / 6.0) * 70.0 +
-                    (nec.promedio_puntaje / 100.0) * 30.0
-                ))::int, 0) AS progreso
+                COALESCE(
+                    (SELECT ROUND(AVG((LEAST(nec.nivel_actual, 6) - 1) * 20.0))::int
+                     FROM nivel_estudiante_competencia nec
+                     WHERE nec.id_estudiante = e.id_estudiante
+                       AND nec.id_competencia BETWEEN 1 AND 4),
+                    0
+                ) AS progreso
             FROM estudiante e
             JOIN estudiante_salones es ON es.id_estudiante = e.id_estudiante
             JOIN docente_salones ds    ON ds.id_salon      = es.id_salon
-            LEFT JOIN nivel_estudiante_competencia nec ON nec.id_estudiante = e.id_estudiante
-            WHERE ds.id_docente = %s
-            GROUP BY e.id_estudiante
+            WHERE ds.id_docente = %s AND e.estado_estudiante = 'activo'
         ) subq
         """,
         (id_docente,),
@@ -166,14 +166,21 @@ def _metricas_dashboard(id_usuario: int):
     # ==========================================================
     cur.execute(
         """
-        SELECT 
+        SELECT
             s.nombre_salon,
-            COUNT(es.id_estudiante) AS num_estudiantes,
-            COALESCE(ROUND(AVG(e.progreso_general), 0), 0) AS progreso_promedio
+            COUNT(e.id_estudiante) AS num_estudiantes,
+            COALESCE(ROUND(AVG(pq.progreso)), 0)::int AS progreso_promedio
         FROM salones s
         JOIN docente_salones ds ON ds.id_salon = s.id_salon
         LEFT JOIN estudiante_salones es ON es.id_salon = s.id_salon
         LEFT JOIN estudiante e ON e.id_estudiante = es.id_estudiante
+                             AND e.estado_estudiante = 'activo'
+        LEFT JOIN LATERAL (
+            SELECT COALESCE(ROUND(AVG((LEAST(nec.nivel_actual, 6) - 1) * 20.0))::int, 0) AS progreso
+            FROM nivel_estudiante_competencia nec
+            WHERE nec.id_estudiante = e.id_estudiante
+              AND nec.id_competencia BETWEEN 1 AND 4
+        ) pq ON TRUE
         WHERE ds.id_docente = %s
         GROUP BY s.nombre_salon
         ORDER BY progreso_promedio DESC
@@ -203,10 +210,11 @@ def _metricas_dashboard(id_usuario: int):
         FROM puntajes p
         JOIN competencias c ON c.id_competencia = p.id_competencia
         WHERE p.id_estudiante IN (
-            SELECT DISTINCT es.id_estudiante
+            SELECT DISTINCT e.id_estudiante
             FROM docente_salones ds
-            JOIN estudiante_salones es ON es.id_salon = ds.id_salon
-            WHERE ds.id_docente = %s
+            JOIN estudiante_salones es ON es.id_salon      = ds.id_salon
+            JOIN estudiante e          ON e.id_estudiante  = es.id_estudiante
+            WHERE ds.id_docente = %s AND e.estado_estudiante = 'activo'
         )
         GROUP BY c.area
         ORDER BY promedio_pct DESC
@@ -228,57 +236,50 @@ def _metricas_dashboard(id_usuario: int):
         )
 
     # ==========================================================
-    # 4) Estudiantes que requieren atención
-    #    Los 3 con peor promedio en competencias.
-    #    Incluimos id_estudiante e id_salon para enlazar a Reportes.
+    # 4) Estudiantes que requieren atención (progreso < 40)
+    #    Todos los alumnos con bajo rendimiento, sin límite.
     # ==========================================================
     cur.execute(
         """
-        SELECT
-            e.id_estudiante,
-            MIN(es.id_salon)                            AS id_salon,
-            u.nombre,
-            u.apellidos,
-            COALESCE(
-                ROUND(AVG(
-                    ((nec.nivel_actual::float - 1) / 6.0) * 70.0 +
-                    (nec.promedio_puntaje / 100.0) * 30.0
-                ))::int, 0
-            )                                           AS progreso_general,
-            (
-                SELECT c2.area
-                FROM nivel_estudiante_competencia nec2
-                JOIN competencias c2 ON c2.id_competencia = nec2.id_competencia
-                WHERE nec2.id_estudiante = e.id_estudiante
-                ORDER BY (
-                    ((nec2.nivel_actual::float - 1) / 6.0) * 70.0 +
-                    (nec2.promedio_puntaje / 100.0) * 30.0
-                ) ASC
-                LIMIT 1
-            )                                           AS peor_area,
-            (
-                SELECT COALESCE(
-                    ROUND(
-                        ((nec2.nivel_actual::float - 1) / 6.0) * 70.0 +
-                        (nec2.promedio_puntaje / 100.0) * 30.0
-                    )::int, 0)
-                FROM nivel_estudiante_competencia nec2
-                WHERE nec2.id_estudiante = e.id_estudiante
-                ORDER BY (
-                    ((nec2.nivel_actual::float - 1) / 6.0) * 70.0 +
-                    (nec2.promedio_puntaje / 100.0) * 30.0
-                ) ASC
-                LIMIT 1
-            )                                           AS peor_progreso
-        FROM estudiante e
-        JOIN usuarios u ON u.id_usuario = e.id_usuario
-        JOIN estudiante_salones es ON es.id_estudiante = e.id_estudiante
-        JOIN docente_salones ds ON ds.id_salon = es.id_salon
-        LEFT JOIN nivel_estudiante_competencia nec ON nec.id_estudiante = e.id_estudiante
-        WHERE ds.id_docente = %s
-        GROUP BY e.id_estudiante, u.nombre, u.apellidos
+        SELECT id_estudiante, id_salon, nombre, apellidos,
+               progreso_general, peor_area, peor_progreso
+        FROM (
+            SELECT
+                e.id_estudiante,
+                MIN(es.id_salon)                            AS id_salon,
+                u.nombre,
+                u.apellidos,
+                COALESCE(
+                    (SELECT ROUND(AVG((LEAST(nec.nivel_actual, 6) - 1) * 20.0))::int
+                     FROM nivel_estudiante_competencia nec
+                     WHERE nec.id_estudiante = e.id_estudiante
+                       AND nec.id_competencia BETWEEN 1 AND 4),
+                    0
+                )                                           AS progreso_general,
+                (
+                    SELECT c2.area
+                    FROM nivel_estudiante_competencia nec2
+                    JOIN competencias c2 ON c2.id_competencia = nec2.id_competencia
+                    WHERE nec2.id_estudiante = e.id_estudiante
+                    ORDER BY (LEAST(nec2.nivel_actual, 6) - 1) * 20.0 ASC
+                    LIMIT 1
+                )                                           AS peor_area,
+                (
+                    SELECT COALESCE(ROUND((LEAST(nec2.nivel_actual, 6) - 1) * 20.0)::int, 0)
+                    FROM nivel_estudiante_competencia nec2
+                    WHERE nec2.id_estudiante = e.id_estudiante
+                    ORDER BY (LEAST(nec2.nivel_actual, 6) - 1) * 20.0 ASC
+                    LIMIT 1
+                )                                           AS peor_progreso
+            FROM estudiante e
+            JOIN usuarios u ON u.id_usuario = e.id_usuario
+            JOIN estudiante_salones es ON es.id_estudiante = e.id_estudiante
+            JOIN docente_salones ds ON ds.id_salon = es.id_salon
+            WHERE ds.id_docente = %s AND e.estado_estudiante = 'activo'
+            GROUP BY e.id_estudiante, u.nombre, u.apellidos
+        ) sub
+        WHERE progreso_general < 40
         ORDER BY progreso_general ASC
-        LIMIT 3
         """,
         (id_docente,),
     )
@@ -303,20 +304,17 @@ def _metricas_dashboard(id_usuario: int):
 
     # ==========================================================
     # 5) Todos los estudiantes con su progreso (para el gráfico)
-    #    Usa la misma fórmula adaptativa que la página de Reportes:
-    #    porcentaje = ((nivel_actual-1)/6)*70 + (promedio_puntaje/100)*30
+    #    progreso = AVG((min(nivel,6)-1)*20) en las 4 competencias
     # ==========================================================
     cur.execute(
         """
         SELECT
             u.nombre || ' ' || u.apellidos AS nombre_completo,
             COALESCE(
-                ROUND(
-                    AVG(
-                        ((nec.nivel_actual::float - 1) / 6.0) * 70.0 +
-                        (nec.promedio_puntaje / 100.0) * 30.0
-                    )
-                )::int,
+                (SELECT ROUND(AVG((LEAST(nec.nivel_actual, 6) - 1) * 20.0))::int
+                 FROM nivel_estudiante_competencia nec
+                 WHERE nec.id_estudiante = e.id_estudiante
+                   AND nec.id_competencia BETWEEN 1 AND 4),
                 0
             ) AS progreso,
             e.id_estudiante,
@@ -325,9 +323,7 @@ def _metricas_dashboard(id_usuario: int):
         JOIN usuarios u                ON u.id_usuario     = e.id_usuario
         JOIN estudiante_salones es     ON es.id_estudiante = e.id_estudiante
         JOIN docente_salones ds        ON ds.id_salon      = es.id_salon
-        LEFT JOIN nivel_estudiante_competencia nec
-                                       ON nec.id_estudiante = e.id_estudiante
-        WHERE ds.id_docente = %s
+        WHERE ds.id_docente = %s AND e.estado_estudiante = 'activo'
         GROUP BY e.id_estudiante, u.nombre, u.apellidos
         ORDER BY progreso ASC, u.apellidos
         """,
