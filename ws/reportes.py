@@ -294,6 +294,38 @@ def reporte_progreso():
         for r in cur.fetchall()
     ]
 
+    # ======================================================
+    # 7d) Estadísticas de materiales de estudio revisados
+    # ======================================================
+    cur.execute(
+        """
+        SELECT
+            m.titulo,
+            m.tipo,
+            hm.veces_revisado,
+            COALESCE(hm.tiempo_visto, 0) AS tiempo_visto
+        FROM historial_material_estudio hm
+        JOIN material_estudio m ON m.id_material = hm.id_material
+        WHERE hm.id_estudiante = %s
+        ORDER BY hm.veces_revisado DESC, tiempo_visto DESC
+        """,
+        (id_est_sel,),
+    )
+    materiales_stats_rows = cur.fetchall() or []
+    materiales_stats = [
+        {
+            "titulo":        r[0] or "—",
+            "tipo":          r[1] or "link",
+            "vecesRevisado": int(r[2] or 0),
+            "tiempoVisto":   int(r[3] or 0),
+            "tiempoMin":     round(int(r[3] or 0) / 60, 1),
+        }
+        for r in materiales_stats_rows
+    ]
+    total_revisiones_mat  = sum(m["vecesRevisado"] for m in materiales_stats)
+    tiempo_total_mat_min  = round(sum(m["tiempoVisto"] for m in materiales_stats) / 60, 1)
+    materiales_distintos  = len(materiales_stats)
+
     # Foco: ejercicios fallados en la competencia más débil (viene del dashboard)
     foco = request.args.get("foco", "").strip()
     ejercicios_foco = []
@@ -376,6 +408,11 @@ def reporte_progreso():
         foco=foco,
         foco_etiqueta=foco_etiqueta,
         ejercicios_foco=ejercicios_foco,
+        # Estadísticas de materiales de estudio
+        materiales_stats=materiales_stats,
+        total_revisiones_mat=total_revisiones_mat,
+        tiempo_total_mat_min=tiempo_total_mat_min,
+        materiales_distintos=materiales_distintos,
     )
 
 

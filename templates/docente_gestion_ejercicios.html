@@ -65,7 +65,7 @@
 
     <!-- Tabla -->
     <div class="overflow-x-auto">
-      <div style="max-height: 440px; overflow-y: auto;">
+      <div style="min-height: 200px; max-height: 440px; overflow-y: auto;">
       <table class="w-full text-sm text-left">
         <thead class="sticky top-0 z-10 border-b border-gray-100 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-700/90">
           <tr>
@@ -249,6 +249,21 @@
           <p class="text-[11px] text-gray-400">Se muestra al estudiante si falla la primera vez.</p>
         </div>
 
+        <!-- Palabras clave para búsqueda de recursos -->
+        <div class="space-y-1">
+          <label class="text-xs font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1">
+            🔍 Palabras clave para búsqueda de recursos
+          </label>
+          <input type="text" name="palabras_clave" id="rapido-palabras-clave"
+            class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/60 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-400"
+            placeholder="Ej: ecuaciones lineales primer grado, fracciones suma" />
+          <p class="text-[11px] text-gray-400">
+            Cuando el alumno falle dos veces, el tutor buscará <strong>videos en YouTube</strong>,
+            <strong>recursos web</strong> y <strong>PDFs</strong> usando estos términos.
+            Si lo dejas vacío, se usarán términos automáticos por competencia.
+          </p>
+        </div>
+
         <!-- Nivel de logro -->
         <div class="space-y-1">
           <label class="text-xs font-bold text-gray-500 uppercase tracking-wide">Nivel de logro del ejercicio</label>
@@ -344,6 +359,7 @@
     document.getElementById("rapido-descripcion").value = "";
     document.getElementById("rapido-id-competencia").value = "";
     document.getElementById("rapido-pista").value = "";
+    document.getElementById("rapido-palabras-clave").value = "";
     document.getElementById("rapido-nivel-logro").value = "";
     document.querySelectorAll("input[name^='opcion_']").forEach(i => i.value = "");
     document.querySelectorAll("input[name='opcion_correcta']").forEach(r => r.checked = false);
@@ -361,6 +377,7 @@
           document.getElementById("rapido-descripcion").value = data.descripcion || "";
           document.getElementById("rapido-id-competencia").value = data.id_competencia || "";
           document.getElementById("rapido-pista").value = data.pista || "";
+          document.getElementById("rapido-palabras-clave").value = data.palabras_clave || "";
           document.getElementById("rapido-nivel-logro").value = data.nivel_logro || "";
           ["A","B","C","D"].forEach(letra => {
             const input = document.querySelector(`input[name="opcion_${letra}"]`);

@@ -334,20 +334,61 @@ def _metricas_dashboard(id_usuario: int):
         for r in cur.fetchall()
     ]
 
+    # ==========================================================
+    # 6) Materiales de estudio — resumen para mini-card del dashboard
+    #    Total revisiones + alumno más activo revisando materiales
+    # ==========================================================
+    total_mat_revisiones = 0
+    alumno_mas_activo_mat = "—"
+    try:
+        cur.execute(
+            """
+            SELECT
+                COALESCE(SUM(hm.veces_revisado), 0) AS total_revisiones,
+                (
+                    SELECT u2.nombre || ' ' || COALESCE(u2.apellidos, '')
+                    FROM historial_material_estudio hm2
+                    JOIN estudiante e2       ON e2.id_estudiante  = hm2.id_estudiante
+                    JOIN usuarios u2         ON u2.id_usuario     = e2.id_usuario
+                    JOIN estudiante_salones es2 ON es2.id_estudiante = e2.id_estudiante
+                    JOIN docente_salones ds2 ON ds2.id_salon      = es2.id_salon
+                    WHERE ds2.id_docente = %s
+                    GROUP BY e2.id_estudiante, u2.nombre, u2.apellidos
+                    ORDER BY SUM(hm2.veces_revisado) DESC
+                    LIMIT 1
+                ) AS alumno_mas_activo
+            FROM historial_material_estudio hm
+            JOIN estudiante e       ON e.id_estudiante  = hm.id_estudiante
+            JOIN estudiante_salones es ON es.id_estudiante = e.id_estudiante
+            JOIN docente_salones ds ON ds.id_salon      = es.id_salon
+            WHERE ds.id_docente = %s AND e.estado_estudiante = 'activo'
+            """,
+            (id_docente, id_docente),
+        )
+        row_mat = cur.fetchone()
+        if row_mat:
+            total_mat_revisiones = int(row_mat[0] or 0)
+            alumno_mas_activo_mat = (row_mat[1] or "—").strip()
+    except Exception:
+        pass
+
     cur.close()
 
     return {
-        "total_estudiantes": total_estudiantes,
-        "porc_avanzado": porc_avanzado,
-        "porc_en_progreso": porc_en_progreso,
+        "total_estudiantes":   total_estudiantes,
+        "porc_avanzado":       porc_avanzado,
+        "porc_en_progreso":    porc_en_progreso,
         "porc_necesita_ayuda": porc_necesita_ayuda,
-        "salones": salones,
-        "temas": temas,
+        "salones":             salones,
+        "temas":               temas,
         "estudiantes_atencion": estudiantes_atencion,
-        "avanzados": avanzados,
-        "en_progreso": en_progreso,
-        "necesita_ayuda": necesita_ayuda,
-        "estudiantes_chart": estudiantes_chart,
+        "avanzados":           avanzados,
+        "en_progreso":         en_progreso,
+        "necesita_ayuda":      necesita_ayuda,
+        "estudiantes_chart":   estudiantes_chart,
+        # materiales
+        "total_mat_revisiones": total_mat_revisiones,
+        "alumno_mas_activo_mat": alumno_mas_activo_mat,
     }
 
 
@@ -398,6 +439,9 @@ def dashboard():
         estudiantes_chart=met["estudiantes_chart"],
         offset_progreso=offset_progreso,
         offset_ayuda=offset_ayuda,
+        # materiales
+        total_mat_revisiones=met["total_mat_revisiones"],
+        alumno_mas_activo_mat=met["alumno_mas_activo_mat"],
         active_page="dashboard",
     )
 

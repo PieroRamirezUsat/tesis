@@ -137,6 +137,32 @@
       </div>
     </div>
 
+    <!-- Mini-card: Revisión de Materiales -->
+    <div class="relative overflow-hidden rounded-2xl p-5
+                bg-gradient-to-br from-violet-500 to-indigo-600
+                text-white shadow-lg shadow-violet-200/40 dark:shadow-violet-900/30">
+      <div class="pointer-events-none absolute -bottom-5 -right-5 w-24 h-24 rounded-full bg-white/10"></div>
+      <div class="relative z-10 flex items-center justify-between">
+        <div>
+          <p class="text-violet-200 text-[10px] font-bold uppercase tracking-widest mb-0.5">Materiales revisados</p>
+          <p class="text-4xl font-black leading-none tabular-nums">
+            {{ total_mat_revisiones }}<span class="text-xl font-bold text-violet-300"> rev.</span>
+          </p>
+          <p class="text-violet-200 text-xs mt-1.5 font-medium truncate max-w-[140px]"
+             title="{{ alumno_mas_activo_mat }}">
+            {% if alumno_mas_activo_mat != '—' %}
+              Más activo: {{ alumno_mas_activo_mat.split()[0] }}
+            {% else %}
+              Sin revisiones aún
+            {% endif %}
+          </p>
+        </div>
+        <span class="w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+          <span class="material-symbols-outlined text-xl text-white">menu_book</span>
+        </span>
+      </div>
+    </div>
+
   </div>
 </div>
 

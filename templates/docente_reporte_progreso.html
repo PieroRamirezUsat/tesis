@@ -176,7 +176,7 @@
         </p>
       </div>
       <div class="overflow-x-auto">
-        <div style="max-height: 352px; overflow-y: auto;">
+        <div style="min-height: 180px; max-height: 352px; overflow-y: auto;">
         <table class="w-full text-sm text-left">
           <thead class="sticky top-0 z-10 bg-gray-50 dark:bg-gray-700/90">
             <tr class="text-[11px] text-gray-400 uppercase tracking-widest">
@@ -397,6 +397,113 @@
   {% endif %}
 </div>
 
+<!-- ══ SECCIÓN: MATERIALES DE ESTUDIO ══════════════════════════════════════ -->
+<div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden mb-4">
+
+  <!-- Cabecera -->
+  <div class="flex items-center gap-3 px-5 py-4 border-b border-gray-100 dark:border-gray-700">
+    <span class="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shrink-0">
+      <span class="material-symbols-outlined text-white text-lg">menu_book</span>
+    </span>
+    <div>
+      <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-0">Materiales de Estudio</p>
+      <p class="text-xs text-gray-400">Historial de revisión de recursos asignados</p>
+    </div>
+  </div>
+
+  {% if materiales_stats %}
+
+  <!-- 3 Chips de resumen -->
+  <div class="grid grid-cols-3 divide-x divide-gray-100 dark:divide-gray-700 border-b border-gray-100 dark:border-gray-700">
+
+    <div class="flex flex-col items-center justify-center py-4 px-3">
+      <span class="text-3xl font-black text-violet-600 dark:text-violet-400 tabular-nums leading-none">
+        {{ total_revisiones_mat }}
+      </span>
+      <span class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mt-1">Revisiones</span>
+    </div>
+
+    <div class="flex flex-col items-center justify-center py-4 px-3">
+      <span class="text-3xl font-black text-indigo-600 dark:text-indigo-400 tabular-nums leading-none">
+        {{ tiempo_total_mat_min }} <span class="text-lg font-bold text-gray-300">min</span>
+      </span>
+      <span class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mt-1">Tiempo total</span>
+    </div>
+
+    <div class="flex flex-col items-center justify-center py-4 px-3">
+      <span class="text-3xl font-black text-sky-600 dark:text-sky-400 tabular-nums leading-none">
+        {{ materiales_distintos }}
+      </span>
+      <span class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mt-1">Materiales</span>
+    </div>
+
+  </div>
+
+  <!-- Gráfico de barras horizontal -->
+  <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-700">
+    <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-3">Revisiones por material</p>
+    <div class="relative" style="height: {{ [materiales_stats|length * 40, 160]|max }}px; max-height: 320px;">
+      <canvas id="chartMateriales"></canvas>
+    </div>
+  </div>
+
+  <!-- Tabla detallada -->
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-gray-100 dark:border-gray-700">
+          <th class="px-5 py-3 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">Material</th>
+          <th class="px-5 py-3 text-center text-[11px] font-bold text-gray-400 uppercase tracking-widest">Tipo</th>
+          <th class="px-5 py-3 text-center text-[11px] font-bold text-gray-400 uppercase tracking-widest">Revisiones</th>
+          <th class="px-5 py-3 text-center text-[11px] font-bold text-gray-400 uppercase tracking-widest">Tiempo</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-50 dark:divide-gray-700/50">
+        {% for mat in materiales_stats %}
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+          <td class="px-5 py-3">
+            <p class="font-semibold text-gray-800 dark:text-gray-200 text-sm leading-snug">{{ mat.titulo }}</p>
+          </td>
+          <td class="px-5 py-3 text-center">
+            {% if mat.tipo == 'video' %}
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-red-50 text-red-600 border border-red-100">
+                <span class="material-symbols-outlined text-xs">play_circle</span>Video
+              </span>
+            {% else %}
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-sky-50 text-sky-600 border border-sky-100">
+                <span class="material-symbols-outlined text-xs">link</span>Enlace
+              </span>
+            {% endif %}
+          </td>
+          <td class="px-5 py-3 text-center">
+            <span class="inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-black
+              {% if mat.vecesRevisado >= 3 %}bg-violet-100 text-violet-700
+              {% elif mat.vecesRevisado >= 2 %}bg-indigo-100 text-indigo-700
+              {% else %}bg-gray-100 text-gray-600{% endif %}">
+              {{ mat.vecesRevisado }}
+            </span>
+          </td>
+          <td class="px-5 py-3 text-center">
+            <span class="text-sm font-bold text-gray-700 dark:text-gray-300">
+              {% if mat.tiempoMin >= 1 %}{{ mat.tiempoMin }} min{% else %}{{ mat.tiempoVisto }}s{% endif %}
+            </span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% else %}
+  <div class="py-10 text-center">
+    <span class="material-symbols-outlined text-4xl text-gray-200 dark:text-gray-600 block mb-2">auto_stories</span>
+    <p class="text-sm text-gray-400">Este estudiante aún no ha revisado ningún material de estudio.</p>
+  </div>
+  {% endif %}
+
+</div>
+<!-- ══ FIN SECCIÓN MATERIALES ══════════════════════════════════════════════ -->
+
 <script>
   // ── Filtros de historial ──────────────────────────────────────────────────
   function filtrarHistorial(tipo) {
@@ -461,6 +568,68 @@
 <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
 <script>
+  // ── Gráfico horizontal de materiales ─────────────────────────────────────
+  {% if materiales_stats %}
+  (function () {
+    const labels  = {{ materiales_stats | map(attribute='titulo')        | list | tojson }};
+    const valores = {{ materiales_stats | map(attribute='vecesRevisado') | list | tojson }};
+
+    // Colores por frecuencia: ≥3 = violeta, ≥2 = índigo, 1 = cielo
+    const colores = valores.map(v =>
+      v >= 3 ? 'rgba(124,58,237,0.75)'   // violeta
+      : v >= 2 ? 'rgba(99,102,241,0.75)' // índigo
+      : 'rgba(14,165,233,0.65)'          // cielo
+    );
+
+    new Chart(document.getElementById('chartMateriales'), {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Revisiones',
+          data: valores,
+          backgroundColor: colores,
+          borderColor: colores.map(c => c.replace('0.75', '1').replace('0.65', '1')),
+          borderWidth: 1,
+          borderRadius: 6,
+        }]
+      },
+      options: {
+        indexAxis: 'y',              // ← barras horizontales
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => ` ${ctx.parsed.x} revisión${ctx.parsed.x !== 1 ? 'es' : ''}`,
+            }
+          }
+        },
+        scales: {
+          x: {
+            beginAtZero: true,
+            ticks: { stepSize: 1, precision: 0, font: { size: 11 } },
+            grid: { color: 'rgba(0,0,0,0.04)' },
+            title: { display: true, text: 'N.º de revisiones', color: '#9ca3af', font: { size: 11, weight: '600' } }
+          },
+          y: {
+            ticks: {
+              font: { size: 11 },
+              callback: function(val) {
+                // Acortar títulos largos a 35 chars
+                const lbl = this.getLabelForValue(val);
+                return lbl.length > 35 ? lbl.substring(0, 33) + '…' : lbl;
+              }
+            },
+            grid: { display: false }
+          }
+        }
+      }
+    });
+  })();
+  {% endif %}
+
   {% if datos_chart %}
   let miGrafico;
   function resetZoom() { if (miGrafico) miGrafico.resetZoom(); }

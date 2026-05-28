@@ -23,11 +23,20 @@ def allowed_file(filename: str) -> bool:
 
 
 def _migrate_nivel_logro(conn):
-    """Agrega columna nivel_logro a ejercicios si no existe."""
+    """Agrega columnas nivel_logro y palabras_clave a ejercicios si no existen."""
     cur = conn.cursor()
     try:
         cur.execute(
             "ALTER TABLE ejercicios ADD COLUMN IF NOT EXISTS nivel_logro SMALLINT"
+        )
+        cur.execute(
+            "ALTER TABLE ejercicios "
+            "ADD COLUMN IF NOT EXISTS palabras_clave VARCHAR(200)"
+        )
+        cur.execute(
+            "ALTER TABLE material_estudio "
+            "ADD COLUMN IF NOT EXISTS id_ejercicio INTEGER "
+            "REFERENCES ejercicios(id_ejercicio) ON DELETE SET NULL"
         )
         conn.commit()
     except Exception:
@@ -56,7 +65,8 @@ def gestion_ejercicios():
             e.id_competencia,     -- 2
             c.descripcion AS nombre_competencia,  -- 3
             e.imagen_url,         -- 4
-            e.nivel_logro         -- 5
+            e.nivel_logro,        -- 5
+            e.palabras_clave      -- 6
         FROM ejercicios e
         JOIN competencias c ON c.id_competencia = e.id_competencia
         ORDER BY e.id_ejercicio DESC
@@ -66,12 +76,13 @@ def gestion_ejercicios():
 
     ejercicios = [
         {
-            "id_ejercicio": f[0],
-            "descripcion": f[1],
-            "id_competencia": f[2],
-            "nombre_competencia": f[3],
-            "imagen_url": f[4],
-            "nivel_logro": f[5],
+            "id_ejercicio":      f[0],
+            "descripcion":       f[1],
+            "id_competencia":    f[2],
+            "nombre_competencia":f[3],
+            "imagen_url":        f[4],
+            "nivel_logro":       f[5],
+            "palabras_clave":    f[6],
         }
         for f in filas_ej
     ]
@@ -121,9 +132,10 @@ def crear_ejercicio():
         return redirect(url_for("auth.login"))
 
     id_ejercicio_raw = request.form.get("id_ejercicio", "").strip()
-    descripcion = request.form.get("descripcion", "").strip()
+    descripcion    = request.form.get("descripcion", "").strip()
     id_competencia = request.form.get("id_competencia")
-    pista = request.form.get("pista", "").strip()
+    pista          = request.form.get("pista", "").strip()
+    palabras_clave = request.form.get("palabras_clave", "").strip() or None
     nivel_logro_raw = request.form.get("nivel_logro", "").strip()
     nivel_logro = int(nivel_logro_raw) if nivel_logro_raw.isdigit() and 1 <= int(nivel_logro_raw) <= 7 else None
 
@@ -168,23 +180,28 @@ def crear_ejercicio():
             cur.execute(
                 """
                 UPDATE ejercicios
-                SET descripcion = %s,
+                SET descripcion        = %s,
                     respuesta_correcta = %s,
-                    id_competencia = %s,
-                    pista = %s,
-                    nivel_logro = %s
+                    id_competencia     = %s,
+                    pista              = %s,
+                    nivel_logro        = %s,
+                    palabras_clave     = %s
                 WHERE id_ejercicio = %s
                 """,
-                (descripcion, respuesta, id_competencia, pista, nivel_logro, id_ej),
+                (descripcion, respuesta, id_competencia,
+                 pista, nivel_logro, palabras_clave, id_ej),
             )
         else:
             cur.execute(
                 """
-                INSERT INTO ejercicios (descripcion, respuesta_correcta, id_competencia, pista, nivel_logro)
-                VALUES (%s, %s, %s, %s, %s)
+                INSERT INTO ejercicios
+                    (descripcion, respuesta_correcta, id_competencia,
+                     pista, nivel_logro, palabras_clave)
+                VALUES (%s, %s, %s, %s, %s, %s)
                 RETURNING id_ejercicio
                 """,
-                (descripcion, respuesta, id_competencia, pista, nivel_logro),
+                (descripcion, respuesta, id_competencia,
+                 pista, nivel_logro, palabras_clave),
             )
             id_ej = cur.fetchone()[0]
 
@@ -360,7 +377,8 @@ def detalle_ejercicio_json(id_ejercicio):
             id_competencia,
             respuesta_correcta,
             pista,
-            nivel_logro
+            nivel_logro,
+            palabras_clave
         FROM ejercicios
         WHERE id_ejercicio = %s
         """,
@@ -388,13 +406,14 @@ def detalle_ejercicio_json(id_ejercicio):
     opciones = {fila[0]: fila[1] for fila in filas_opt}
 
     data = {
-        "id_ejercicio": ej[0],
-        "descripcion": ej[1],
-        "id_competencia": ej[2],
-        "respuesta_correcta": ej[3],
-        "pista": ej[4],
-        "nivel_logro": ej[5],
-        "opciones": opciones,
+        "id_ejercicio":      ej[0],
+        "descripcion":       ej[1],
+        "id_competencia":    ej[2],
+        "respuesta_correcta":ej[3],
+        "pista":             ej[4],
+        "nivel_logro":       ej[5],
+        "palabras_clave":    ej[6],
+        "opciones":          opciones,
     }
 
     return jsonify(data)
