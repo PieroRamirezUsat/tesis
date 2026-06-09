@@ -504,6 +504,121 @@
 </div>
 <!-- ══ FIN SECCIÓN MATERIALES ══════════════════════════════════════════════ -->
 
+<!-- ══ SECCIÓN: TIEMPO POR DIFICULTAD ══════════════════════════════════════ -->
+<div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden mb-4">
+
+  <!-- Cabecera -->
+  <div class="flex items-center gap-3 px-5 py-4 border-b border-gray-100 dark:border-gray-700">
+    <span class="w-9 h-9 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center shrink-0">
+      <span class="material-symbols-outlined text-white text-lg">timer</span>
+    </span>
+    <div>
+      <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-0">Tiempo por Dificultad</p>
+      <p class="text-xs text-gray-400">Tiempo promedio de respuesta y tasa de acierto según nivel del ejercicio</p>
+    </div>
+  </div>
+
+  {% if tiempo_por_nivel %}
+
+  <!-- Tabla -->
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/60">
+          <th class="px-5 py-3 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest w-8">N°</th>
+          <th class="px-5 py-3 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">Nivel</th>
+          <th class="px-5 py-3 text-center text-[11px] font-bold text-gray-400 uppercase tracking-widest">Tiempo prom.</th>
+          <th class="px-5 py-3 text-center text-[11px] font-bold text-gray-400 uppercase tracking-widest">% Acierto</th>
+          <th class="px-5 py-3 text-center text-[11px] font-bold text-gray-400 uppercase tracking-widest">Respuestas</th>
+          <th class="px-5 py-3 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">Diagnóstico</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-50 dark:divide-gray-700/50">
+        {% for t in tiempo_por_nivel %}
+        {% set badge_color = ['bg-emerald-500', 'bg-blue-500', 'bg-orange-500', 'bg-purple-600'][t.nivel - 1] if t.nivel <= 4 else 'bg-gray-500' %}
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+
+          <!-- Badge nivel -->
+          <td class="px-5 py-3">
+            <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-xs font-black text-white {{ badge_color }}">
+              N{{ t.nivel }}
+            </span>
+          </td>
+
+          <!-- Nombre -->
+          <td class="px-5 py-3">
+            <p class="font-bold text-gray-800 dark:text-gray-200 text-sm">{{ t.nombreNivel }}</p>
+          </td>
+
+          <!-- Tiempo promedio -->
+          <td class="px-5 py-3 text-center">
+            <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-bold
+              bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+              <span class="material-symbols-outlined text-sm text-teal-500">schedule</span>
+              {{ t.promedioFormato }}
+            </span>
+          </td>
+
+          <!-- % Acierto -->
+          <td class="px-5 py-3 text-center">
+            <div class="flex flex-col items-center gap-1">
+              <span class="text-lg font-black tabular-nums
+                {% if t.pctAcierto >= 70 %}text-emerald-600
+                {% elif t.pctAcierto >= 45 %}text-amber-500
+                {% else %}text-red-500{% endif %}">
+                {{ t.pctAcierto }}%
+              </span>
+              <div class="w-16 bg-gray-100 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
+                <div class="h-1.5 rounded-full
+                  {% if t.pctAcierto >= 70 %}bg-emerald-500
+                  {% elif t.pctAcierto >= 45 %}bg-amber-500
+                  {% else %}bg-red-500{% endif %}"
+                  style="width: {{ t.pctAcierto }}%"></div>
+              </div>
+            </div>
+          </td>
+
+          <!-- Total respuestas -->
+          <td class="px-5 py-3 text-center">
+            <span class="inline-flex items-center justify-center w-9 h-9 rounded-full text-sm font-black
+              bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+              {{ t.totalRespuestas }}
+            </span>
+          </td>
+
+          <!-- Diagnóstico pedagógico -->
+          <td class="px-5 py-3">
+            {% if t.pctAcierto >= 70 %}
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                <span class="material-symbols-outlined text-xs">check_circle</span>Domina este nivel
+              </span>
+            {% elif t.pctAcierto >= 45 %}
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                <span class="material-symbols-outlined text-xs">pending</span>En proceso
+              </span>
+            {% else %}
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                <span class="material-symbols-outlined text-xs">warning</span>Necesita refuerzo
+              </span>
+            {% endif %}
+          </td>
+
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% else %}
+  <div class="py-10 text-center">
+    <span class="material-symbols-outlined text-4xl text-gray-200 dark:text-gray-600 block mb-2">timer_off</span>
+    <p class="text-sm text-gray-400">Este estudiante aún no ha registrado respuestas con tiempo medido.</p>
+  </div>
+  {% endif %}
+
+</div>
+<!-- ══ FIN SECCIÓN TIEMPO POR DIFICULTAD ════════════════════════════════════ -->
+
 <script>
   // ── Filtros de historial ──────────────────────────────────────────────────
   function filtrarHistorial(tipo) {

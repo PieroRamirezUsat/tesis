@@ -330,6 +330,56 @@ def reporte_progreso():
     tiempo_total_mat_min  = round(sum(m["tiempoVisto"] for m in materiales_stats) / 60, 1)
     materiales_distintos  = len(materiales_stats)
 
+    # ======================================================
+    # 7e) Tiempo promedio por nivel de dificultad
+    # ======================================================
+    cur.execute(
+        """
+        SELECT
+            e.nivel                                              AS nivel_ejercicio,
+            AVG(r.tiempo_respuesta)                             AS promedio_seg,
+            COUNT(*)                                            AS total_respuestas,
+            AVG(CASE WHEN op.es_correcta THEN 1.0 ELSE 0.0 END) AS tasa_acierto
+        FROM respuestas_estudiantes r
+        JOIN ejercicios e          ON e.id_ejercicio = r.id_ejercicio
+        JOIN opciones_ejercicio op ON op.id_opcion   = r.id_opcion
+        WHERE r.id_estudiante    = %s
+          AND r.tiempo_respuesta IS NOT NULL
+          AND r.tiempo_respuesta > 0
+        GROUP BY e.nivel
+        ORDER BY e.nivel
+        """,
+        (id_est_sel,),
+    )
+
+    _NOMBRES_NIVEL = {1: "Fácil", 2: "Básico", 3: "Intermedio", 4: "Avanzado"}
+
+    def _fmt_seg(seg):
+        if not seg or seg < 0:
+            return "—"
+        s = int(round(float(seg)))
+        m = s // 60
+        s = s % 60
+        if m >= 60:
+            return f"{m//60}h {m%60}m"
+        return f"{m}m {s}s" if m else f"{s}s"
+
+    tiempo_por_nivel = []
+    for row in cur.fetchall():
+        nivel  = int(row[0] or 0)
+        prom   = float(row[1] or 0)
+        total  = int(row[2] or 0)
+        tasa   = float(row[3] or 0)
+        tiempo_por_nivel.append({
+            "nivel":          nivel,
+            "nombreNivel":    _NOMBRES_NIVEL.get(nivel, f"N{nivel}"),
+            "promedioSeg":    round(prom, 1),
+            "promedioFormato": _fmt_seg(prom),
+            "totalRespuestas": total,
+            "tasaAcierto":    round(tasa, 3),
+            "pctAcierto":     int(round(tasa * 100)),
+        })
+
     # Foco: ejercicios fallados en la competencia más débil (viene del dashboard)
     foco = request.args.get("foco", "").strip()
     ejercicios_foco = []
@@ -417,6 +467,8 @@ def reporte_progreso():
         total_revisiones_mat=total_revisiones_mat,
         tiempo_total_mat_min=tiempo_total_mat_min,
         materiales_distintos=materiales_distintos,
+        # Tiempo por nivel de dificultad
+        tiempo_por_nivel=tiempo_por_nivel,
     )
 
 
