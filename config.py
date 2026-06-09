@@ -1,10 +1,12 @@
 import os
+from dotenv import load_dotenv
+
+# Cargar variables del archivo .env automáticamente
+load_dotenv()
 
 class Config:
-    # ============================
-    #  🔐 Clave de sesión de Flask
-    # ============================
-    SECRET_KEY = os.environ.get("SECRET_KEY", "dev-key")
+    SECRET_KEY   = os.environ.get("SECRET_KEY", "dev-key")
+    DATABASE_URL = os.environ.get("DATABASE_URL")
 
     # ===========================================
     #  🔗 Cadena de conexión a la base de datos
