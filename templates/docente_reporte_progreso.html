@@ -285,12 +285,159 @@
                 style="width: {{ porcentaje }}%;"></div>
             </div>
           </div>
+
+          {# ── Nivel MINEDU oficial ─────────────────────────────────────── #}
+          {% if competencias_nec and area in competencias_nec %}
+            {% set cnec = competencias_nec[area] %}
+            <div class="flex items-center justify-between pt-1 border-t border-gray-100 dark:border-gray-700/60">
+              <span class="text-[10px] text-gray-400 dark:text-gray-500">
+                STI: <span class="font-semibold text-gray-500 dark:text-gray-400">{{ cnec.nombre_sti }}</span>
+              </span>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full
+                {% if cnec.nivel_minedu == 'Destacado' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300
+                {% elif cnec.nivel_minedu == 'Logrado' %}bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300
+                {% elif cnec.nivel_minedu == 'En proceso' %}bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300
+                {% elif cnec.nivel_minedu == 'En inicio' %}bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300
+                {% else %}bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300{% endif %}">
+                {{ cnec.nivel_minedu }}
+              </span>
+            </div>
+          {% endif %}
         </div>
       {% endfor %}
     {% else %}
       <p class="text-sm text-gray-400 col-span-4 py-4 text-center">Aún no hay datos de progreso por competencia.</p>
     {% endif %}
   </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     OE4: DIAGNÓSTICO INICIAL vs. ESTADO ACTUAL
+     Compara el score asignado por el docente al inicio con el nivel
+     adaptativo actual del alumno para evidenciar la mejora (o no).
+═══════════════════════════════════════════════════════════════════ -->
+<div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-5 mb-4">
+  <div class="flex items-center gap-2 mb-1">
+    <span class="w-7 h-7 rounded-lg bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center shrink-0">
+      <span class="material-symbols-outlined text-violet-600 dark:text-violet-400 text-sm">compare_arrows</span>
+    </span>
+    <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Efectividad del Sistema</p>
+  </div>
+  <p class="text-xs text-gray-400 dark:text-gray-500 mb-4 ml-9">Diagnóstico inicial del docente vs. nivel adaptativo actual — evidencia de mejora por competencia.</p>
+
+  {% if diagnostico_vs_actual %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-xs">
+      <thead>
+        <tr class="border-b border-gray-100 dark:border-gray-700">
+          <th class="text-left py-2 px-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Competencia</th>
+          <th class="text-center py-2 px-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Diagnóstico inicial</th>
+          <th class="text-center py-2 px-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider"></th>
+          <th class="text-center py-2 px-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Estado actual</th>
+          <th class="text-center py-2 px-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Variación</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-50 dark:divide-gray-700/50">
+        {% for d in diagnostico_vs_actual %}
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+
+          {# Nombre de competencia #}
+          <td class="py-3 px-3 font-semibold text-gray-700 dark:text-gray-300 min-w-[130px]">{{ d.etiqueta }}</td>
+
+          {# Diagnóstico inicial #}
+          <td class="py-3 px-3 text-center">
+            {% if d.sin_diag %}
+              <span class="text-gray-300 dark:text-gray-600 italic">Sin diagnóstico</span>
+            {% else %}
+              <div class="flex flex-col items-center gap-1">
+                <span class="text-base font-black tabular-nums text-gray-500 dark:text-gray-400">{{ d.score_diag | int }}</span>
+                <span class="text-[10px] px-2 py-0.5 rounded-full font-semibold
+                  {% if d.minedu_diag == 'Destacado' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300
+                  {% elif d.minedu_diag == 'Logrado' %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300
+                  {% elif d.minedu_diag == 'En proceso' %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300
+                  {% elif d.minedu_diag == 'En inicio' %}bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300
+                  {% else %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300{% endif %}">
+                  {{ d.minedu_diag }}
+                </span>
+              </div>
+            {% endif %}
+          </td>
+
+          {# Flecha central #}
+          <td class="py-3 px-2 text-center">
+            {% if not d.sin_diag %}
+              <span class="material-symbols-outlined text-gray-300 dark:text-gray-600 text-base">arrow_forward</span>
+            {% endif %}
+          </td>
+
+          {# Estado actual #}
+          <td class="py-3 px-3 text-center">
+            <div class="flex flex-col items-center gap-1">
+              <span class="text-base font-black tabular-nums
+                {% if d.minedu_actual == 'Destacado' %}text-emerald-600
+                {% elif d.minedu_actual == 'Logrado' %}text-blue-600
+                {% elif d.minedu_actual == 'En proceso' %}text-amber-500
+                {% elif d.minedu_actual == 'En inicio' %}text-orange-500
+                {% else %}text-red-500{% endif %}">
+                {{ d.score_actual | int }}
+              </span>
+              <span class="text-[10px] px-2 py-0.5 rounded-full font-semibold
+                {% if d.minedu_actual == 'Destacado' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300
+                {% elif d.minedu_actual == 'Logrado' %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300
+                {% elif d.minedu_actual == 'En proceso' %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300
+                {% elif d.minedu_actual == 'En inicio' %}bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300
+                {% else %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300{% endif %}">
+                {{ d.minedu_actual }}
+              </span>
+            </div>
+          </td>
+
+          {# Variación (delta) #}
+          <td class="py-3 px-3 text-center">
+            {% if d.sin_diag %}
+              <span class="text-gray-300 dark:text-gray-600">—</span>
+            {% elif d.delta_score == 0 %}
+              <span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[11px] font-bold bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400">
+                <span class="material-symbols-outlined text-[13px]">remove</span>Sin cambio
+              </span>
+            {% elif d.mejoro %}
+              <span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                <span class="material-symbols-outlined text-[13px]">trending_up</span>+{{ d.delta_score | int }}
+              </span>
+            {% else %}
+              <span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[11px] font-bold bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-300">
+                <span class="material-symbols-outlined text-[13px]">trending_down</span>{{ d.delta_score | int }}
+              </span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {# Resumen de mejora general #}
+  {% set con_diag = diagnostico_vs_actual | selectattr('sin_diag', 'equalto', false) | list %}
+  {% if con_diag %}
+    {% set mejorados = con_diag | selectattr('mejoro', 'equalto', true) | list %}
+    <div class="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700/60 flex items-center gap-2">
+      <span class="material-symbols-outlined text-sm
+        {% if mejorados | length == con_diag | length %}text-emerald-500
+        {% elif mejorados | length > 0 %}text-amber-500
+        {% else %}text-red-400{% endif %}">
+        {% if mejorados | length == con_diag | length %}verified
+        {% elif mejorados | length > 0 %}trending_up
+        {% else %}trending_down{% endif %}
+      </span>
+      <p class="text-xs text-gray-500 dark:text-gray-400">
+        <strong>{{ mejorados | length }} de {{ con_diag | length }}</strong> competencias con diagnóstico muestran mejora respecto al punto de partida.
+      </p>
+    </div>
+  {% endif %}
+
+  {% else %}
+    <p class="text-sm text-gray-400 text-center py-4">Aún no hay datos para comparar.</p>
+  {% endif %}
 </div>
 
 <!-- HISTORIAL DE ACTIVIDADES -->

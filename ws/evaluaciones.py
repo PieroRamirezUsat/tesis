@@ -431,13 +431,10 @@ def cerrar_evaluacion(id_evaluacion):
             """,
             (id_est, id_comp, nivel, float(puntaje), total),
         )
-        cur.execute(
-            """
-            INSERT INTO puntajes (puntaje, id_competencia, id_estudiante)
-            VALUES (%s, %s, %s)
-            """,
-            (puntaje, id_comp, id_est),
-        )
+        # NOTA: puntajes NO recibe el score de evaluación porque usa escala
+        # continua 0-100 (% correcto por competencia), mientras que el historial
+        # de práctica es binario 0/100. Mezclarlos sesga los features ML
+        # (AVG, tasa_aprobados, etc.).  La evaluación es MEDICIÓN, no entrenamiento.
 
     conn.commit()
     cur.close()

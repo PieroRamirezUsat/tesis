@@ -206,11 +206,11 @@ def crear_tema():
     cur = conn.cursor()
     cur.execute(
         """
-        INSERT INTO competencias (descripcion, area)
-        VALUES (%s, %s)
+        INSERT INTO competencias (descripcion, area, nivel)
+        VALUES (%s, %s, %s)
         RETURNING id_competencia
         """,
-        (descripcion, titulo),
+        (descripcion, titulo, 1),   # nivel=1 (Fácil) por defecto; editable después
     )
     nuevo_id = cur.fetchone()[0]
     conn.commit()

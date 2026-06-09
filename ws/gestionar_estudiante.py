@@ -395,7 +395,8 @@ def crear_estudiante():
 
 @bp_docentes.route("/estudiantes/<int:id_estudiante>/editar", methods=["POST"])
 def editar_estudiante(id_estudiante):
-    if "user_id" not in session or session.get("user_rol") != "docente":
+    id_docente = _obtener_id_docente_desde_sesion()
+    if id_docente is None:
         return redirect(url_for("auth.login"))
 
     id_usuario = request.form.get("id_usuario", type=int)
@@ -434,6 +435,20 @@ def editar_estudiante(id_estudiante):
 
     conn = get_db()
     cur = conn.cursor()
+
+    # Verificar que el estudiante pertenece a un salón de ESTE docente
+    cur.execute(
+        """
+        SELECT 1 FROM estudiante_salones es
+        JOIN docente_salones ds ON ds.id_salon = es.id_salon
+        WHERE es.id_estudiante = %s AND ds.id_docente = %s
+        """,
+        (id_estudiante, id_docente),
+    )
+    if not cur.fetchone():
+        cur.close()
+        flash("No tienes permiso para editar a este estudiante.", "danger")
+        return redirect(url_for("docentes.gestion_estudiantes"))
 
     # Validar correo único
     cur.execute(
@@ -500,7 +515,11 @@ def editar_estudiante(id_estudiante):
              id_estudiante),
         )
 
-        # Sincronizar → NEC y puntajes diagnóstico
+        # Sincronizar → NEC diagnóstico
+        # NOTA: puntajes NO recibe el score del diagnóstico porque usa escala
+        # continua 0-100 (docente), mientras que todo el historial de práctica
+        # es binario 0/100.  El nivel inicial queda registrado en NEC, que es
+        # la fuente autoritativa que lee leer_nec() en el módulo tutor.
         comp_map = [
             (1, comp_cantidad),
             (2, comp_regularidad),
@@ -523,14 +542,6 @@ def editar_estudiante(id_estudiante):
                 """,
                 (id_estudiante, id_comp, nivel_actual, float(s)),
             )
-            if score is not None:
-                cur.execute(
-                    """
-                    INSERT INTO puntajes (puntaje, id_competencia, id_estudiante)
-                    VALUES (%s, %s, %s)
-                    """,
-                    (score, id_comp, id_estudiante),
-                )
         flash("Estudiante actualizado correctamente.", "success")
 
     # Contraseña (siempre permitida)
@@ -548,11 +559,27 @@ def editar_estudiante(id_estudiante):
 
 @bp_docentes.route("/estudiantes/<int:id_estudiante>/baja", methods=["POST"])
 def baja_estudiante(id_estudiante):
-    if "user_id" not in session or session.get("user_rol") != "docente":
+    id_docente = _obtener_id_docente_desde_sesion()
+    if id_docente is None:
         return redirect(url_for("auth.login"))
 
     conn = get_db()
     cur = conn.cursor()
+
+    # Verificar que el estudiante pertenece a un salón de ESTE docente
+    cur.execute(
+        """
+        SELECT 1 FROM estudiante_salones es
+        JOIN docente_salones ds ON ds.id_salon = es.id_salon
+        WHERE es.id_estudiante = %s AND ds.id_docente = %s
+        """,
+        (id_estudiante, id_docente),
+    )
+    if not cur.fetchone():
+        cur.close()
+        flash("No tienes permiso para dar de baja a este estudiante.", "danger")
+        return redirect(url_for("docentes.gestion_estudiantes"))
+
     cur.execute(
         "UPDATE estudiante SET estado_estudiante = 'inactivo' WHERE id_estudiante = %s",
         (id_estudiante,),
@@ -622,7 +649,8 @@ def baja_seleccion_estudiantes():
 
 @bp_docentes.route("/estudiantes/<int:id_estudiante>/foto", methods=["POST"])
 def subir_foto_estudiante(id_estudiante):
-    if "user_id" not in session or session.get("user_rol") != "docente":
+    id_docente = _obtener_id_docente_desde_sesion()
+    if id_docente is None:
         return redirect(url_for("auth.login"))
 
     foto = request.files.get("foto_estudiante")
@@ -637,6 +665,21 @@ def subir_foto_estudiante(id_estudiante):
 
     conn = get_db()
     cur = conn.cursor()
+
+    # Verificar que el estudiante pertenece a un salón de ESTE docente
+    cur.execute(
+        """
+        SELECT 1 FROM estudiante_salones es
+        JOIN docente_salones ds ON ds.id_salon = es.id_salon
+        WHERE es.id_estudiante = %s AND ds.id_docente = %s
+        """,
+        (id_estudiante, id_docente),
+    )
+    if not cur.fetchone():
+        cur.close()
+        flash("No tienes permiso para modificar a este estudiante.", "danger")
+        return redirect(url_for("docentes.gestion_estudiantes"))
+
     cur.execute(
         "SELECT e.id_estudiante, u.id_usuario FROM estudiante e JOIN usuarios u ON u.id_usuario = e.id_usuario WHERE e.id_estudiante = %s",
         (id_estudiante,),

@@ -10,6 +10,7 @@ from flask import (
 from db import get_db
 from config import Config
 from werkzeug.security import generate_password_hash, check_password_hash
+from extensions import limiter
 import secrets
 import smtplib
 import ssl
@@ -20,6 +21,7 @@ bp_auth = Blueprint("auth", __name__)
 
 # ============== LOGIN ==============
 @bp_auth.route("/login", methods=["GET", "POST"])
+@limiter.limit("5 per minute", methods=["POST"])   # ← máx. 5 intentos/min por IP
 def login():
     if request.method == "POST":
         correo = request.form.get("correo", "").strip()
@@ -91,6 +93,7 @@ def logout():
 
 # ============== REGISTRO DOCENTE ==============
 @bp_auth.route("/register", methods=["GET", "POST"])
+@limiter.limit("10 per hour", methods=["POST"])    # ← máx. 10 registros/hora por IP
 def register():
     if request.method == "POST":
         nombre           = request.form.get("nombre", "").strip()
@@ -172,6 +175,7 @@ def register():
 
 # ============== OLVIDÉ MI CONTRASEÑA ==============
 @bp_auth.route("/forgot-password", methods=["GET", "POST"])
+@limiter.limit("3 per 10 minutes", methods=["POST"])  # ← máx. 3 correos/10 min por IP
 def forgot_password():
     if request.method == "POST":
         correo = request.form.get("correo", "").strip()
@@ -202,19 +206,10 @@ def forgot_password():
         # Generar nueva contraseña temporal (texto plano solo para el correo)
         nueva_contra_plana = secrets.token_urlsafe(8)
 
-        # 🔐 Encriptar para guardar en BD
-        hash_contra = generate_password_hash(nueva_contra_plana)
-
-        cur.execute(
-            "UPDATE usuarios SET contrasena = %s WHERE id_usuario = %s",
-            (hash_contra, id_usuario),
-        )
-        conn.commit()
-        cur.close()
-
-        # Enviar correo
+        # 🔐 Construir el correo ANTES de tocar la BD.
+        #    Si el envío falla, la contraseña del usuario NO cambia.
         msg = EmailMessage()
-        msg["Subject"] = "Recuperación de contraseña - Sistema de Álgebra"
+        msg["Subject"] = "Recuperación de contraseña - TutorMath"
         msg["From"] = Config.MAIL_DEFAULT_SENDER
         msg["To"] = correo_db
 
@@ -222,16 +217,25 @@ def forgot_password():
             f"""
 Hola {nombre} {apellidos},
 
-Se ha generado una nueva contraseña temporal para tu cuenta:
+Se ha generado una nueva contraseña temporal para tu cuenta en TutorMath:
 
     {nueva_contra_plana}
 
-Te recomendamos iniciar sesión y cambiarla lo antes posible.
+Te recomendamos iniciar sesión y cambiarla lo antes posible en tu perfil.
 
 Saludos,
-Sistema de Álgebra Inteligente
+Sistema Tutor Adaptativo de Álgebra
 """
         )
+
+        # Intentar enviar primero; solo si el correo sale bien actualizamos la BD
+        if not Config.MAIL_USERNAME or not Config.MAIL_PASSWORD:
+            cur.close()
+            flash(
+                "El sistema de correo no está configurado. Contacta al administrador.",
+                "danger",
+            )
+            return render_template("forgot_password.html")
 
         context = ssl.create_default_context()
         try:
@@ -240,17 +244,29 @@ Sistema de Álgebra Inteligente
             ) as server:
                 server.login(Config.MAIL_USERNAME, Config.MAIL_PASSWORD)
                 server.send_message(msg)
-            flash(
-                "Se ha enviado una nueva contraseña a tu correo electrónico.",
-                "success",
-            )
         except Exception as e:
             print("Error enviando correo de recuperación:", e)
+            cur.close()
             flash(
-                "Se actualizó la contraseña, pero hubo un error al enviar el correo.",
-                "warning",
+                "No se pudo enviar el correo de recuperación. "
+                "Verifica tu dirección o intenta más tarde.",
+                "danger",
             )
+            return render_template("forgot_password.html")
 
+        # El correo salió OK → ahora sí actualizamos la contraseña
+        hash_contra = generate_password_hash(nueva_contra_plana)
+        cur.execute(
+            "UPDATE usuarios SET contrasena = %s WHERE id_usuario = %s",
+            (hash_contra, id_usuario),
+        )
+        conn.commit()
+        cur.close()
+
+        flash(
+            "Se ha enviado una nueva contraseña a tu correo electrónico.",
+            "success",
+        )
         return redirect(url_for("auth.login"))
 
     # GET

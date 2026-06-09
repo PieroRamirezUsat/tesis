@@ -5,7 +5,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Config:
-    SECRET_KEY = os.environ.get("SECRET_KEY", "dev-key")
+    # ⚠️  Producción (Railway): define SECRET_KEY como variable de entorno con
+    #     un valor largo y aleatorio. El default solo sirve para desarrollo local.
+    SECRET_KEY = os.environ.get("SECRET_KEY", "dev-only-change-in-production-tutormath2026")
 
     # ── Base de datos ───────────────────────────────────────────────
     # Railway y Render inyectan DATABASE_URL automáticamente.
@@ -64,8 +66,12 @@ class Config:
     # ============================
     #  📧 Configuración de correo
     # ============================
+    # ⚠️  NUNCA pongas credenciales reales aquí (pueden quedar en Git).
+    #     Defínelas en .env (local) o como variables de entorno en Railway.
+    #     MAIL_PASSWORD debe ser un App Password de Gmail (no la contraseña
+    #     principal). Generarlo en: myaccount.google.com → Seguridad → App passwords.
     MAIL_SERVER = "smtp.gmail.com"
     MAIL_PORT = 465
-    MAIL_USERNAME = os.environ.get("MAIL_USERNAME", "ww.sco.lol@gmail.com")
-    MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD", "hgzm kujp blfu sczr")
+    MAIL_USERNAME = os.environ.get("MAIL_USERNAME", "")
+    MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD", "")
     MAIL_DEFAULT_SENDER = MAIL_USERNAME

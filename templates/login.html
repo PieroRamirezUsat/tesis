@@ -231,6 +231,7 @@
 
         <!-- Formulario -->
         <form method="POST" action="{{ url_for('auth.login') }}" class="space-y-4">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
           <!-- Correo -->
           <div>
@@ -277,13 +278,6 @@
               </button>
             </div>
           </div>
-
-          <!-- Recordar sesión -->
-          <label class="flex items-center gap-2.5 cursor-pointer select-none">
-            <input type="checkbox" name="remember"
-                   class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-400 focus:ring-offset-0"/>
-            <span class="text-sm text-slate-600 font-medium">Recordar sesión</span>
-          </label>
 
           <!-- Botón submit -->
           <button type="submit"

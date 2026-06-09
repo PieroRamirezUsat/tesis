@@ -102,7 +102,6 @@ def reporte_progreso():
             progreso_general=0,
             progreso_competencias={},
             historial=[],
-            valores_heatmap=[0] * 28,
         )
 
     # 2) Salón seleccionado
@@ -145,7 +144,6 @@ def reporte_progreso():
             progreso_general=0,
             progreso_competencias={},
             historial=[],
-            valores_heatmap=[0] * 28,
         )
 
     # 4) Estudiante seleccionado – validamos que pertenezca al salón del docente
@@ -188,12 +186,33 @@ def reporte_progreso():
         (id_est_sel,),
     )
 
+    # Mapeo nivel interno (1-7) → nivel MINEDU oficial (EBR)
+    _MINEDU_NIVEL = {
+        1: "Previo al inicio",
+        2: "En inicio",
+        3: "En proceso",
+        4: "En proceso",
+        5: "Logrado",
+        6: "Logrado",
+        7: "Destacado",
+    }
+    _NOMBRE_NIVEL_STI = {
+        1: "Iniciando", 2: "Básico",    3: "En progreso", 4: "Intermedio",
+        5: "Avanzado",  6: "Experto",   7: "Maestro",
+    }
+
     progreso_competencias = {}
+    competencias_nec      = {}          # {area: {nivel, nombre_sti, nivel_minedu}}
     for fila in cur.fetchall():
         area    = fila[0]
         nivel   = int(fila[1])
         puntaje = float(fila[2])
         progreso_competencias[area] = calcular_progreso(nivel, puntaje)
+        competencias_nec[area] = {
+            "nivel":        nivel,
+            "nombre_sti":   _NOMBRE_NIVEL_STI.get(nivel, f"Nivel {nivel}"),
+            "nivel_minedu": _MINEDU_NIVEL.get(nivel, "Previo al inicio"),
+        }
 
     progreso_general = (
         int(round(sum(progreso_competencias.values()) / len(progreso_competencias)))
@@ -435,6 +454,84 @@ def reporte_progreso():
         except Exception:
             cur.execute("ROLLBACK")
 
+    # ======================================================
+    # OE4) Diagnóstico inicial vs. Estado actual
+    #      Fuente diagnóstico : tabla estudiante (score 0-100 del docente)
+    #      Fuente actual      : nivel_estudiante_competencia (score adaptativo)
+    # ======================================================
+    cur.execute(
+        """
+        SELECT
+            c.id_competencia,
+            c.area,
+            CASE c.id_competencia
+                WHEN 1 THEN est.cantidad
+                WHEN 2 THEN est.regularidad_equivalencia_cambio
+                WHEN 3 THEN est.forma_movimiento_localizacion
+                WHEN 4 THEN est.gestion_datos_incertidumbre
+            END::float                                    AS score_diag,
+            COALESCE(nec.nivel_actual, 1)::int            AS nivel_actual,
+            COALESCE(nec.promedio_puntaje, 0)::float      AS score_actual
+        FROM competencias c
+        JOIN estudiante est ON est.id_estudiante = %s
+        LEFT JOIN nivel_estudiante_competencia nec
+            ON nec.id_estudiante  = %s
+           AND nec.id_competencia = c.id_competencia
+        WHERE c.id_competencia BETWEEN 1 AND 4
+        ORDER BY c.id_competencia
+        """,
+        (id_est_sel, id_est_sel),
+    )
+
+    def _score_to_nivel_local(s):
+        """Misma lógica que scoring.py SCORE_BRACKETS."""
+        s = float(s or 0)
+        if s <= 21: return 1
+        if s <= 35: return 2
+        if s <= 49: return 3
+        if s <= 64: return 4
+        if s <= 78: return 5
+        if s <= 92: return 6
+        return 7
+
+    _COMP_ETIQUETA_CORTA = {
+        "cantidad":                        "Cantidad",
+        "regularidad_equivalencia_cambio": "Regularidad y cambio",
+        "forma_movimiento_localizacion":   "Forma y movimiento",
+        "gestion_datos_incertidumbre":     "Gestión de datos",
+    }
+
+    diagnostico_vs_actual = []
+    for row in cur.fetchall():
+        area        = row[1]
+        score_diag  = float(row[2]) if row[2] is not None else None
+        nivel_act   = int(row[3])
+        score_act   = float(row[4])
+
+        sin_diag = score_diag is None
+        if not sin_diag:
+            nivel_diag   = _score_to_nivel_local(score_diag)
+            delta_score  = round(score_act - score_diag, 1)
+        else:
+            nivel_diag  = None
+            delta_score = None
+
+        diagnostico_vs_actual.append({
+            "area":          area,
+            "etiqueta":      _COMP_ETIQUETA_CORTA.get(area, area),
+            "score_diag":    round(score_diag, 1) if score_diag is not None else None,
+            "nivel_diag":    nivel_diag,
+            "nombre_diag":   _NOMBRE_NIVEL_STI.get(nivel_diag, "—") if nivel_diag else "—",
+            "minedu_diag":   _MINEDU_NIVEL.get(nivel_diag, "—")     if nivel_diag else "—",
+            "score_actual":  round(score_act, 1),
+            "nivel_actual":  nivel_act,
+            "nombre_actual": _NOMBRE_NIVEL_STI.get(nivel_act, "—"),
+            "minedu_actual": _MINEDU_NIVEL.get(nivel_act, "—"),
+            "delta_score":   delta_score,
+            "mejoro":        (delta_score > 0)  if delta_score is not None else None,
+            "sin_diag":      sin_diag,
+        })
+
     cur.close()
 
     from datetime import datetime as _dt
@@ -469,6 +566,10 @@ def reporte_progreso():
         materiales_distintos=materiales_distintos,
         # Tiempo por nivel de dificultad
         tiempo_por_nivel=tiempo_por_nivel,
+        # Nivel NEC + equivalencia MINEDU por competencia (para OE2)
+        competencias_nec=competencias_nec,
+        # Diagnóstico inicial vs. estado actual (para OE4)
+        diagnostico_vs_actual=diagnostico_vs_actual,
     )
 
 
