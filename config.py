@@ -5,14 +5,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Config:
-    SECRET_KEY   = os.environ.get("SECRET_KEY", "dev-key")
-    DATABASE_URL = os.environ.get("DATABASE_URL")
+    SECRET_KEY = os.environ.get("SECRET_KEY", "dev-key")
 
-    # ===========================================
-    #  🔗 Cadena de conexión a la base de datos
-    #  En local usa el valor por defecto.
-    #  En Render usa la variable DATABASE_URL
-    # ===========================================
+    # ── Base de datos ───────────────────────────────────────────────
+    # Railway y Render inyectan DATABASE_URL automáticamente.
+    # En local usa el valor por defecto si no hay .env configurado.
     DATABASE_URL = os.environ.get(
         "DATABASE_URL",
         "postgresql://postgres:hola1@localhost:5432/bd_ejemplo"
