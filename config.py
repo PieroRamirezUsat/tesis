@@ -44,6 +44,14 @@ class Config:
     )
 
     # ====================================================
+    #  🔗 URL base de la API REST (para imágenes cross-servicio en Railway)
+    #  En local no hace falta si los archivos están accesibles por filesystem.
+    #  En Railway, ponla con el dominio público de la API, ej:
+    #  https://api-tesis-production.up.railway.app
+    # ====================================================
+    API_BASE_URL = os.environ.get("API_BASE_URL", "")
+
+    # ====================================================
     #  📱 URL de descarga del APK de la app móvil
     #  Cámbiala por el enlace real de GitHub Releases u
     #  otro servidor cuando subas el APK.

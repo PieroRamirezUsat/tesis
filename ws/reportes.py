@@ -12,32 +12,36 @@ from ws.utils import calcular_progreso, url_foto_usuario
 
 def _resolver_imagen(app, desarrollo_url: str) -> str | None:
     """
-    Devuelve la ruta absoluta de la imagen de desarrollo buscando en:
-    1. static/desarrollos_alumno/ del proyecto web (por si se copia allí)
-    2. La carpeta configurada en DESARROLLOS_ALUMNO_PATH (proyecto API externo)
-    Retorna None si no se encuentra en ningún lugar.
+    Devuelve la ubicación de la imagen de desarrollo:
+      - Ruta absoluta (str)  → si se encuentra en el sistema de archivos local.
+      - URL HTTP (str)       → si la API está configurada (Railway: servicios separados).
+      - None                 → no encontrada.
+
+    Orden de búsqueda:
+      1. static/desarrollos_alumno/ del propio proyecto web.
+      2. Carpeta DESARROLLOS_ALUMNO_PATH (acceso local, útil en Windows dev).
+      3. API_BASE_URL/desarrollos/imagen/<filename> (Railway / producción).
     """
     if not desarrollo_url:
         return None
 
-    # Extraer solo el nombre de archivo de la URL
     filename = os.path.basename(desarrollo_url.replace("\\", "/"))
     if not filename:
         return None
 
-    lugares = [
-        # Carpeta local del proyecto web
+    # ── Búsqueda local ────────────────────────────────────────────
+    lugares_locales = [
         os.path.join(app.root_path, "static", "desarrollos_alumno", filename),
-        # Carpeta externa configurada (API_RESTFUL u otro proyecto)
-        os.path.join(
-            app.config.get("DESARROLLOS_ALUMNO_PATH", ""),
-            filename
-        ),
+        os.path.join(app.config.get("DESARROLLOS_ALUMNO_PATH", ""), filename),
     ]
-
-    for ruta in lugares:
+    for ruta in lugares_locales:
         if ruta and os.path.isfile(ruta):
             return ruta
+
+    # ── Fallback: URL de la API (Railway u otro servidor) ─────────
+    api_base = app.config.get("API_BASE_URL", "").rstrip("/")
+    if api_base:
+        return f"{api_base}/desarrollos/imagen/{filename}"
 
     return None
 
@@ -448,10 +452,13 @@ def ver_imagen_respuesta(id_respuesta):
 
     desarrollo_url, respuesta_imagen = row
 
-    # 1) Nuevo flujo: busca el archivo en las carpetas conocidas (web o API externa)
+    # 1) Nuevo flujo: busca el archivo local o redirige a la API (Railway)
     if desarrollo_url:
         ruta = _resolver_imagen(current_app, desarrollo_url)
         if ruta:
+            # URL HTTP → redirige al endpoint de la API (servicios separados en Railway)
+            if ruta.startswith("http://") or ruta.startswith("https://"):
+                return redirect(ruta)
             return send_file(ruta, mimetype="image/jpeg")
         flash("Imagen de desarrollo no encontrada en el servidor.", "error")
         return redirect(url_for("reportes.reporte_progreso"))
@@ -851,12 +858,17 @@ def exportar_pdf():
         ])
         row_meta.append("data")
 
-        # Imagen del desarrollo si existe (busca en web y en API externa)
+        # Imagen del desarrollo si existe (busca en web o descarga de la API)
         dev_url = ej["desarrollo_url"]
         dev_path = _resolver_imagen(current_app, dev_url) if dev_url else None
 
         if dev_path:
             try:
+                # Si es una URL HTTP (Railway: servicios separados), descarga como BytesIO
+                if isinstance(dev_path, str) and dev_path.startswith("http"):
+                    import urllib.request
+                    with urllib.request.urlopen(dev_path, timeout=5) as resp:
+                        dev_path = BytesIO(resp.read())
                 rl_img = Image(dev_path)
                 max_w = PAGE_W - 0.5 * cm
                 max_h = 8 * cm
