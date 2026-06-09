@@ -207,13 +207,19 @@ def crear_ejercicio():
 
         # ---------- Guardar imagen si viene ----------
         if archivo and allowed_file(archivo.filename):
-            os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+            from util_cloudinary import cloudinary_configurado, subir_imagen
+            if cloudinary_configurado():
+                # Modo nube: sube a Cloudinary, guarda URL permanente
+                public_id = f"tutormath/ejercicios/ej_{id_ej}"
+                img_url   = subir_imagen(archivo, public_id)
+            else:
+                # Modo local: guarda en disco
+                os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+                filename = secure_filename(f"ej_{id_ej}.jpg")
+                ruta     = os.path.join(UPLOAD_FOLDER, filename)
+                archivo.save(ruta)
+                img_url  = f"/static/ejercicios_ayuda/{filename}"
 
-            filename = secure_filename(f"ej_{id_ej}.jpg")
-            ruta = os.path.join(UPLOAD_FOLDER, filename)
-            archivo.save(ruta)
-
-            img_url = f"/static/ejercicios_ayuda/{filename}"
             cur.execute(
                 "UPDATE ejercicios SET imagen_url = %s WHERE id_ejercicio = %s",
                 (img_url, id_ej),

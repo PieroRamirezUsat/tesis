@@ -22,8 +22,28 @@ def calcular_progreso(nivel_actual: int, promedio_puntaje: float = 0) -> int:
 def url_foto_usuario(root_path: str, id_usuario: int) -> str:
     """
     Devuelve la URL de la foto de perfil del usuario.
-    Busca en static/fotos_perfil/user_<id>.jpg; retorna el avatar por defecto si no existe.
+
+    Orden de búsqueda:
+      1. Cloudinary (si CLOUDINARY_URL está configurada — Railway/producción).
+         public_id = "tutormath/fotos_perfil/user_<id>"
+      2. Archivo local en static/fotos_perfil/user_<id>.jpg (desarrollo local).
+      3. Avatar por defecto.
     """
+    try:
+        from util_cloudinary import cloudinary_configurado
+        if cloudinary_configurado():
+            import cloudinary.utils as cld_utils
+            url, _ = cld_utils.cloudinary_url(
+                f"tutormath/fotos_perfil/user_{id_usuario}",
+                resource_type="image",
+                format="jpg",
+                secure=True,
+            )
+            return url
+    except Exception:
+        pass
+
+    # Modo local
     fs_path = os.path.join(root_path, "static", "fotos_perfil", f"user_{id_usuario}.jpg")
     if os.path.exists(fs_path):
         return url_for("static", filename=f"fotos_perfil/user_{id_usuario}.jpg")

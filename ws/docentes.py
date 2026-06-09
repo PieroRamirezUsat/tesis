@@ -500,8 +500,13 @@ def perfil():
         foto = request.files.get("foto")
         if foto and foto.filename:
             try:
-                fs_path = _fs_path_foto_usuario(id_usuario)
-                foto.save(fs_path)
+                from util_cloudinary import cloudinary_configurado, subir_imagen
+                if cloudinary_configurado():
+                    public_id = f"tutormath/fotos_perfil/user_{id_usuario}"
+                    subir_imagen(foto, public_id)
+                else:
+                    fs_path = _fs_path_foto_usuario(id_usuario)
+                    foto.save(fs_path)
                 flash("Foto de perfil actualizada.", "success")
             except Exception as e:
                 print("Error guardando foto:", e)

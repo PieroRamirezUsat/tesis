@@ -654,7 +654,12 @@ def subir_foto_estudiante(id_estudiante):
     ruta_destino = os.path.join(fotos_dir, f"user_{id_usuario}.jpg")
 
     try:
-        foto.save(ruta_destino)
+        from util_cloudinary import cloudinary_configurado, subir_imagen
+        if cloudinary_configurado():
+            public_id = f"tutormath/fotos_perfil/user_{id_usuario}"
+            subir_imagen(foto, public_id)
+        else:
+            foto.save(ruta_destino)
         flash("Foto del estudiante actualizada.", "success")
     except Exception as e:
         print("Error guardando foto estudiante:", e)
