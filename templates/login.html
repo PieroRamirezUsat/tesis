@@ -1,33 +1,25 @@
 <!DOCTYPE html>
-<html class="light" lang="es">
+<html lang="es" class="light">
 <head>
   <meta charset="utf-8"/>
   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-  <title>Inicio de Sesión - Sistema de Álgebra</title>
+  <title>Iniciar Sesión – TutorMath</title>
 
-  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-
-  <!-- Fuentes -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,500,0,0" rel="stylesheet"/>
 
   <script>
     tailwind.config = {
       darkMode: "class",
       theme: {
         extend: {
+          fontFamily: { display: ["Inter", "system-ui", "sans-serif"] },
           colors: {
-            primary: "#137fec",
-            "background-light": "#f6f7f8",
-            "background-dark": "#101922",
-          },
-          fontFamily: {
-            display: ["Inter", "sans-serif"],
-          },
-          borderRadius: {
-            "xl": "0.75rem",
+            primary:    "#4F46E5",
+            "bg-light": "#F4F7FB",
           },
         },
       },
@@ -35,159 +27,314 @@
   </script>
 
   <style>
-    body {
-      font-family: 'Inter', sans-serif;
+    * { font-family: 'Inter', system-ui, sans-serif; }
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0,'wght' 500,'GRAD' 0,'opsz' 24; }
+
+    /* Fondo panel izquierdo */
+    .hero-panel {
+      background: linear-gradient(145deg, #1e1b4b 0%, #312e81 35%, #4338CA 65%, #7C3AED 100%);
+    }
+    .hero-grid {
+      background-image:
+        linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);
+      background-size: 44px 44px;
+    }
+
+    /* Animaciones */
+    @keyframes float  { 0%,100%{transform:translateY(0)  rotate(0deg)} 50%{transform:translateY(-16px) rotate(4deg)} }
+    @keyframes floatR { 0%,100%{transform:translateY(0)  rotate(0deg)} 50%{transform:translateY(16px)  rotate(-4deg)} }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(22px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes shimmer{ 0%{background-position:-200% center} 100%{background-position:200% center} }
+
+    .f1 { animation: float  6s ease-in-out infinite; }
+    .f2 { animation: float  6s ease-in-out 1.3s infinite; }
+    .f3 { animation: floatR 7s ease-in-out  .7s infinite; }
+    .f4 { animation: floatR 5s ease-in-out  2s  infinite; }
+    .fade-up { animation: fadeUp .6s ease-out both; }
+    .d1{animation-delay:.08s} .d2{animation-delay:.18s} .d3{animation-delay:.28s} .d4{animation-delay:.38s}
+
+    .shimmer-text {
+      background: linear-gradient(90deg,#a5b4fc,#e879f9,#67e8f9,#a5b4fc);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: shimmer 4s linear infinite;
+    }
+
+    /* Inputs */
+    .field {
+      display: block; width: 100%; height: 44px;
+      border-radius: 12px;
+      border: 1.5px solid #e2e8f0;
+      background: #f8fafc;
+      color: #0f172a;
+      padding: 0 12px;
+      font-size: 14px;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .field:focus {
+      outline: none;
+      border-color: #4F46E5;
+      box-shadow: 0 0 0 3px rgba(79,70,229,.16);
+      background: #fff;
+    }
+    .field::placeholder { color: #94a3b8; }
+
+    /* Right panel bg */
+    .right-bg {
+      background-color: #F4F7FB;
+      background-image:
+        linear-gradient(rgba(79,70,229,.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(79,70,229,.03) 1px, transparent 1px);
+      background-size: 32px 32px;
     }
   </style>
 </head>
 
-<body class="bg-background-light dark:bg-background-dark">
-  <div class="min-h-screen flex items-center justify-center px-4">
-    <div class="w-full max-w-md">
+<body class="right-bg min-h-screen flex items-stretch">
+
+  <!-- ══════════ LAYOUT SPLIT ══════════ -->
+  <div class="flex w-full min-h-screen">
+
+    <!-- ── Panel izquierdo (solo desktop) ─────────────────── -->
+    <div class="hero-panel hero-grid hidden lg:flex lg:w-[46%] xl:w-[42%] flex-col justify-between p-10 relative overflow-hidden shrink-0">
+
+      <!-- Símbolos matemáticos flotantes -->
+      <div class="absolute inset-0 pointer-events-none select-none overflow-hidden">
+        <span class="absolute top-[12%] left-[6%]  text-white/10 font-black f1" style="font-size:4rem">∑</span>
+        <span class="absolute top-[30%] left-[14%] text-violet-300/15 font-black f2" style="font-size:2.4rem">x²</span>
+        <span class="absolute top-[58%] left-[5%]  text-indigo-300/10 font-black f3" style="font-size:3.2rem">∫</span>
+        <span class="absolute top-[78%] left-[18%] text-white/8  font-black f4" style="font-size:2rem">√</span>
+        <span class="absolute top-[8%]  right-[8%] text-white/10 font-black f3" style="font-size:3.5rem">π</span>
+        <span class="absolute top-[45%] right-[5%] text-violet-300/12 font-black f1" style="font-size:2.8rem">α</span>
+        <span class="absolute top-[70%] right-[12%] text-indigo-300/10 font-black f2" style="font-size:3.8rem">≠</span>
+        <!-- Glow blobs -->
+        <div class="absolute top-1/4 left-1/3  w-72 h-72 bg-violet-500/10 rounded-full blur-3xl"></div>
+        <div class="absolute bottom-1/4 right-0 w-56 h-56 bg-indigo-400/10 rounded-full blur-3xl"></div>
+      </div>
+
+      <!-- Top: Brand -->
+      <div class="relative z-10 fade-up">
+        <a href="{{ url_for('index') }}" class="inline-flex items-center gap-2.5 group">
+          <div class="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center group-hover:bg-white/25 transition-colors">
+            <span class="material-symbols-outlined text-white" style="font-size:21px">school</span>
+          </div>
+          <div>
+            <p class="text-white font-black text-base leading-tight">TutorMath</p>
+            <p class="text-indigo-200 leading-tight" style="font-size:10px">Sistema Adaptativo · Álgebra</p>
+          </div>
+        </a>
+      </div>
+
+      <!-- Center: Headline + features -->
+      <div class="relative z-10 space-y-8">
+        <div class="fade-up d1">
+          <h2 class="text-3xl xl:text-4xl font-black text-white leading-[1.1] mb-3">
+            Panel de gestión<br/>
+            <span class="shimmer-text">para docentes</span>
+          </h2>
+          <p class="text-indigo-200 text-sm xl:text-base leading-relaxed max-w-xs">
+            Administra estudiantes, diseña ejercicios y monitorea el progreso
+            de tu aula en tiempo real.
+          </p>
+        </div>
+
+        <!-- Feature list -->
+        <ul class="space-y-3 fade-up d2">
+          <li class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
+              <span class="material-symbols-outlined text-indigo-200" style="font-size:17px">psychology</span>
+            </div>
+            <span class="text-indigo-100 text-sm font-medium">Tutor IA Adaptativo para tus alumnos</span>
+          </li>
+          <li class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
+              <span class="material-symbols-outlined text-indigo-200" style="font-size:17px">bar_chart</span>
+            </div>
+            <span class="text-indigo-100 text-sm font-medium">Reportes de progreso por competencia</span>
+          </li>
+          <li class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
+              <span class="material-symbols-outlined text-indigo-200" style="font-size:17px">notifications_active</span>
+            </div>
+            <span class="text-indigo-100 text-sm font-medium">Alertas automáticas de seguimiento</span>
+          </li>
+          <li class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
+              <span class="material-symbols-outlined text-indigo-200" style="font-size:17px">target</span>
+            </div>
+            <span class="text-indigo-100 text-sm font-medium">4 Competencias del currículo MINEDU</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Bottom: copyright -->
+      <div class="relative z-10 fade-up d3">
+        <p class="text-indigo-300/60 text-xs">© 2026 TutorMath · Proyecto de Tesis</p>
+      </div>
+
+    </div>
+
+    <!-- ── Panel derecho: formulario ──────────────────────── -->
+    <div class="flex-1 flex flex-col items-center justify-center px-5 py-10 sm:px-10">
+
+      <!-- Mobile brand (solo < lg) -->
+      <div class="lg:hidden flex flex-col items-center mb-8 fade-up">
+        <a href="{{ url_for('index') }}" class="flex items-center gap-2.5">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-200">
+            <span class="material-symbols-outlined text-white" style="font-size:21px">school</span>
+          </div>
+          <div>
+            <p class="font-black text-slate-900 text-base leading-tight">TutorMath</p>
+            <p class="text-indigo-500 leading-tight" style="font-size:10px">Sistema Adaptativo · Álgebra</p>
+          </div>
+        </a>
+      </div>
 
       <!-- Card -->
-      <div class="bg-white dark:bg-slate-900 rounded-xl shadow-lg px-8 py-8 md:py-10 flex flex-col items-center gap-6">
+      <div class="w-full max-w-sm fade-up d1">
 
-        <!-- Icono -->
-        <div class="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-1">
-          <svg class="h-7 w-7 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-               xmlns="http://www.w3.org/2000/svg">
-            <path d="M9 7h6m0 10v-3.333A1.667 1.667 0 0013.333 12H10.667A1.667 1.667 0 009 13.667V17m0-10V4a2 2 0 012-2h2a2 2 0 012 2v3m-6 0h6"
-                  stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
-          </svg>
+        <!-- Card header -->
+        <div class="mb-7">
+          <h1 class="text-2xl font-black text-slate-900 leading-tight">Bienvenido de vuelta 👋</h1>
+          <p class="text-slate-500 text-sm mt-1.5">Ingresa tus datos para acceder al sistema.</p>
         </div>
 
-        <!-- Títulos -->
-        <div class="text-center space-y-1">
-          <p class="text-2xl md:text-3xl font-black text-slate-900 dark:text-slate-50 leading-tight">
-            Bienvenido al Sistema de Álgebra
-          </p>
-          <p class="text-sm md:text-base text-slate-500 dark:text-slate-400">
-            Acceso para profesores y directivos
-          </p>
-        </div>
-
-        <!-- Mensajes flash (solo errores) -->
+        <!-- Flash messages -->
         {% with messages = get_flashed_messages(with_categories=true) %}
           {% if messages %}
-            <div class="w-full mb-2">
+            <div class="space-y-2 mb-5">
               {% for category, message in messages %}
-                {% if category == 'danger' %}
-                  <div class="rounded-lg px-3 py-2 text-sm bg-red-100 text-red-800 border border-red-200">
-                    {{ message }}
-                  </div>
-                {% endif %}
+                <div class="flex items-start gap-2.5 rounded-xl px-3.5 py-2.5 text-sm border
+                  {% if category == 'danger'  %}bg-rose-50    text-rose-800    border-rose-100
+                  {% elif category == 'success'%}bg-emerald-50 text-emerald-800 border-emerald-100
+                  {% elif category == 'warning'%}bg-amber-50   text-amber-800   border-amber-100
+                  {% else                      %}bg-blue-50    text-blue-800    border-blue-100{% endif %}">
+                  <span class="material-symbols-outlined shrink-0 mt-0.5
+                    {% if category == 'danger'  %}text-rose-500
+                    {% elif category == 'success'%}text-emerald-500
+                    {% elif category == 'warning'%}text-amber-500
+                    {% else                      %}text-blue-500{% endif %}" style="font-size:16px">
+                    {% if   category == 'danger'  %}error
+                    {% elif category == 'success'  %}check_circle
+                    {% elif category == 'warning'  %}warning
+                    {% else                        %}info{% endif %}
+                  </span>
+                  <span>{{ message }}</span>
+                </div>
               {% endfor %}
             </div>
           {% endif %}
         {% endwith %}
 
-        <!-- FORMULARIO -->
-        <form method="POST" action="{{ url_for('auth.login') }}" class="w-full flex flex-col gap-4">
+        <!-- Formulario -->
+        <form method="POST" action="{{ url_for('auth.login') }}" class="space-y-4">
 
-          <!-- Usuario -->
-          <div class="w-full">
-            <label class="block text-sm font-medium text-slate-800 dark:text-slate-100 mb-1.5">
-              Usuario
+          <!-- Correo -->
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5">
+              Correo electrónico
             </label>
-            <input
-              class="block w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-background-light dark:bg-slate-950 text-slate-900 dark:text-slate-50 focus:ring-2 focus:ring-primary/60 focus:border-primary h-12 px-3 text-sm md:text-base placeholder:text-slate-400"
-              placeholder="Introduce tu usuario (correo)"
-              name="correo"
-              type="email"
-              required
-            />
-          </div>
-
-          <!-- Contraseña con icono de ojo -->
-          <div class="w-full">
-            <label class="block text-sm font-medium text-slate-800 dark:text-slate-100 mb-1.5">
-              Contraseña
-            </label>
-
             <div class="relative">
+              <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" style="font-size:18px">mail</span>
               <input
-                id="passwordInput"
-                class="block w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-background-light dark:bg-slate-950 text-slate-900 dark:text-slate-50 focus:ring-2 focus:ring-primary/60 focus:border-primary h-12 px-3 pr-12 text-sm md:text-base placeholder:text-slate-400"
-                placeholder="Introduce tu contraseña"
-                type="password"
-                name="contrasena"
+                type="email"
+                name="correo"
+                class="field pl-10"
+                placeholder="tu@correo.com"
+                autocomplete="email"
                 required
               />
+            </div>
+          </div>
 
-              <!-- Botón del ojo -->
-              <button
-                type="button"
-                id="togglePassword"
-                class="absolute inset-y-0 right-3 flex items-center text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
-                tabindex="-1"
-              >
-                <!-- Ícono Ojo -->
-                <svg id="eyeIcon" xmlns="http://www.w3.org/2000/svg" fill="none"
-                     viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
-                     class="w-6 h-6">
-                  <path stroke-linecap="round" stroke-linejoin="round"
-                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  <circle cx="12" cy="12" r="3"/>
-                </svg>
+          <!-- Contraseña -->
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="text-sm font-semibold text-slate-700">Contraseña</label>
+              <a href="{{ url_for('auth.forgot_password') }}"
+                 class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors">
+                ¿Olvidaste tu contraseña?
+              </a>
+            </div>
+            <div class="relative">
+              <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" style="font-size:18px">lock</span>
+              <input
+                id="passInput"
+                type="password"
+                name="contrasena"
+                class="field pl-10 pr-11"
+                placeholder="••••••••"
+                autocomplete="current-password"
+                required
+              />
+              <button type="button" id="togglePass"
+                      class="absolute inset-y-0 right-3 flex items-center text-slate-400 hover:text-slate-600 transition-colors"
+                      tabindex="-1">
+                <span id="eyeIcon" class="material-symbols-outlined" style="font-size:20px">visibility_off</span>
               </button>
             </div>
           </div>
 
-          <!-- Recordar / olvidó -->
-          <div class="flex items-center justify-between text-sm mt-1">
-            <label class="inline-flex items-center gap-2 text-slate-700 dark:text-slate-200">
-              <input
-                type="checkbox"
-                class="h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary/60"
-              />
-              <span>Recordar sesión</span>
-            </label>
-            <a href="{{ url_for('auth.forgot_password') }}" class="text-primary hover:underline">
-            ¿Olvidó su contraseña?
-            </a>
+          <!-- Recordar sesión -->
+          <label class="flex items-center gap-2.5 cursor-pointer select-none">
+            <input type="checkbox" name="remember"
+                   class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-400 focus:ring-offset-0"/>
+            <span class="text-sm text-slate-600 font-medium">Recordar sesión</span>
+          </label>
 
-          </div>
+          <!-- Botón submit -->
+          <button type="submit"
+                  class="w-full h-11 mt-1 rounded-xl bg-indigo-600 text-white font-bold text-sm
+                         hover:bg-indigo-700 active:bg-indigo-800 transition-all
+                         shadow-md shadow-indigo-200 focus:outline-none
+                         focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2
+                         flex items-center justify-center gap-2">
+            <span class="material-symbols-outlined" style="font-size:18px">login</span>
+            Iniciar sesión
+          </button>
 
-          <!-- Botones -->
-          <div class="flex flex-col gap-3 mt-2">
-            <!-- Iniciar sesión -->
-            <button
-              type="submit"
-              class="inline-flex justify-center items-center h-11 rounded-lg bg-primary text-white font-semibold text-sm md:text-base hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/60 focus:ring-offset-2 focus:ring-offset-background-light">
-              Iniciar sesión
-            </button>
-
-            <!-- Registrarse (luego lo conectamos) -->
-            <a
-            href="{{ url_for('auth.register') }}"
-            class="inline-flex justify-center items-center h-11 rounded-lg border border-slate-300 dark:border-slate-600 text-primary font-semibold text-sm md:text-base bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800">
-            Registrarse
-            </a>
-
-          </div>
         </form>
 
+        <!-- Divider -->
+        <div class="flex items-center gap-3 my-5">
+          <div class="flex-1 h-px bg-slate-200"></div>
+          <span class="text-xs text-slate-400 font-medium">¿Primera vez?</span>
+          <div class="flex-1 h-px bg-slate-200"></div>
+        </div>
+
+        <!-- Registro docente -->
+        <a href="{{ url_for('auth.register') }}"
+           class="w-full h-11 rounded-xl border-2 border-slate-200 bg-white
+                  text-slate-700 font-bold text-sm
+                  hover:border-indigo-300 hover:text-indigo-700 hover:bg-indigo-50/50 transition-all
+                  flex items-center justify-center gap-2">
+          <span class="material-symbols-outlined" style="font-size:18px">how_to_reg</span>
+          Crear cuenta de docente
+        </a>
+
+        <p class="text-center text-xs text-slate-400 mt-3 leading-relaxed">
+          El registro requiere el
+          <span class="font-semibold text-slate-500">código de institución</span>.
+          Los alumnos acceden solo desde la app móvil.
+        </p>
+
       </div>
-
     </div>
-  </div>
 
-  <!-- SCRIPT: Toggle password -->
+  </div><!-- /split layout -->
+
   <script>
-    const passwordInput = document.getElementById("passwordInput");
-    const togglePassword = document.getElementById("togglePassword");
-    const eyeIcon = document.getElementById("eyeIcon");
-
-    if (passwordInput && togglePassword && eyeIcon) {
-      togglePassword.addEventListener("click", () => {
-        const isPassword = passwordInput.type === "password";
-        passwordInput.type = isPassword ? "text" : "password";
-
-        // Cambia el ícono según estado (opcionalmente podrías modificarlo)
-        // Aquí solo dejamos el mismo ojo para que no se deforme.
-      });
-    }
+    const passInput  = document.getElementById('passInput');
+    const togglePass = document.getElementById('togglePass');
+    const eyeIcon    = document.getElementById('eyeIcon');
+    togglePass.addEventListener('click', () => {
+      const show = passInput.type === 'password';
+      passInput.type   = show ? 'text' : 'password';
+      eyeIcon.textContent = show ? 'visibility' : 'visibility_off';
+    });
   </script>
 </body>
 </html>

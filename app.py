@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, redirect, url_for
+from flask import Flask, jsonify, redirect, url_for, render_template
 from config import Config
 from db import get_db, close_db
 from ws import register_blueprints
@@ -27,8 +27,13 @@ def create_app():
 
     @app.route("/")
     def index():
-        # Redirige al login de tu sistema
-        return redirect(url_for("auth.login"))
+        """
+        Landing page: muestra presentación de la app móvil
+        con botón de descarga del APK antes del login.
+        Actualiza APK_DOWNLOAD_URL en config.py o variable de entorno.
+        """
+        apk_url = app.config.get("APK_DOWNLOAD_URL", "#descargar")
+        return render_template("landing.html", apk_url=apk_url)
 
     return app
 

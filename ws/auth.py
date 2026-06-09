@@ -93,14 +93,24 @@ def logout():
 @bp_auth.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
-        nombre = request.form.get("nombre", "").strip()
-        apellidos = request.form.get("apellidos", "").strip()
-        correo = request.form.get("correo", "").strip()
-        contrasena = request.form.get("contrasena", "")
-        confirmar = request.form.get("confirmar_contrasena", "")
+        nombre           = request.form.get("nombre", "").strip()
+        apellidos        = request.form.get("apellidos", "").strip()
+        correo           = request.form.get("correo", "").strip()
+        contrasena       = request.form.get("contrasena", "")
+        confirmar        = request.form.get("confirmar_contrasena", "")
+        codigo_registro  = request.form.get("codigo_registro", "").strip()
         rol = "docente"
 
         errores = []
+
+        # ── Validación del código de institución ──────────────────
+        # Solo docentes con el código correcto pueden registrarse.
+        # Esto impide que alumnos u otros usuarios creen cuentas web.
+        if not codigo_registro:
+            errores.append("Debes ingresar el código de institución.")
+        elif codigo_registro != Config.CODIGO_REGISTRO_DOCENTE:
+            errores.append("El código de institución no es válido.")
+
         if not nombre:
             errores.append("Debes ingresar el nombre.")
         if not apellidos:

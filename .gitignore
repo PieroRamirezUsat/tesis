@@ -1,8 +1,30 @@
+## Python
 __pycache__/
 *.pyc
 *.pyo
-.env
+*.pyd
+
+## Entornos virtuales
 .venv/
+venv/
+env/
+
+## Variables de entorno (NUNCA subir al repo)
+.env
+
+## Claude Code
 .claude/
+
+## Modelos ML
 *.pkl
+*.joblib
+
+## Flask instance
 instance/
+
+## VS Code
+.vscode/
+
+## Archivos del sistema
+.DS_Store
+Thumbs.db
