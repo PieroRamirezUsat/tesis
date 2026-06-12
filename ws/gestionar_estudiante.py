@@ -527,7 +527,12 @@ def editar_estudiante(id_estudiante):
             (4, comp_datos),
         ]
         for id_comp, score in comp_map:
-            s = score if score is not None else 0
+            # Si el docente no envió esta nota (campo vacío) NO tocar el NEC —
+            # misma semántica que el COALESCE del UPDATE estudiante. Antes se
+            # reseteaba a 0/nivel 1 al editar cualquier dato del alumno.
+            if score is None:
+                continue
+            s = score
             nivel_actual = _score_to_nivel(s)
             cur.execute(
                 """
