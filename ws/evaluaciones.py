@@ -2,15 +2,11 @@ from flask import Blueprint, render_template, session, redirect, url_for, reques
 from db import get_db
 import json, random
 
-# Tabla score→nivel compartida con la API REST y gestionar_estudiante
-_BRACKETS = [(0,21,1),(22,35,2),(36,49,3),(50,64,4),(65,78,5),(79,92,6),(93,100,7)]
-
-def _score_to_nivel(score):
-    s = max(0.0, min(100.0, float(score or 0)))
-    for lo, hi, nivel in _BRACKETS:
-        if lo <= s <= hi:
-            return nivel
-    return 7
+# NOTA: _score_to_nivel/_BRACKETS se eliminaron de este archivo — la única
+# función que los usaba era la sincronización NEC de cerrar_evaluacion,
+# retirada porque la evaluación es medición y no debe tocar el nivel adaptativo.
+# La tabla score→nivel vive en gestionar_estudiante.py (diagnóstico) y en la
+# API (models/scoring.py).
 
 
 def _format_duracion_seg(segundos) -> str:
@@ -117,10 +113,35 @@ def _asignar_grupos(conn, id_evaluacion, id_salon, num_grupos, num_preguntas):
                 (id_evaluacion, id_est, grupo),
             )
 
-        # Pre-select exercises per group (different exercises to prevent copying)
-        cur.execute("SELECT id_ejercicio FROM ejercicios")
-        all_ids = [r[0] for r in cur.fetchall()]
-        random.shuffle(all_ids)
+        # Pre-select exercises per group (different exercises to prevent copying).
+        # Balanceados por competencia: se intercalan C1,C2,C3,C4,C1,... para que
+        # cada grupo reciba preguntas de las 4 competencias — sin esto, el % por
+        # competencia del reporte se calculaba sobre 1-2 preguntas (puro ruido).
+        # Solo ejercicios con opciones (respondibles desde la app).
+        cur.execute(
+            """
+            SELECT e.id_ejercicio, e.id_competencia
+            FROM ejercicios e
+            WHERE EXISTS (SELECT 1 FROM opciones_ejercicio o
+                          WHERE o.id_ejercicio = e.id_ejercicio)
+            """
+        )
+        por_comp = {}
+        for id_ej, id_comp in cur.fetchall():
+            por_comp.setdefault(id_comp, []).append(id_ej)
+        for ids in por_comp.values():
+            random.shuffle(ids)
+
+        all_ids = []
+        listas = [por_comp[c] for c in sorted(por_comp)]
+        while listas:
+            for lst in listas:
+                if lst:
+                    all_ids.append(lst.pop())
+            listas = [l for l in listas if l]
+
+        if not all_ids:
+            return  # sin ejercicios respondibles; finally cierra el cursor
 
         ejercicios_grupos = {}
         for idx, letra in enumerate(letras):
@@ -390,51 +411,16 @@ def cerrar_evaluacion(id_evaluacion):
         (id_evaluacion,),
     )
 
-    # Sincronizar puntajes por competencia → nivel_estudiante_competencia
-    # Para cada estudiante que completó la evaluación, calculamos su % correcto
-    # por competencia basándonos en las respuestas registradas.
-    cur.execute(
-        """
-        SELECT
-            er.id_estudiante,
-            ej.id_competencia,
-            COUNT(*) FILTER (WHERE ev_r.es_correcta = TRUE)  AS correctas,
-            COUNT(*)                                          AS total
-        FROM evaluacion_respuestas ev_r
-        JOIN ejercicios ej ON ej.id_ejercicio = ev_r.id_ejercicio
-        JOIN evaluacion_resultados er
-            ON er.id_evaluacion = ev_r.id_evaluacion
-           AND er.id_estudiante = ev_r.id_estudiante
-           AND er.estado = 'completado'
-        WHERE ev_r.id_evaluacion = %s
-          AND ej.id_competencia IS NOT NULL
-        GROUP BY er.id_estudiante, ej.id_competencia
-        """,
-        (id_evaluacion,),
-    )
-    filas_comp = cur.fetchall()
-
-    for id_est, id_comp, correctas, total in filas_comp:
-        puntaje = round(correctas / total * 100) if total else 0
-        nivel = _score_to_nivel(puntaje)
-        cur.execute(
-            """
-            INSERT INTO nivel_estudiante_competencia
-                (id_estudiante, id_competencia, nivel_actual,
-                 promedio_puntaje, ejercicios_considerados, fecha_ultimo_update)
-            VALUES (%s, %s, %s, %s, %s, NOW())
-            ON CONFLICT (id_estudiante, id_competencia) DO UPDATE SET
-                nivel_actual            = EXCLUDED.nivel_actual,
-                promedio_puntaje        = EXCLUDED.promedio_puntaje,
-                ejercicios_considerados = EXCLUDED.ejercicios_considerados,
-                fecha_ultimo_update     = EXCLUDED.fecha_ultimo_update
-            """,
-            (id_est, id_comp, nivel, float(puntaje), total),
-        )
-        # NOTA: puntajes NO recibe el score de evaluación porque usa escala
-        # continua 0-100 (% correcto por competencia), mientras que el historial
-        # de práctica es binario 0/100. Mezclarlos sesga los features ML
-        # (AVG, tasa_aprobados, etc.).  La evaluación es MEDICIÓN, no entrenamiento.
+    # ⚠️  REGLA DEL SISTEMA: la evaluación es MEDICIÓN, no entrenamiento.
+    #     NO sincroniza nivel_estudiante_competencia (NEC) ni la tabla puntajes:
+    #     · NEC es la fuente autoritativa del nivel adaptativo construido en
+    #       modo repaso (delta scoring). Sobrescribirlo con el % de una
+    #       evaluación de pocas preguntas por competencia (1-5) destruía el
+    #       historial adaptativo y corrompía el reporte OE4 (diagnóstico vs actual).
+    #     · puntajes usa escala binaria 0/100 del repaso; mezclar el % continuo
+    #       de evaluación sesga los features del árbol ML.
+    #     Los resultados quedan en evaluacion_resultados / evaluacion_respuestas
+    #     para los reportes del docente.
 
     conn.commit()
     cur.close()

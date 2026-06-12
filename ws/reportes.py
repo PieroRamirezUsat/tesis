@@ -352,10 +352,16 @@ def reporte_progreso():
     # ======================================================
     # 7e) Tiempo promedio por nivel de dificultad
     # ======================================================
+    # Banda de dificultad 1-4 derivada de la dificultad real (nivel_logro 1-7).
+    # La columna legacy `nivel` quedó abandonada en 1; COALESCE cubre filas viejas.
+    # Mismo CASE que BANDA_DIFICULTAD_SQL en la API (models/scoring.py).
     cur.execute(
         """
         SELECT
-            e.nivel                                              AS nivel_ejercicio,
+            CASE WHEN COALESCE(e.nivel_logro, e.nivel, 1) <= 2 THEN 1
+                 WHEN COALESCE(e.nivel_logro, e.nivel, 1) = 3  THEN 2
+                 WHEN COALESCE(e.nivel_logro, e.nivel, 1) <= 5 THEN 3
+                 ELSE 4 END                                      AS nivel_ejercicio,
             AVG(r.tiempo_respuesta)                             AS promedio_seg,
             COUNT(*)                                            AS total_respuestas,
             AVG(CASE WHEN op.es_correcta THEN 1.0 ELSE 0.0 END) AS tasa_acierto
@@ -365,8 +371,8 @@ def reporte_progreso():
         WHERE r.id_estudiante    = %s
           AND r.tiempo_respuesta IS NOT NULL
           AND r.tiempo_respuesta > 0
-        GROUP BY e.nivel
-        ORDER BY e.nivel
+        GROUP BY 1
+        ORDER BY 1
         """,
         (id_est_sel,),
     )
