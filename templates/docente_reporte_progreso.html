@@ -43,6 +43,19 @@
         <span class="material-symbols-outlined text-base">draw</span>
         <span class="hidden sm:inline">Exportar desarrollos</span>
       </a>
+      {# M13: datos crudos para el análisis estadístico de la tesis (Excel/SPSS) #}
+      <a href="{{ url_for('reportes.exportar_csv', tipo='respuestas') }}"
+         title="Descarga todas las respuestas de tus estudiantes (una fila por respuesta) para análisis en Excel/SPSS"
+         class="flex items-center gap-2 h-10 px-4 rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white text-sm font-bold shadow-sm transition-all">
+        <span class="material-symbols-outlined text-base">table_view</span>
+        <span class="hidden sm:inline">CSV respuestas</span>
+      </a>
+      <a href="{{ url_for('reportes.exportar_csv', tipo='resumen') }}"
+         title="Descarga el resumen diagnóstico vs. estado actual por alumno y competencia"
+         class="flex items-center gap-2 h-10 px-4 rounded-xl bg-gradient-to-r from-slate-500 to-slate-600 hover:from-slate-600 hover:to-slate-700 text-white text-sm font-bold shadow-sm transition-all">
+        <span class="material-symbols-outlined text-base">summarize</span>
+        <span class="hidden sm:inline">CSV resumen</span>
+      </a>
     </div>
   </div>
 </div>

@@ -415,6 +415,43 @@ def dashboard():
     offset_progreso = met["porc_avanzado"]
     offset_ayuda = met["porc_avanzado"] + met["porc_en_progreso"]
 
+    # ── M12: Evolución semanal del salón (últimas 8 semanas) ──────────────
+    # % de aciertos en modo práctica + nº de respuestas de TODOS los alumnos
+    # de los salones del docente. Permite ver si el grupo mejora con el uso
+    # del tutor adaptativo (evidencia de efectividad para el docente).
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(
+        """
+        SELECT
+            date_trunc('week', r.fecha)::date                        AS semana,
+            COUNT(*)                                                 AS total_respuestas,
+            ROUND(AVG(CASE WHEN op.es_correcta THEN 100.0 ELSE 0 END)) AS pct_acierto
+        FROM respuestas_estudiantes r
+        JOIN opciones_ejercicio op ON op.id_opcion = r.id_opcion
+        WHERE r.modo = 'repaso'
+          AND r.fecha >= NOW() - INTERVAL '8 weeks'
+          AND r.id_estudiante IN (
+              SELECT es.id_estudiante
+              FROM estudiante_salones es
+              JOIN docente_salones ds ON ds.id_salon = es.id_salon
+              JOIN docente d          ON d.id_docente = ds.id_docente
+              WHERE d.id_usuario = %s
+          )
+        GROUP BY 1
+        ORDER BY 1
+        """,
+        (id_usuario,),
+    )
+    evolucion_semanas   = []
+    evolucion_aciertos  = []
+    evolucion_actividad = []
+    for r in cur.fetchall():
+        evolucion_semanas.append(r[0].strftime("%d/%m"))
+        evolucion_actividad.append(int(r[1] or 0))
+        evolucion_aciertos.append(int(r[2] or 0))
+    cur.close()
+
     return render_template(
         "docente_dashboard.html",
         titulo="Panel de Control - Sistema de Álgebra Inteligente",
@@ -439,6 +476,10 @@ def dashboard():
         estudiantes_chart=met["estudiantes_chart"],
         offset_progreso=offset_progreso,
         offset_ayuda=offset_ayuda,
+        # M12: evolución semanal del salón
+        evolucion_semanas=evolucion_semanas,
+        evolucion_aciertos=evolucion_aciertos,
+        evolucion_actividad=evolucion_actividad,
         # materiales
         total_mat_revisiones=met["total_mat_revisiones"],
         alumno_mas_activo_mat=met["alumno_mas_activo_mat"],

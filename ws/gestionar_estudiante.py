@@ -246,17 +246,33 @@ def crear_estudiante():
     conn = get_db()
     cur = conn.cursor()
 
-    # Obtener un salón del docente (el primero)
+    # M10: usar el salón que el docente eligió en el formulario — el select
+    # "Grado / Sección" muestra los nombres de SUS salones, así que se busca
+    # el id_salon cuyo nombre coincide. Antes se ignoraba la elección y el
+    # alumno iba siempre al primer salón del docente (LIMIT 1).
     cur.execute(
         """
-        SELECT id_salon
-        FROM docente_salones
-        WHERE id_docente = %s
+        SELECT s.id_salon
+        FROM salones s
+        JOIN docente_salones ds ON ds.id_salon = s.id_salon
+        WHERE ds.id_docente = %s AND s.nombre_salon = %s
         LIMIT 1
         """,
-        (id_docente,),
+        (id_docente, grado),
     )
     row_salon = cur.fetchone()
+    if not row_salon:
+        # Fallback (grado no coincide con ningún salón): primer salón del docente
+        cur.execute(
+            """
+            SELECT id_salon
+            FROM docente_salones
+            WHERE id_docente = %s
+            LIMIT 1
+            """,
+            (id_docente,),
+        )
+        row_salon = cur.fetchone()
     if not row_salon:
         flash(
             "No tienes salones asignados. No se puede crear el estudiante.",

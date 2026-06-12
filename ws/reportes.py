@@ -758,6 +758,112 @@ def exportar_pdf():
         }
         for r in cur.fetchall()
     ]
+
+    # ---- M11 · OE4: diagnóstico inicial vs estado actual (misma query que el HTML) ----
+    _MINEDU_PDF = {1: "Previo al inicio", 2: "En inicio", 3: "En proceso",
+                   4: "En proceso", 5: "Logrado", 6: "Logrado", 7: "Destacado"}
+    _ETIQ_CORTA_PDF = {
+        "cantidad":                        "Cantidad",
+        "regularidad_equivalencia_cambio": "Regularidad y cambio",
+        "forma_movimiento_localizacion":   "Forma y movimiento",
+        "gestion_datos_incertidumbre":     "Gestión de datos",
+    }
+
+    def _score_a_nivel_pdf(s):
+        s = float(s or 0)
+        if s <= 21: return 1
+        if s <= 35: return 2
+        if s <= 49: return 3
+        if s <= 64: return 4
+        if s <= 78: return 5
+        if s <= 92: return 6
+        return 7
+
+    cur.execute(
+        """
+        SELECT
+            c.id_competencia,
+            c.area,
+            CASE c.id_competencia
+                WHEN 1 THEN est.cantidad
+                WHEN 2 THEN est.regularidad_equivalencia_cambio
+                WHEN 3 THEN est.forma_movimiento_localizacion
+                WHEN 4 THEN est.gestion_datos_incertidumbre
+            END::float                                    AS score_diag,
+            COALESCE(nec.nivel_actual, 1)::int            AS nivel_actual,
+            COALESCE(nec.promedio_puntaje, 0)::float      AS score_actual
+        FROM competencias c
+        JOIN estudiante est ON est.id_estudiante = %s
+        LEFT JOIN nivel_estudiante_competencia nec
+            ON nec.id_estudiante  = %s
+           AND nec.id_competencia = c.id_competencia
+        WHERE c.id_competencia BETWEEN 1 AND 4
+        ORDER BY c.id_competencia
+        """,
+        (id_est_sel, id_est_sel),
+    )
+    diag_vs_actual_pdf = []
+    for row in cur.fetchall():
+        area       = row[1]
+        score_diag = float(row[2]) if row[2] is not None else None
+        nivel_act  = int(row[3])
+        score_act  = float(row[4])
+        nivel_diag = _score_a_nivel_pdf(score_diag) if score_diag is not None else None
+        diag_vs_actual_pdf.append({
+            "etiqueta":      _ETIQ_CORTA_PDF.get(area, area),
+            "score_diag":    round(score_diag, 1) if score_diag is not None else None,
+            "minedu_diag":   _MINEDU_PDF.get(nivel_diag, "—") if nivel_diag else "—",
+            "score_actual":  round(score_act, 1),
+            "minedu_actual": _MINEDU_PDF.get(nivel_act, "—"),
+            "delta":         round(score_act - score_diag, 1) if score_diag is not None else None,
+        })
+
+    # ---- M11 · Tiempo por dificultad (misma banda 1-4 que el HTML y la API) ----
+    cur.execute(
+        """
+        SELECT
+            CASE WHEN COALESCE(e.nivel_logro, e.nivel, 1) <= 2 THEN 1
+                 WHEN COALESCE(e.nivel_logro, e.nivel, 1) = 3  THEN 2
+                 WHEN COALESCE(e.nivel_logro, e.nivel, 1) <= 5 THEN 3
+                 ELSE 4 END                                      AS banda,
+            AVG(r.tiempo_respuesta)                             AS promedio_seg,
+            COUNT(*)                                            AS total_respuestas,
+            AVG(CASE WHEN op.es_correcta THEN 1.0 ELSE 0.0 END) AS tasa_acierto
+        FROM respuestas_estudiantes r
+        JOIN ejercicios e          ON e.id_ejercicio = r.id_ejercicio
+        JOIN opciones_ejercicio op ON op.id_opcion   = r.id_opcion
+        WHERE r.id_estudiante    = %s
+          AND r.tiempo_respuesta IS NOT NULL
+          AND r.tiempo_respuesta > 0
+        GROUP BY 1
+        ORDER BY 1
+        """,
+        (id_est_sel,),
+    )
+    _NOMBRES_BANDA_PDF = {1: "Fácil", 2: "Básico", 3: "Intermedio", 4: "Avanzado"}
+
+    def _fmt_seg_pdf(seg):
+        if not seg or seg < 0:
+            return "—"
+        s = int(round(float(seg)))
+        m, s = s // 60, s % 60
+        if m >= 60:
+            return f"{m//60}h {m%60}m"
+        return f"{m}m {s}s" if m else f"{s}s"
+
+    tiempo_nivel_pdf = []
+    for row in cur.fetchall():
+        banda = int(row[0] or 0)
+        prom  = float(row[1] or 0)
+        total = int(row[2] or 0)
+        tasa  = float(row[3] or 0)
+        tiempo_nivel_pdf.append({
+            "nombre":      _NOMBRES_BANDA_PDF.get(banda, f"N{banda}"),
+            "tiempo":      _fmt_seg_pdf(prom),
+            "pct_acierto": int(round(tasa * 100)),
+            "total":       total,
+        })
+
     cur.close()
 
     # ---- Ancho útil de página ----
@@ -974,6 +1080,125 @@ def exportar_pdf():
         ("RIGHTPADDING",  (2, 1), (2, -1),  0),
     ]))
     story.append(comp_table)
+    story.append(Spacer(1, 10))
+
+    # ================================================================
+    # M11 · EFECTIVIDAD DEL SISTEMA (OE4: diagnóstico vs estado actual)
+    # ================================================================
+    story.append(seccion("Efectividad del Sistema — Diagnóstico Inicial vs. Estado Actual"))
+    story.append(Spacer(1, 6))
+
+    CW_OE4 = [5 * cm, 4 * cm, 4 * cm, 4 * cm]
+    oe4_rows = [[
+        Paragraph("<b>Competencia</b>",        st_ch),
+        Paragraph("<b>Diagnóstico inicial</b>", st_ch),
+        Paragraph("<b>Estado actual</b>",       st_ch),
+        Paragraph("<b>Variación</b>",           st_ch),
+    ]]
+    mejoras = 0
+    con_diag = 0
+    for idx, d in enumerate(diag_vs_actual_pdf):
+        if d["score_diag"] is None:
+            diag_txt  = "Sin diagnóstico"
+            delta_txt = "—"
+            col_d     = colors.HexColor("#7F8C8D")
+        else:
+            con_diag += 1
+            diag_txt = f"{d['score_diag']:.0f} pts · {d['minedu_diag']}"
+            delta    = d["delta"]
+            if delta > 0:
+                mejoras  += 1
+                delta_txt = f"▲ +{delta:.0f} pts"
+                col_d     = VERDE
+            elif delta < 0:
+                delta_txt = f"▼ {delta:.0f} pts"
+                col_d     = ROJO
+            else:
+                delta_txt = "= Sin cambio"
+                col_d     = colors.HexColor("#7F8C8D")
+        oe4_rows.append([
+            Paragraph(d["etiqueta"], st_cell),
+            Paragraph(diag_txt, st_cell),
+            Paragraph(f"{d['score_actual']:.0f} pts · {d['minedu_actual']}", st_cell),
+            Paragraph(f"<b>{delta_txt}</b>",
+                      st(f"oe4{idx}", fontSize=8, fontName="Helvetica-Bold",
+                         textColor=col_d, alignment=TA_CENTER)),
+        ])
+
+    oe4_table = Table(oe4_rows, colWidths=CW_OE4)
+    oe4_table.setStyle(TableStyle([
+        ("BACKGROUND",    (0, 0), (-1, 0),  AZUL),
+        ("ROWBACKGROUNDS",(0, 1), (-1, -1), [colors.white, GRIS]),
+        ("BOX",           (0, 0), (-1, -1), 0.8, CELDA),
+        ("INNERGRID",     (0, 0), (-1, -1), 0.3, CELDA),
+        ("VALIGN",        (0, 0), (-1, -1), "MIDDLE"),
+        ("LEFTPADDING",   (0, 0), (-1, -1), 6),
+        ("RIGHTPADDING",  (0, 0), (-1, -1), 6),
+        ("TOPPADDING",    (0, 0), (-1, -1), 6),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+    ]))
+    story.append(oe4_table)
+    if con_diag:
+        story.append(Spacer(1, 4))
+        story.append(Paragraph(
+            f"<b>{mejoras} de {con_diag}</b> competencias con diagnóstico muestran mejora "
+            f"respecto a la evaluación inicial del docente.",
+            st("oe4_resumen", fontSize=8, textColor=colors.HexColor("#555555")),
+        ))
+    story.append(Spacer(1, 10))
+
+    # ================================================================
+    # M11 · TIEMPO PROMEDIO POR DIFICULTAD
+    # ================================================================
+    story.append(seccion("Tiempo Promedio por Dificultad del Ejercicio"))
+    story.append(Spacer(1, 6))
+
+    if tiempo_nivel_pdf:
+        CW_TN = [3.5 * cm, 3.5 * cm, 3 * cm, 3 * cm, 4 * cm]
+        tn_rows = [[
+            Paragraph("<b>Dificultad</b>",   st_ch),
+            Paragraph("<b>Tiempo prom.</b>", st_ch),
+            Paragraph("<b>% Acierto</b>",    st_ch),
+            Paragraph("<b>Respuestas</b>",   st_ch),
+            Paragraph("<b>Diagnóstico</b>",  st_ch),
+        ]]
+        for idx, tn in enumerate(tiempo_nivel_pdf):
+            pct = tn["pct_acierto"]
+            if pct >= 70:
+                diag_p, col_p = "Domina este nivel", VERDE
+            elif pct >= 45:
+                diag_p, col_p = "En proceso", colors.orange
+            else:
+                diag_p, col_p = "Necesita refuerzo", ROJO
+            tn_rows.append([
+                Paragraph(f"<b>{tn['nombre']}</b>", st_cell),
+                Paragraph(tn["tiempo"], st_cell),
+                Paragraph(f"<b>{pct}%</b>",
+                          st(f"tnp{idx}", fontSize=8, fontName="Helvetica-Bold",
+                             textColor=col_p, alignment=TA_CENTER)),
+                Paragraph(str(tn["total"]),
+                          st(f"tnt{idx}", fontSize=8, alignment=TA_CENTER)),
+                Paragraph(diag_p,
+                          st(f"tnd{idx}", fontSize=8, textColor=col_p)),
+            ])
+        tn_table = Table(tn_rows, colWidths=CW_TN)
+        tn_table.setStyle(TableStyle([
+            ("BACKGROUND",    (0, 0), (-1, 0),  AZUL),
+            ("ROWBACKGROUNDS",(0, 1), (-1, -1), [colors.white, GRIS]),
+            ("BOX",           (0, 0), (-1, -1), 0.8, CELDA),
+            ("INNERGRID",     (0, 0), (-1, -1), 0.3, CELDA),
+            ("VALIGN",        (0, 0), (-1, -1), "MIDDLE"),
+            ("LEFTPADDING",   (0, 0), (-1, -1), 6),
+            ("RIGHTPADDING",  (0, 0), (-1, -1), 6),
+            ("TOPPADDING",    (0, 0), (-1, -1), 6),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+        ]))
+        story.append(tn_table)
+    else:
+        story.append(Paragraph(
+            "Aún no hay respuestas con tiempo registrado.",
+            st("tn_vacio", fontSize=8, textColor=colors.HexColor("#7F8C8D")),
+        ))
     story.append(Spacer(1, 10))
 
     # ================================================================
@@ -1364,6 +1589,150 @@ def exportar_desarrollos_pdf():
     return send_file(
         buf,
         mimetype="application/pdf",
+        as_attachment=True,
+        download_name=nombre_archivo,
+    )
+
+
+# ════════════════════════════════════════════════════════════════
+# M13 · EXPORTAR CSV PARA ANÁLISIS ESTADÍSTICO DE LA TESIS
+#   /docente/reportes/csv?tipo=respuestas → una fila por respuesta
+#   /docente/reportes/csv?tipo=resumen    → una fila por alumno×competencia
+#   Codificación utf-8-sig (BOM) para que Excel/SPSS abran tildes bien.
+#   Solo exporta estudiantes de los salones del docente logueado.
+# ════════════════════════════════════════════════════════════════
+@bp_reportes.route("/csv")
+def exportar_csv():
+    import csv
+    from io import StringIO
+
+    if "user_id" not in session or session.get("user_rol") != "docente":
+        return redirect(url_for("auth.login"))
+
+    tipo = (request.args.get("tipo") or "respuestas").strip().lower()
+    conn = get_db()
+    cur = conn.cursor()
+
+    out = StringIO()
+    writer = csv.writer(out, delimiter=";")  # ; = separador que Excel en español espera
+
+    _MINEDU_CSV = {1: "Previo al inicio", 2: "En inicio", 3: "En proceso",
+                   4: "En proceso", 5: "Logrado", 6: "Logrado", 7: "Destacado"}
+
+    if tipo == "resumen":
+        # ── Una fila por alumno × competencia: diagnóstico vs estado actual ──
+        cur.execute(
+            """
+            SELECT
+                u.apellidos || ', ' || u.nombre               AS estudiante,
+                s.nombre_salon,
+                c.descripcion                                  AS competencia,
+                CASE c.id_competencia
+                    WHEN 1 THEN est.cantidad
+                    WHEN 2 THEN est.regularidad_equivalencia_cambio
+                    WHEN 3 THEN est.forma_movimiento_localizacion
+                    WHEN 4 THEN est.gestion_datos_incertidumbre
+                END::float                                     AS score_diagnostico,
+                COALESCE(nec.promedio_puntaje, 0)::float       AS score_actual,
+                COALESCE(nec.nivel_actual, 1)::int             AS nivel_actual,
+                (SELECT COUNT(*)
+                 FROM respuestas_estudiantes r
+                 JOIN ejercicios ej ON ej.id_ejercicio = r.id_ejercicio
+                 WHERE r.id_estudiante = est.id_estudiante
+                   AND ej.id_competencia = c.id_competencia
+                   AND r.modo = 'repaso')                      AS respuestas_practica,
+                (SELECT ROUND(AVG(CASE WHEN op.es_correcta THEN 100.0 ELSE 0 END))
+                 FROM respuestas_estudiantes r
+                 JOIN ejercicios ej ON ej.id_ejercicio = r.id_ejercicio
+                 LEFT JOIN opciones_ejercicio op ON op.id_opcion = r.id_opcion
+                 WHERE r.id_estudiante = est.id_estudiante
+                   AND ej.id_competencia = c.id_competencia
+                   AND r.modo = 'repaso')                      AS pct_acierto_practica
+            FROM estudiante est
+            JOIN usuarios u            ON u.id_usuario = est.id_usuario
+            JOIN estudiante_salones es ON es.id_estudiante = est.id_estudiante
+            JOIN salones s             ON s.id_salon = es.id_salon
+            JOIN docente_salones ds    ON ds.id_salon = s.id_salon
+            JOIN docente d             ON d.id_docente = ds.id_docente
+            CROSS JOIN competencias c
+            LEFT JOIN nivel_estudiante_competencia nec
+                ON nec.id_estudiante = est.id_estudiante
+               AND nec.id_competencia = c.id_competencia
+            WHERE d.id_usuario = %s
+              AND c.id_competencia BETWEEN 1 AND 4
+              AND est.estado_estudiante = 'activo'
+            ORDER BY estudiante, c.id_competencia
+            """,
+            (session["user_id"],),
+        )
+        writer.writerow([
+            "estudiante", "salon", "competencia",
+            "score_diagnostico", "score_actual", "delta_score",
+            "nivel_actual_1a7", "nivel_minedu",
+            "respuestas_practica", "pct_acierto_practica",
+        ])
+        for r in cur.fetchall():
+            score_diag = r[3]
+            score_act  = float(r[4] or 0)
+            delta      = round(score_act - score_diag, 1) if score_diag is not None else ""
+            writer.writerow([
+                r[0], r[1], r[2],
+                score_diag if score_diag is not None else "",
+                round(score_act, 1),
+                delta,
+                r[5],
+                _MINEDU_CSV.get(int(r[5] or 1), ""),
+                r[6] or 0,
+                r[7] if r[7] is not None else "",
+            ])
+        nombre_archivo = f"tesis_resumen_competencias_{datetime.now().strftime('%Y%m%d')}.csv"
+
+    else:
+        # ── Una fila por respuesta registrada (datos crudos para estadística) ──
+        cur.execute(
+            """
+            SELECT
+                u.apellidos || ', ' || u.nombre               AS estudiante,
+                s.nombre_salon,
+                c.descripcion                                  AS competencia,
+                r.id_ejercicio,
+                COALESCE(ej.nivel_logro, ej.nivel, 1)          AS dificultad_1a7,
+                r.modo,
+                CASE WHEN op.es_correcta THEN 1 ELSE 0 END     AS correcta,
+                r.tiempo_respuesta                             AS tiempo_seg,
+                CASE WHEN r.uso_pista THEN 1 ELSE 0 END        AS uso_pista,
+                to_char(r.fecha, 'YYYY-MM-DD HH24:MI:SS')      AS fecha
+            FROM respuestas_estudiantes r
+            JOIN estudiante est        ON est.id_estudiante = r.id_estudiante
+            JOIN usuarios u            ON u.id_usuario = est.id_usuario
+            JOIN estudiante_salones es ON es.id_estudiante = est.id_estudiante
+            JOIN salones s             ON s.id_salon = es.id_salon
+            JOIN docente_salones ds    ON ds.id_salon = s.id_salon
+            JOIN docente d             ON d.id_docente = ds.id_docente
+            JOIN ejercicios ej         ON ej.id_ejercicio = r.id_ejercicio
+            JOIN competencias c        ON c.id_competencia = ej.id_competencia
+            LEFT JOIN opciones_ejercicio op ON op.id_opcion = r.id_opcion
+            WHERE d.id_usuario = %s
+            ORDER BY estudiante, r.fecha
+            """,
+            (session["user_id"],),
+        )
+        writer.writerow([
+            "estudiante", "salon", "competencia", "id_ejercicio",
+            "dificultad_1a7", "modo", "correcta", "tiempo_seg",
+            "uso_pista", "fecha",
+        ])
+        for r in cur.fetchall():
+            writer.writerow(list(r))
+        nombre_archivo = f"tesis_respuestas_{datetime.now().strftime('%Y%m%d')}.csv"
+
+    cur.close()
+
+    # utf-8-sig → Excel reconoce el BOM y muestra las tildes correctamente
+    buf = BytesIO(out.getvalue().encode("utf-8-sig"))
+    return send_file(
+        buf,
+        mimetype="text/csv",
         as_attachment=True,
         download_name=nombre_archivo,
     )
