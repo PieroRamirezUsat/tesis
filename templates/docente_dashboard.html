@@ -605,10 +605,10 @@
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.font = '700 18px Inter, sans-serif';
-        ctx.fillStyle = '#1f2937';
+        ctx.fillStyle = '#F1F5F9';
         ctx.fillText('{{ total_estudiantes }}', cx, cy - 7);
         ctx.font = '600 9px Inter, sans-serif';
-        ctx.fillStyle = '#9ca3af';
+        ctx.fillStyle = '#94A3B8';
         ctx.fillText('ALUMNOS', cx, cy + 9);
         ctx.restore();
       }
@@ -621,7 +621,7 @@
           data: [{{ avanzados }}, {{ en_progreso }}, {{ necesita_ayuda }}],
           backgroundColor: ['#34d399', '#fb923c', '#f87171'],
           borderWidth: 2,
-          borderColor: '#ffffff',
+          borderColor: 'rgba(15,23,42,.85)',
           hoverOffset: 6,
         }]
       },
@@ -703,17 +703,17 @@
           yPct: {
             position: 'left',
             min: 0, max: 100,
-            ticks: { callback: v => v + '%', font: { size: 10 }, color: '#9ca3af' },
-            grid: { color: 'rgba(156,163,175,0.12)' },
+            ticks: { callback: v => v + '%', font: { size: 10 }, color: '#94A3B8' },
+            grid: { color: 'rgba(255,255,255,0.06)' },
           },
           yAct: {
             position: 'right',
             beginAtZero: true,
-            ticks: { precision: 0, font: { size: 10 }, color: '#c7d2fe' },
+            ticks: { precision: 0, font: { size: 10 }, color: '#818CF8' },
             grid: { display: false },
           },
           x: {
-            ticks: { font: { size: 10 }, color: '#9ca3af' },
+            ticks: { font: { size: 10 }, color: '#94A3B8' },
             grid: { display: false },
           }
         }

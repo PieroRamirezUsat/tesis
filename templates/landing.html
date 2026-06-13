@@ -117,13 +117,50 @@
       border-radius: 50%;
       animation: spin-slow 30s linear infinite;
     }
+
+    /* ── DARK PAGE THEME ─────────────────────────────── */
+    .glass-nav {
+      background: rgba(15,23,42,.92) !important;
+      border-color: rgba(99,102,241,.2) !important;
+    }
+    .glass-nav .text-slate-900 { color: #f1f5f9 !important; }
+    .glass-nav .text-indigo-500 { color: #a5b4fc !important; }
+
+    section:not(.hero-bg) .bg-white  { background: #1e293b !important; border-color: #334155 !important; }
+    section:not(.hero-bg) .bg-slate-50  { background: #0f172a !important; border-color: #475569 !important; }
+    section:not(.hero-bg) .bg-slate-200 { background: #334155 !important; }
+
+    section:not(.hero-bg) .text-slate-900 { color: #f1f5f9 !important; }
+    section:not(.hero-bg) .text-slate-500 { color: #94a3b8 !important; }
+    section:not(.hero-bg) .text-indigo-600 { color: #818cf8 !important; }
+    section:not(.hero-bg) .text-emerald-600 { color: #34d399 !important; }
+    section:not(.hero-bg) .text-violet-600  { color: #c084fc !important; }
+    section:not(.hero-bg) .text-amber-600   { color: #fbbf24 !important; }
+    section:not(.hero-bg) .text-indigo-500  { color: #818cf8 !important; }
+    section:not(.hero-bg) .text-violet-500  { color: #c084fc !important; }
+    section:not(.hero-bg) .text-emerald-500 { color: #34d399 !important; }
+
+    section:not(.hero-bg) .bg-indigo-50  { background: rgba(99,102,241,.15) !important; }
+    section:not(.hero-bg) .bg-indigo-100 { background: rgba(99,102,241,.2)  !important; border-color: rgba(99,102,241,.3) !important; }
+    section:not(.hero-bg) .border-indigo-100 { border-color: rgba(99,102,241,.3) !important; }
+    section:not(.hero-bg) .text-indigo-700 { color: #a5b4fc !important; }
+    section:not(.hero-bg) .bg-emerald-50, section:not(.hero-bg) .bg-emerald-100 { background: rgba(16,185,129,.15) !important; }
+    section:not(.hero-bg) .text-emerald-700 { color: #6ee7b7 !important; }
+    section:not(.hero-bg) .bg-violet-50,  section:not(.hero-bg) .bg-violet-100  { background: rgba(139,92,246,.15) !important; }
+    section:not(.hero-bg) .text-violet-700 { color: #d8b4fe !important; }
+    section:not(.hero-bg) .bg-amber-50,   section:not(.hero-bg) .bg-amber-100   { background: rgba(245,158,11,.15) !important; }
+    section:not(.hero-bg) .text-amber-700 { color: #fde68a !important; }
+    section:not(.hero-bg) .bg-sky-50,     section:not(.hero-bg) .bg-sky-100     { background: rgba(14,165,233,.15) !important; }
+    section:not(.hero-bg) .text-sky-700   { color: #7dd3fc !important; }
+    section:not(.hero-bg) .bg-rose-50,    section:not(.hero-bg) .bg-rose-100    { background: rgba(244,63,94,.15) !important; }
+    section:not(.hero-bg) .text-rose-700  { color: #fda4af !important; }
   </style>
 </head>
 
-<body class="bg-bg-light overflow-x-hidden">
+<body class="overflow-x-hidden" style="background:#0f172a">
 
   <!-- ══════════════════ NAVBAR ══════════════════ -->
-  <nav class="glass-nav fixed top-0 left-0 right-0 z-50 border-b border-indigo-100/50 shadow-sm">
+  <nav class="glass-nav fixed top-0 left-0 right-0 z-50 border-b border-indigo-900/40 shadow-sm">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between h-16">
 
@@ -393,14 +430,14 @@
 
     <!-- Wave divider -->
     <div class="absolute bottom-0 left-0 right-0 pointer-events-none">
-      <svg viewBox="0 0 1440 72" preserveAspectRatio="none" class="w-full" style="height:72px" fill="#F4F7FB">
+      <svg viewBox="0 0 1440 72" preserveAspectRatio="none" class="w-full" style="height:72px" fill="#0f172a">
         <path d="M0,36 C240,72 480,0 720,36 C960,72 1200,0 1440,36 L1440,72 L0,72 Z"/>
       </svg>
     </div>
   </section>
 
   <!-- ══════════════════ STATS ══════════════════ -->
-  <section class="bg-bg-light py-12">
+  <section class="py-12" style="background:#131929">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-5">
 
@@ -441,7 +478,7 @@
   </section>
 
   <!-- ══════════════════ FEATURES ══════════════════ -->
-  <section class="bg-bg-light py-16 sm:py-20">
+  <section class="py-16 sm:py-20" style="background:#0f172a">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
       <!-- Section header -->
@@ -564,7 +601,7 @@
   </section>
 
   <!-- ══════════════════ HOW TO INSTALL ══════════════════ -->
-  <section class="bg-white py-16 sm:py-20 border-y border-slate-100">
+  <section class="py-16 sm:py-20 border-y border-slate-800" style="background:#1a2744">
     <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="text-center mb-12">
         <h2 class="text-3xl sm:text-4xl font-black text-slate-900 mb-3">
@@ -618,7 +655,7 @@
   </section>
 
   <!-- ══════════════════ DOWNLOAD CTA ══════════════════ -->
-  <section id="descargar" class="bg-bg-light py-16 sm:py-24">
+  <section id="descargar" class="py-16 sm:py-24" style="background:#0f172a">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
 
       <div class="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-800 rounded-3xl p-8 sm:p-14 text-center shadow-2xl shadow-indigo-300/30">

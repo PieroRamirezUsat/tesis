@@ -67,28 +67,24 @@
     .field {
       display: block; width: 100%; height: 44px;
       border-radius: 12px;
-      border: 1.5px solid #e2e8f0;
-      background: #f8fafc;
-      color: #0f172a;
+      border: 1.5px solid rgba(129,140,248,.25);
+      background: rgba(255,255,255,.06);
+      color: #f1f5f9;
       padding: 0 12px;
       font-size: 14px;
       transition: border-color .2s, box-shadow .2s;
     }
     .field:focus {
       outline: none;
-      border-color: #4F46E5;
-      box-shadow: 0 0 0 3px rgba(79,70,229,.16);
-      background: #fff;
+      border-color: #818cf8;
+      box-shadow: 0 0 0 3px rgba(129,140,248,.2);
+      background: rgba(255,255,255,.10);
     }
-    .field::placeholder { color: #94a3b8; }
+    .field::placeholder { color: rgba(255,255,255,.3); }
 
     /* Right panel bg */
     .right-bg {
-      background-color: #F4F7FB;
-      background-image:
-        linear-gradient(rgba(79,70,229,.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(79,70,229,.03) 1px, transparent 1px);
-      background-size: 32px 32px;
+      background: linear-gradient(145deg, #0f172a 0%, #1a1740 40%, #1e1b4b 100%);
     }
   </style>
 </head>
@@ -187,8 +183,8 @@
             <span class="material-symbols-outlined text-white" style="font-size:21px">school</span>
           </div>
           <div>
-            <p class="font-black text-slate-900 text-base leading-tight">TutorMath</p>
-            <p class="text-indigo-500 leading-tight" style="font-size:10px">Sistema Adaptativo · Álgebra</p>
+            <p class="font-black text-white text-base leading-tight">TutorMath</p>
+            <p class="text-indigo-300 leading-tight" style="font-size:10px">Sistema Adaptativo · Álgebra</p>
           </div>
         </a>
       </div>
@@ -198,8 +194,8 @@
 
         <!-- Card header -->
         <div class="mb-7">
-          <h1 class="text-2xl font-black text-slate-900 leading-tight">Bienvenido de vuelta 👋</h1>
-          <p class="text-slate-500 text-sm mt-1.5">Ingresa tus datos para acceder al sistema.</p>
+          <h1 class="text-2xl font-black text-white leading-tight">Bienvenido de vuelta 👋</h1>
+          <p class="text-indigo-200 text-sm mt-1.5">Ingresa tus datos para acceder al sistema.</p>
         </div>
 
         <!-- Flash messages -->
@@ -235,11 +231,11 @@
 
           <!-- Correo -->
           <div>
-            <label class="block text-sm font-semibold text-slate-700 mb-1.5">
+            <label class="block text-sm font-semibold text-indigo-200 mb-1.5">
               Correo electrónico
             </label>
             <div class="relative">
-              <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" style="font-size:18px">mail</span>
+              <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-indigo-300 pointer-events-none" style="font-size:18px">mail</span>
               <input
                 type="email"
                 name="correo"
@@ -254,14 +250,14 @@
           <!-- Contraseña -->
           <div>
             <div class="flex items-center justify-between mb-1.5">
-              <label class="text-sm font-semibold text-slate-700">Contraseña</label>
+              <label class="text-sm font-semibold text-indigo-200">Contraseña</label>
               <a href="{{ url_for('auth.forgot_password') }}"
                  class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors">
                 ¿Olvidaste tu contraseña?
               </a>
             </div>
             <div class="relative">
-              <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" style="font-size:18px">lock</span>
+              <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-indigo-300 pointer-events-none" style="font-size:18px">lock</span>
               <input
                 id="passInput"
                 type="password"
@@ -272,7 +268,7 @@
                 required
               />
               <button type="button" id="togglePass"
-                      class="absolute inset-y-0 right-3 flex items-center text-slate-400 hover:text-slate-600 transition-colors"
+                      class="absolute inset-y-0 right-3 flex items-center text-indigo-300 hover:text-white transition-colors"
                       tabindex="-1">
                 <span id="eyeIcon" class="material-symbols-outlined" style="font-size:20px">visibility_off</span>
               </button>
@@ -294,9 +290,9 @@
 
         <!-- Divider -->
         <div class="flex items-center gap-3 my-5">
-          <div class="flex-1 h-px bg-slate-200"></div>
-          <span class="text-xs text-slate-400 font-medium">¿Primera vez?</span>
-          <div class="flex-1 h-px bg-slate-200"></div>
+          <div class="flex-1 h-px bg-slate-600"></div>
+          <span class="text-xs text-slate-400 font-medium" style="color:#94a3b8">¿Primera vez?</span>
+          <div class="flex-1 h-px bg-slate-600"></div>
         </div>
 
         <!-- Registro docente -->
@@ -309,9 +305,9 @@
           Crear cuenta de docente
         </a>
 
-        <p class="text-center text-xs text-slate-400 mt-3 leading-relaxed">
+        <p class="text-center text-xs mt-3 leading-relaxed" style="color:#94a3b8">
           El registro requiere el
-          <span class="font-semibold text-slate-500">código de institución</span>.
+          <span class="font-semibold text-indigo-300">código de institución</span>.
           Los alumnos acceden solo desde la app móvil.
         </p>
 

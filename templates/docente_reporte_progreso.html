@@ -884,15 +884,15 @@
         scales: {
           x: {
             beginAtZero: true,
-            ticks: { stepSize: 1, precision: 0, font: { size: 11 } },
-            grid: { color: 'rgba(0,0,0,0.04)' },
-            title: { display: true, text: 'N.º de revisiones', color: '#9ca3af', font: { size: 11, weight: '600' } }
+            ticks: { stepSize: 1, precision: 0, font: { size: 11 }, color: '#94A3B8' },
+            grid: { color: 'rgba(255,255,255,0.06)' },
+            title: { display: true, text: 'N.º de revisiones', color: '#64748B', font: { size: 11, weight: '600' } }
           },
           y: {
             ticks: {
               font: { size: 11 },
+              color: '#94A3B8',
               callback: function(val) {
-                // Acortar títulos largos a 35 chars
                 const lbl = this.getLabelForValue(val);
                 return lbl.length > 35 ? lbl.substring(0, 33) + '…' : lbl;
               }
@@ -951,20 +951,20 @@
             title: {
               display: true,
               text: '% Correcto',
-              color: '#9ca3af',
+              color: '#64748B',
               font: { size: 11, weight: '600' }
             },
-            ticks: { callback: v => v + '%', stepSize: 25, font: { size: 11 } },
-            grid: { color: 'rgba(0,0,0,0.04)' }
+            ticks: { callback: v => v + '%', stepSize: 25, font: { size: 11 }, color: '#94A3B8' },
+            grid: { color: 'rgba(255,255,255,0.06)' }
           },
           x: {
             title: {
               display: true,
               text: 'Fecha de actividad',
-              color: '#9ca3af',
+              color: '#64748B',
               font: { size: 11, weight: '600' }
             },
-            ticks: { font: { size: 10 }, maxRotation: 45 },
+            ticks: { font: { size: 10 }, maxRotation: 45, color: '#94A3B8' },
             grid: { display: false }
           }
         }

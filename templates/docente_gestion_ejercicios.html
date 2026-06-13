@@ -445,11 +445,11 @@
   // ── Distribución + coloreado de badges ───────────────────────────────────
   (function renderStats() {
     const PALETA = [
-      { bar: '#F59E0B', badgeBg: '#FEF3C7', badgeColor: '#92400E' },  // amber
-      { bar: '#0EA5E9', badgeBg: '#E0F2FE', badgeColor: '#0C4A6E' },  // sky
-      { bar: '#8B5CF6', badgeBg: '#EDE9FE', badgeColor: '#4C1D95' },  // violet
-      { bar: '#10B981', badgeBg: '#D1FAE5', badgeColor: '#064E3B' },  // emerald
-      { bar: '#F97316', badgeBg: '#FFEDD5', badgeColor: '#7C2D12' },  // orange
+      { bar: '#F59E0B', badgeBg: 'rgba(245,158,11,.14)',   badgeColor: '#FCD34D' },  // amber
+      { bar: '#38BDF8', badgeBg: 'rgba(56,189,248,.12)',   badgeColor: '#7DD3FC' },  // sky
+      { bar: '#A78BFA', badgeBg: 'rgba(167,139,250,.12)',  badgeColor: '#C4B5FD' },  // violet
+      { bar: '#34D399', badgeBg: 'rgba(52,211,153,.12)',   badgeColor: '#6EE7B7' },  // emerald
+      { bar: '#FB923C', badgeBg: 'rgba(251,146,60,.12)',   badgeColor: '#FCA97C' },  // orange
     ];
 
     const rows = document.querySelectorAll('[data-row-ejercicio]');

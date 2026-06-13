@@ -1,13 +1,12 @@
 <!DOCTYPE html>
-<html lang="es" class="light">
+<html lang="es">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="csrf-token" content="{{ csrf_token() }}" />
-  <title>{% block title %}Panel del Docente{% endblock %}</title>
+  <title>{% block title %}Panel del Docente — Tutor Math{% endblock %}</title>
 
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
@@ -15,241 +14,683 @@
 
   <script>
     tailwind.config = {
-      darkMode: "class",
       theme: {
         extend: {
           fontFamily: { display: ["Inter", "system-ui", "sans-serif"] },
           colors: {
-            primary: "#4F46E5",
+            primary:   "#4F46E5",
             secondary: "#22C55E",
-            accent: "#F97316",
-            "background-light": "#F4F7FB",
-            "background-dark": "#101922",
-            "text-light": "#111827",
-            "text-dark": "#F9FAFB",
-            danger: "#E11D48",
-            success: "#16A34A",
+            accent:    "#F97316",
+            danger:    "#E11D48",
+            success:   "#16A34A",
           },
-          boxShadow: { card: "0 10px 25px rgba(15, 23, 42, 0.08)" },
         },
       },
     };
   </script>
 
   <style>
-    body { margin: 0; font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-    .material-symbols-outlined { font-variation-settings: "FILL" 0, "wght" 500, "GRAD" 0, "opsz" 24; }
-    .nav-icon-active { font-variation-settings: "FILL" 1, "wght" 600, "GRAD" 0, "opsz" 24; }
+    /* ── Reset & base ── */
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Inter", system-ui, sans-serif;
+      background: #0F172A;
+      color: #F1F5F9;
+    }
+    .material-symbols-outlined {
+      font-variation-settings: "FILL" 0, "wght" 500, "GRAD" 0, "opsz" 24;
+      vertical-align: middle;
+    }
+    .sym-fill { font-variation-settings: "FILL" 1, "wght" 600, "GRAD" 0, "opsz" 24; }
+
+    /* ── Animations ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0);    }
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0)    rotate(0deg);  }
+      50%      { transform: translateY(-14px) rotate(3deg);  }
+    }
+    @keyframes floatR {
+      0%, 100% { transform: translateY(0)    rotate(0deg);  }
+      50%      { transform: translateY(12px)  rotate(-3deg); }
+    }
+    @keyframes shimmer {
+      0%   { background-position: -200% center; }
+      100% { background-position:  200% center; }
+    }
+
+    .anim-up   { animation: fadeUp .5s ease-out both; }
+    .anim-up-1 { animation-delay: .08s; }
+    .anim-up-2 { animation-delay: .16s; }
+    .anim-up-3 { animation-delay: .24s; }
+    .anim-up-4 { animation-delay: .32s; }
+    .anim-up-5 { animation-delay: .40s; }
+
+    .float-a { animation: float  7s ease-in-out infinite; }
+    .float-b { animation: floatR 8s ease-in-out 1.5s infinite; }
+    .float-c { animation: float  9s ease-in-out 3s   infinite; }
+    .float-d { animation: floatR 6s ease-in-out .8s  infinite; }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      background: linear-gradient(180deg, #0F172A 0%, #1E1B4B 55%, #2D2A6E 100%);
+      position: relative;
+      overflow: hidden;
+    }
+    .sidebar::before {
+      content: "";
+      position: absolute; inset: 0; pointer-events: none;
+      background-image:
+        linear-gradient(rgba(129,140,248,.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(129,140,248,.045) 1px, transparent 1px);
+      background-size: 32px 32px;
+    }
+
+    /* ── Nav items ── */
+    .nav-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 9px 10px; border-radius: 12px;
+      font-size: 13px; font-weight: 500;
+      color: rgba(203,213,225,.72);
+      text-decoration: none;
+      transition: background .18s, color .18s, border-color .18s;
+      border-left: 3px solid transparent;
+      position: relative; z-index: 1;
+    }
+    .nav-item:hover {
+      background: rgba(255,255,255,.07);
+      color: #E2E8F0;
+    }
+    .nav-item.active {
+      background: rgba(99,102,241,.2);
+      color: #fff;
+      font-weight: 700;
+      border-left-color: #818CF8;
+    }
+    .nav-icon {
+      width: 32px; height: 32px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: background .18s;
+      background: rgba(255,255,255,.07);
+    }
+    .nav-item.active .nav-icon { background: rgba(99,102,241,.45); }
+    .nav-item:hover:not(.active) .nav-icon { background: rgba(255,255,255,.1); }
+    .nav-item     .nav-icon span { color: rgba(148,163,184,.7); }
+    .nav-item:hover:not(.active) .nav-icon span { color: #CBD5E1; }
+    .nav-item.active .nav-icon span {
+      color: #A5B4FC;
+      font-variation-settings: "FILL" 1, "wght" 600, "GRAD" 0, "opsz" 24;
+    }
+
+    /* ── Top header ── */
+    .top-header {
+      background: rgba(15,23,42,.92);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgba(129,140,248,.12);
+    }
+
+    /* ── Card variants ── */
+    .card-glass {
+      background: rgba(30,27,75,.55);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(129,140,248,.18);
+      border-radius: 16px;
+    }
+    .card-surface {
+      background: rgba(15,23,42,.7);
+      border: 1px solid rgba(148,163,184,.1);
+      border-radius: 16px;
+    }
+
+    /* ── Stat card gradients ── */
+    .stat-indigo { background: linear-gradient(135deg, #4338CA 0%, #7C3AED 100%); }
+    .stat-blue   { background: linear-gradient(135deg, #1D4ED8 0%, #4338CA 100%); }
+    .stat-violet { background: linear-gradient(135deg, #7C3AED 0%, #9333EA 100%); }
+    .stat-cyan   { background: linear-gradient(135deg, #0891B2 0%, #2563EB 100%); }
+    .stat-rose   { background: linear-gradient(135deg, #BE185D 0%, #7C3AED 100%); }
+    .stat-emerald{ background: linear-gradient(135deg, #059669 0%, #0891B2 100%); }
+
+    /* ── Buttons ── */
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 9px 18px; border-radius: 10px; border: none; cursor: pointer;
+      background: linear-gradient(135deg, #4338CA, #7C3AED);
+      color: #fff; font-size: 13px; font-weight: 700; font-family: inherit;
+      box-shadow: 0 4px 14px rgba(99,102,241,.35);
+      transition: transform .15s, box-shadow .15s, filter .15s;
+      text-decoration: none;
+    }
+    .btn-primary:hover  { filter: brightness(1.12); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(99,102,241,.5); }
+    .btn-primary:active { transform: scale(.97); }
+
+    .btn-outline {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 16px; border-radius: 10px; cursor: pointer;
+      background: rgba(99,102,241,.08);
+      border: 1.5px solid rgba(129,140,248,.35);
+      color: #A5B4FC; font-size: 13px; font-weight: 600; font-family: inherit;
+      transition: background .15s, border-color .15s, color .15s;
+      text-decoration: none;
+    }
+    .btn-outline:hover { background: rgba(99,102,241,.15); border-color: rgba(129,140,248,.6); color: #C7D2FE; }
+
+    .btn-danger {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 16px; border-radius: 10px; cursor: pointer;
+      background: rgba(225,29,72,.1);
+      border: 1.5px solid rgba(225,29,72,.3);
+      color: #FCA5A5; font-size: 13px; font-weight: 600; font-family: inherit;
+      transition: background .15s, border-color .15s;
+      text-decoration: none;
+    }
+    .btn-danger:hover { background: rgba(225,29,72,.2); border-color: rgba(225,29,72,.5); }
+
+    /* ── Inputs (global) ── */
+    .field-dark {
+      height: 42px;
+      padding: 0 14px;
+      border-radius: 10px;
+      border: 1.5px solid rgba(129,140,248,.2);
+      background: rgba(255,255,255,.05);
+      color: #F1F5F9;
+      font-size: 13px;
+      font-family: inherit;
+      width: 100%;
+      transition: border-color .2s, box-shadow .2s, background .2s;
+      outline: none;
+    }
+    .field-dark::placeholder { color: rgba(148,163,184,.5); }
+    .field-dark:focus {
+      border-color: #818CF8;
+      box-shadow: 0 0 0 3px rgba(129,140,248,.18);
+      background: rgba(255,255,255,.08);
+    }
+    select.field-dark { cursor: pointer; }
+
+    /* ── Flash messages ── */
+    .flash-success { background: rgba(16,163,74,.15);  border: 1px solid rgba(16,163,74,.3);  color: #6EE7B7; }
+    .flash-danger  { background: rgba(225,29,72,.15);  border: 1px solid rgba(225,29,72,.3);  color: #FCA5A5; }
+    .flash-warning { background: rgba(245,158,11,.15); border: 1px solid rgba(245,158,11,.3); color: #FCD34D; }
+    .flash-info    { background: rgba(99,102,241,.15); border: 1px solid rgba(99,102,241,.3); color: #A5B4FC; }
+
+    /* ── Tables ── */
+    .tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .tbl thead th {
+      padding: 10px 14px; text-align: left;
+      font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+      color: rgba(148,163,184,.6);
+      border-bottom: 1px solid rgba(129,140,248,.12);
+    }
+    .tbl tbody tr {
+      border-bottom: 1px solid rgba(148,163,184,.07);
+      transition: background .15s;
+    }
+    .tbl tbody tr:hover { background: rgba(99,102,241,.07); }
+    .tbl tbody td { padding: 11px 14px; color: #CBD5E1; vertical-align: middle; }
+
+    /* ── Badges ── */
+    .badge {
+      display: inline-flex; align-items: center;
+      padding: 3px 10px; border-radius: 999px;
+      font-size: 11px; font-weight: 700; letter-spacing: .02em;
+    }
+    .badge-indigo  { background: rgba(99,102,241,.2);  color: #A5B4FC; }
+    .badge-blue    { background: rgba(59,130,246,.2);  color: #93C5FD; }
+    .badge-violet  { background: rgba(124,58,237,.2);  color: #C4B5FD; }
+    .badge-green   { background: rgba(16,185,129,.2);  color: #6EE7B7; }
+    .badge-amber   { background: rgba(245,158,11,.2);  color: #FCD34D; }
+    .badge-rose    { background: rgba(225,29,72,.2);   color: #FCA5A5; }
+    .badge-muted   { background: rgba(148,163,184,.15); color: #94A3B8; }
+
+    /* ── Dividers ── */
+    .sep { height: 1px; background: rgba(129,140,248,.1); margin: 20px 0; }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(129,140,248,.22); border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(129,140,248,.38); }
+
+    /* ── Page content entrance ── */
+    .page-content { animation: fadeUp .4s ease-out both; }
+
+    /* ══════════════════════════════════════════════════
+       DARK OVERRIDES — aplican a todas las páginas hijas
+       ══════════════════════════════════════════════════ */
+
+    /* Fondo general del main */
+    main { background: #0F172A; }
+
+    /* Tarjetas blancas → dark glass */
+    main .bg-white { background: rgba(15,23,42,.65) !important; }
+    main [class~="border-gray-100"] { border-color: rgba(129,140,248,.13) !important; }
+    main [class~="border-gray-50"]  { border-color: rgba(129,140,248,.08) !important; }
+    main .bg-gray-50 { background: rgba(255,255,255,.04) !important; }
+    main .bg-gray-100 { background: rgba(255,255,255,.06) !important; }
+    main .bg-gray-200 { background: rgba(255,255,255,.08) !important; }
+
+    /* Textos */
+    main .text-gray-900 { color: #F1F5F9 !important; }
+    main .text-gray-800 { color: #E2E8F0 !important; }
+    main .text-gray-700 { color: #CBD5E1 !important; }
+    main .text-gray-600 { color: #94A3B8 !important; }
+    main .text-gray-500 { color: rgba(148,163,184,.7) !important; }
+    main .text-gray-400 { color: rgba(148,163,184,.52) !important; }
+    main .text-gray-300 { color: rgba(148,163,184,.35) !important; }
+    main .text-gray-200 { color: rgba(148,163,184,.22) !important; }
+
+    /* Etiquetas de formularios */
+    main label { color: rgba(203,213,225,.8); }
+
+    /* Inputs / selects dentro del main */
+    main input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=hidden]):not([type=range]),
+    main select,
+    main textarea {
+      background: rgba(255,255,255,.055) !important;
+      border-color: rgba(129,140,248,.2) !important;
+      color: #F1F5F9 !important;
+      border-radius: 10px !important;
+    }
+    main input::placeholder,
+    main textarea::placeholder { color: rgba(148,163,184,.45) !important; }
+    main input:focus:not([type=checkbox]):not([type=radio]),
+    main select:focus,
+    main textarea:focus {
+      border-color: #818CF8 !important;
+      box-shadow: 0 0 0 3px rgba(129,140,248,.18) !important;
+      background: rgba(255,255,255,.08) !important;
+      outline: none !important;
+    }
+    main select option { background: #1E1B4B; color: #F1F5F9; }
+
+    /* Tabla — cabecera y filas */
+    main thead,
+    main thead th {
+      background: rgba(49,46,129,.42) !important;
+      color: #A5B4FC !important;
+      border-bottom: 1px solid rgba(129,140,248,.28) !important;
+    }
+    main tbody tr { border-color: rgba(129,140,248,.07) !important; }
+    main tbody tr:hover { background: rgba(99,102,241,.07) !important; }
+
+    /* Hover estados */
+    main .hover\:bg-gray-50:hover,
+    main .hover\:bg-gray-100:hover    { background: rgba(99,102,241,.06) !important; }
+    main .hover\:bg-indigo-50:hover   { background: rgba(99,102,241,.1)  !important; }
+    main .hover\:bg-blue-50:hover,
+    main .hover\:bg-blue-50\/40:hover { background: rgba(59,130,246,.08) !important; }
+    main .hover\:bg-violet-50\/30:hover,
+    main .hover\:bg-violet-50\/50:hover,
+    main .hover\:bg-violet-50:hover   { background: rgba(124,58,237,.08) !important; }
+    main .hover\:bg-orange-50:hover   { background: rgba(245,158,11,.08) !important; }
+    main .hover\:bg-red-50:hover      { background: rgba(239,68,68,.07)  !important; }
+
+    /* Badges con fondo claro */
+    main .bg-indigo-50  { background: rgba(99,102,241,.18) !important; }
+    main .bg-violet-50  { background: rgba(124,58,237,.18) !important; }
+    main .bg-blue-50    { background: rgba(59,130,246,.18) !important; }
+    main .bg-emerald-50 { background: rgba(16,185,129,.18) !important; }
+    main .bg-amber-50   { background: rgba(245,158,11,.18) !important; }
+    main .bg-sky-50     { background: rgba(14,165,233,.18) !important; }
+    main .bg-red-50     { background: rgba(239,68,68,.12)  !important; }
+    main .bg-rose-50    { background: rgba(244,63,94,.12)  !important; }
+    main .bg-orange-50  { background: rgba(249,115,22,.12) !important; }
+    main .bg-purple-50  { background: rgba(168,85,247,.18) !important; }
+    main .bg-slate-100  { background: rgba(148,163,184,.1) !important; }
+
+    /* Dividers */
+    main .border-b,
+    main .border-t { border-color: rgba(129,140,248,.1) !important; }
+
+    /* ── Modales (fixed, fuera del main) ── */
+    [id*="backdrop"] > div {
+      background: rgba(10,15,35,.96) !important;
+      border: 1px solid rgba(129,140,248,.22) !important;
+      color: #F1F5F9;
+    }
+    #modal-estudiante {
+      background: rgba(10,15,35,.96) !important;
+      border: 1px solid rgba(129,140,248,.22) !important;
+    }
+    [id*="backdrop"] .bg-white { background: rgba(255,255,255,.05) !important; }
+    [id*="backdrop"] .border-gray-100,
+    [id*="backdrop"] .border-gray-200 { border-color: rgba(129,140,248,.15) !important; }
+    [id*="backdrop"] .text-gray-900 { color: #F1F5F9 !important; }
+    [id*="backdrop"] .text-gray-800 { color: #E2E8F0 !important; }
+    [id*="backdrop"] .text-gray-700 { color: #CBD5E1 !important; }
+    [id*="backdrop"] .text-gray-600 { color: #94A3B8 !important; }
+    [id*="backdrop"] .text-gray-500 { color: rgba(148,163,184,.7) !important; }
+    [id*="backdrop"] .text-gray-400 { color: rgba(148,163,184,.5) !important; }
+    [id*="backdrop"] label { color: rgba(203,213,225,.75) !important; }
+    [id*="backdrop"] input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=hidden]),
+    [id*="backdrop"] select {
+      background: rgba(255,255,255,.06) !important;
+      border-color: rgba(129,140,248,.2) !important;
+      color: #F1F5F9 !important;
+      border-radius: 10px !important;
+    }
+    [id*="backdrop"] input:focus:not([type=checkbox]):not([type=radio]),
+    [id*="backdrop"] select:focus {
+      border-color: #818CF8 !important;
+      box-shadow: 0 0 0 3px rgba(129,140,248,.18) !important;
+      outline: none !important;
+    }
+    [id*="backdrop"] select option { background: #1E1B4B; color: #F1F5F9; }
+    [id*="backdrop"] .hover\:bg-blue-50:hover,
+    [id*="backdrop"] .hover\:bg-blue-50\/30:hover { background: rgba(59,130,246,.08) !important; }
+    [id*="backdrop"] .hover\:bg-gray-50:hover { background: rgba(99,102,241,.06) !important; }
+    /* Dropdown autocomplete */
+    #dropdown-usuarios {
+      background: rgba(10,15,35,.97) !important;
+      border-color: rgba(129,140,248,.2) !important;
+    }
+    #dropdown-usuarios button:hover { background: rgba(99,102,241,.12) !important; }
+    #dropdown-usuarios .border-gray-50 { border-color: rgba(129,140,248,.08) !important; }
+    /* Banner colores en modales */
+    [id*="backdrop"] .bg-amber-50  { background: rgba(245,158,11,.12) !important; }
+    [id*="backdrop"] .bg-orange-50 { background: rgba(249,115,22,.12) !important; }
+    [id*="backdrop"] .border-amber-200  { border-color: rgba(245,158,11,.3) !important; }
+    [id*="backdrop"] .border-orange-200 { border-color: rgba(249,115,22,.3) !important; }
+    /* Input readonly/disabled en modales */
+    [id*="backdrop"] input[readonly],
+    [id*="backdrop"] input:disabled { background: rgba(255,255,255,.03) !important; color: rgba(148,163,184,.5) !important; }
+
+    /* ── Light gradient card overrides (from-*-50 to-white patterns) ── */
+    main [class~="from-emerald-50"]  { background-image:none!important; background-color:rgba(16,185,129,.10)!important; }
+    main [class~="from-amber-50"]    { background-image:none!important; background-color:rgba(245,158,11,.10)!important; }
+    main [class~="from-red-50"]      { background-image:none!important; background-color:rgba(225,29,72,.10)!important;  }
+    main [class~="from-rose-50"]     { background-image:none!important; background-color:rgba(225,29,72,.10)!important;  }
+    main [class~="from-blue-50"]     { background-image:none!important; background-color:rgba(14,165,233,.10)!important; }
+    main [class~="from-sky-50"]      { background-image:none!important; background-color:rgba(14,165,233,.10)!important; }
+    main [class~="from-indigo-50"]   { background-image:none!important; background-color:rgba(99,102,241,.12)!important; }
+    main [class~="from-violet-50"]   { background-image:none!important; background-color:rgba(167,139,250,.10)!important; }
+    main [class~="from-purple-50"]   { background-image:none!important; background-color:rgba(167,139,250,.10)!important; }
+    /* ── Light badge / chip backgrounds ── */
+    main .bg-emerald-50  { background:rgba(16,185,129,.14)!important; }
+    main .bg-emerald-100 { background:rgba(16,185,129,.18)!important; }
+    main .bg-amber-50    { background:rgba(245,158,11,.14)!important; }
+    main .bg-amber-100   { background:rgba(245,158,11,.18)!important; }
+    main .bg-red-50      { background:rgba(225,29,72,.12)!important;  }
+    main .bg-red-100     { background:rgba(225,29,72,.16)!important;  }
+    main .bg-rose-50     { background:rgba(225,29,72,.12)!important;  }
+    main .bg-blue-50     { background:rgba(14,165,233,.12)!important; }
+    main .bg-blue-100    { background:rgba(14,165,233,.16)!important; }
+    main .bg-sky-50      { background:rgba(14,165,233,.12)!important; }
+    main .bg-sky-100     { background:rgba(14,165,233,.16)!important; }
+    main .bg-indigo-50   { background:rgba(99,102,241,.14)!important; }
+    main .bg-indigo-100  { background:rgba(99,102,241,.18)!important; }
+    main .bg-violet-50   { background:rgba(167,139,250,.12)!important; }
+    main .bg-violet-100  { background:rgba(167,139,250,.16)!important; }
+    main .bg-purple-50   { background:rgba(167,139,250,.12)!important; }
+    main .bg-purple-100  { background:rgba(167,139,250,.16)!important; }
+    main .bg-slate-50    { background:rgba(99,102,241,.08)!important;  }
+    main .bg-slate-200   { background:rgba(148,163,184,.15)!important; }
+    main [class~="hover:bg-slate-100"]:hover  { background:rgba(148,163,184,.15)!important; }
+    main [class~="hover:bg-slate-200"]:hover  { background:rgba(148,163,184,.2)!important;  }
+    /* ── Badge / label text colors (dark bg needs light text) ── */
+    main .text-emerald-700, main .text-emerald-800, main .text-emerald-600 { color:#6EE7B7!important; }
+    main .text-amber-700,   main .text-amber-800   { color:#FCD34D!important; }
+    main .text-red-700,     main .text-red-600     { color:#FCA5A5!important; }
+    main .text-rose-700,    main .text-rose-600    { color:#FCA5A5!important; }
+    main .text-blue-700,    main .text-blue-600    { color:#93C5FD!important; }
+    main .text-sky-700,     main .text-sky-600     { color:#7DD3FC!important; }
+    main .text-indigo-700,  main .text-indigo-600  { color:#A5B4FC!important; }
+    main .text-violet-700,  main .text-violet-600  { color:#C4B5FD!important; }
+    main .text-purple-700,  main .text-purple-600  { color:#C4B5FD!important; }
+    main .text-orange-700,  main .text-orange-600  { color:#FDB07A!important; }
+    main .text-teal-700,    main .text-teal-600    { color:#5EEAD4!important; }
+    main .text-cyan-700,    main .text-cyan-600    { color:#67E8F9!important; }
+    main .text-slate-600   { color:#94A3B8!important; }
+    /* ── Light hover backgrounds ── */
+    main [class~="hover:bg-amber-50"]:hover   { background:rgba(245,158,11,.15)!important; }
+    main [class~="hover:bg-emerald-50"]:hover { background:rgba(16,185,129,.15)!important; }
+    main [class~="hover:bg-blue-50"]:hover    { background:rgba(14,165,233,.15)!important; }
+    main [class~="hover:bg-rose-50"]:hover    { background:rgba(225,29,72,.12)!important;  }
+    main [class~="hover:bg-red-50"]:hover     { background:rgba(225,29,72,.12)!important;  }
+    main [class~="hover:bg-indigo-50"]:hover  { background:rgba(99,102,241,.12)!important; }
+    main [class~="hover:bg-violet-50"]:hover  { background:rgba(167,139,250,.12)!important; }
+    main [class~="hover:bg-purple-50"]:hover  { background:rgba(167,139,250,.12)!important; }
+    /* ── Light border overrides ── */
+    main .border-emerald-100 { border-color:rgba(16,185,129,.22)!important; }
+    main .border-amber-100   { border-color:rgba(245,158,11,.22)!important; }
+    main .border-amber-200   { border-color:rgba(245,158,11,.3)!important;  }
+    main .border-amber-300   { border-color:rgba(245,158,11,.4)!important;  }
+    main .border-red-100     { border-color:rgba(225,29,72,.2)!important;   }
+    main .border-red-200     { border-color:rgba(225,29,72,.3)!important;   }
+    main .border-blue-100    { border-color:rgba(14,165,233,.2)!important;  }
+    main .border-blue-200    { border-color:rgba(14,165,233,.3)!important;  }
+    main .border-indigo-100  { border-color:rgba(99,102,241,.2)!important;  }
+    main .border-indigo-200  { border-color:rgba(99,102,241,.3)!important;  }
+    main .border-violet-200  { border-color:rgba(167,139,250,.3)!important; }
+    main .border-purple-100  { border-color:rgba(167,139,250,.2)!important; }
+    main .border-rose-200    { border-color:rgba(225,29,72,.28)!important;  }
+    main .border-sky-100     { border-color:rgba(14,165,233,.2)!important;  }
+    main .border-sky-200     { border-color:rgba(14,165,233,.3)!important;  }
+    main .border-slate-200   { border-color:rgba(148,163,184,.2)!important; }
+
+    {% block extra_styles %}{% endblock %}
   </style>
 </head>
 
-<body class="bg-background-light dark:bg-background-dark font-display text-text-light dark:text-text-dark">
-  <div class="relative flex min-h-screen w-full overflow-x-hidden">
+<body>
+  <div style="display:flex; min-height:100vh; overflow-x:hidden;">
 
-    <!-- ======== SIDEBAR ======== -->
-    <aside class="flex flex-col w-64 shrink-0 bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800">
+    <!-- ═══════════════════ SIDEBAR ═══════════════════ -->
+    <aside class="sidebar" style="display:flex; flex-direction:column; width:256px; flex-shrink:0;">
 
-      <!-- Brand + Profile (gradient header) -->
-      <div class="bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-700 px-4 pt-5 pb-4">
-        <div class="flex items-center gap-2.5 mb-4">
-          <div class="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
-            <span class="material-symbols-outlined text-white" style="font-size:18px">school</span>
+      <!-- Símbolos matemáticos decorativos del fondo -->
+      <span class="float-a" style="position:absolute;top:11%;left:5%;font-size:54px;color:rgba(129,140,248,.065);font-weight:900;pointer-events:none;user-select:none;z-index:0;line-height:1;">∑</span>
+      <span class="float-b" style="position:absolute;top:36%;right:4%;font-size:40px;color:rgba(167,139,250,.055);font-weight:900;pointer-events:none;user-select:none;z-index:0;line-height:1;">π</span>
+      <span class="float-c" style="position:absolute;bottom:28%;left:7%;font-size:46px;color:rgba(129,140,248,.05);font-weight:900;pointer-events:none;user-select:none;z-index:0;line-height:1;">∫</span>
+      <span class="float-d" style="position:absolute;bottom:11%;right:5%;font-size:34px;color:rgba(167,139,250,.065);font-weight:900;pointer-events:none;user-select:none;z-index:0;line-height:1;">x²</span>
+
+      <!-- Brand -->
+      <div style="padding:20px 16px 16px; border-bottom:1px solid rgba(255,255,255,.07); position:relative; z-index:1;">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
+          <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#4338CA,#7C3AED);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 12px rgba(99,102,241,.4);">
+            <span class="material-symbols-outlined sym-fill" style="color:#fff;font-size:18px;">school</span>
           </div>
           <div>
-            <p class="text-white font-black text-sm leading-tight">TutorMath</p>
-            <p class="text-indigo-200 leading-tight" style="font-size:10px">Sistema Adaptativo</p>
+            <p style="color:#fff;font-weight:900;font-size:14px;line-height:1.2;margin:0;">
+              Tutor <span style="background:linear-gradient(90deg,#818CF8,#C084FC);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Math</span>
+            </p>
+            <p style="color:rgba(165,180,252,.55);font-size:10px;line-height:1;margin:2px 0 0;">Sistema Adaptativo · IA</p>
           </div>
         </div>
 
-        <div class="flex items-center gap-3 bg-white/10 rounded-xl px-3 py-2.5">
+        <!-- Tarjeta del docente -->
+        <div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px 12px;">
           <img
             src="{{ url_for('static', filename='fotos_perfil/user_' ~ session.get('user_id', 0) ~ '.jpg') }}"
-            onerror="this.onerror=null;this.src='https://ui-avatars.com/api/?name={{ session.get('user_name', 'U') | urlencode }}&background=6366f1&color=fff&size=64';"
+            onerror="this.onerror=null;this.src='https://ui-avatars.com/api/?name={{ session.get('user_name','U')|urlencode }}&background=4338CA&color=fff&size=64';"
             alt="Foto"
-            class="h-9 w-9 rounded-full object-cover border-2 border-white/40 shrink-0"
+            style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid rgba(129,140,248,.5);flex-shrink:0;"
           />
-          <div class="flex flex-col min-w-0">
-            <span class="font-bold text-white leading-tight truncate" style="font-size:12px">
-              {{ session.get('user_name', 'Profesor') }}
-            </span>
-            <span class="text-indigo-200 leading-tight truncate" style="font-size:10px">
-              {{ session.get('user_rol', 'Docente') }}
-            </span>
+          <div style="min-width:0; flex:1;">
+            <p style="color:#fff;font-weight:700;font-size:12px;line-height:1.3;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+              {{ session.get('user_name','Profesor') }}
+            </p>
+            <p style="color:rgba(165,180,252,.6);font-size:10px;line-height:1;margin:2px 0 0;">
+              {{ session.get('user_rol','Docente') | capitalize }}
+            </p>
           </div>
+          <a href="{{ url_for('docentes.perfil') }}" title="Mi perfil"
+             style="color:rgba(165,180,252,.45);transition:color .2s;flex-shrink:0;"
+             onmouseover="this.style.color='rgba(165,180,252,.85)'" onmouseout="this.style.color='rgba(165,180,252,.45)'">
+            <span class="material-symbols-outlined" style="font-size:16px;">settings</span>
+          </a>
         </div>
       </div>
 
       <!-- Navigation -->
-      <div class="flex-1 overflow-y-auto py-3 px-3">
-        {% set ap = active_page|default('') %}
+      <nav style="flex:1;overflow-y:auto;padding:12px 10px;position:relative;z-index:1;">
+        {% set ap = active_page | default('') %}
 
-        <p class="font-bold text-gray-400 uppercase tracking-widest px-2 mb-2" style="font-size:9px">Menú Principal</p>
+        <p style="font-size:9px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:rgba(148,163,184,.38);padding:0 10px;margin:0 0 6px;">Panel principal</p>
 
-        <nav class="space-y-0.5">
+        <div style="display:flex;flex-direction:column;gap:2px;">
 
-          <!-- Dashboard -->
           <a href="{{ url_for('docentes.dashboard') }}"
-            class="group flex items-center gap-3 px-2.5 py-2 rounded-xl text-sm transition-all
-              {% if ap == 'dashboard' %}bg-indigo-50 dark:bg-indigo-900/30{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50{% endif %}">
-            <div class="flex items-center justify-center w-8 h-8 rounded-lg shrink-0 transition-all
-              {% if ap == 'dashboard' %}bg-indigo-600 shadow-sm{% else %}bg-indigo-50 dark:bg-indigo-900/20 group-hover:bg-indigo-100{% endif %}">
-              <span class="material-symbols-outlined {% if ap == 'dashboard' %}nav-icon-active text-white{% else %}text-indigo-500{% endif %}" style="font-size:18px">dashboard</span>
+             class="nav-item {% if ap=='dashboard' %}active{% endif %}">
+            <div class="nav-icon">
+              <span class="material-symbols-outlined" style="font-size:17px;">dashboard</span>
             </div>
-            <span class="{% if ap == 'dashboard' %}font-bold text-indigo-700 dark:text-indigo-300{% else %}font-medium{% endif %}">Panel de Control</span>
+            Panel de Control
           </a>
 
-          <!-- Estudiantes -->
           <a href="{{ url_for('docentes.gestion_estudiantes') }}"
-            class="group flex items-center gap-3 px-2.5 py-2 rounded-xl text-sm transition-all
-              {% if ap == 'estudiantes' %}bg-blue-50 dark:bg-blue-900/30{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50{% endif %}">
-            <div class="flex items-center justify-center w-8 h-8 rounded-lg shrink-0 transition-all
-              {% if ap == 'estudiantes' %}bg-blue-600 shadow-sm{% else %}bg-blue-50 dark:bg-blue-900/20 group-hover:bg-blue-100{% endif %}">
-              <span class="material-symbols-outlined {% if ap == 'estudiantes' %}nav-icon-active text-white{% else %}text-blue-500{% endif %}" style="font-size:18px">group</span>
+             class="nav-item {% if ap=='estudiantes' %}active{% endif %}">
+            <div class="nav-icon">
+              <span class="material-symbols-outlined" style="font-size:17px;">group</span>
             </div>
-            <span class="{% if ap == 'estudiantes' %}font-bold text-blue-700 dark:text-blue-300{% else %}font-medium{% endif %}">Gestión de Estudiantes</span>
+            Gestión de Estudiantes
           </a>
 
-          <!-- Salones -->
           <a href="{{ url_for('salones.gestion_salones') }}"
-            class="group flex items-center gap-3 px-2.5 py-2 rounded-xl text-sm transition-all
-              {% if ap == 'salones' %}bg-violet-50 dark:bg-violet-900/30{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50{% endif %}">
-            <div class="flex items-center justify-center w-8 h-8 rounded-lg shrink-0 transition-all
-              {% if ap == 'salones' %}bg-violet-600 shadow-sm{% else %}bg-violet-50 dark:bg-violet-900/20 group-hover:bg-violet-100{% endif %}">
-              <span class="material-symbols-outlined {% if ap == 'salones' %}nav-icon-active text-white{% else %}text-violet-500{% endif %}" style="font-size:18px">class</span>
+             class="nav-item {% if ap=='salones' %}active{% endif %}">
+            <div class="nav-icon">
+              <span class="material-symbols-outlined" style="font-size:17px;">class</span>
             </div>
-            <span class="{% if ap == 'salones' %}font-bold text-violet-700 dark:text-violet-300{% else %}font-medium{% endif %}">Gestión de Salones</span>
+            Gestión de Salones
           </a>
 
-          <!-- Temas -->
           <a href="{{ url_for('temas.gestion_temas') }}"
-            class="group flex items-center gap-3 px-2.5 py-2 rounded-xl text-sm transition-all
-              {% if ap == 'temas' %}bg-sky-50 dark:bg-sky-900/30{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50{% endif %}">
-            <div class="flex items-center justify-center w-8 h-8 rounded-lg shrink-0 transition-all
-              {% if ap == 'temas' %}bg-sky-600 shadow-sm{% else %}bg-sky-50 dark:bg-sky-900/20 group-hover:bg-sky-100{% endif %}">
-              <span class="material-symbols-outlined {% if ap == 'temas' %}nav-icon-active text-white{% else %}text-sky-500{% endif %}" style="font-size:18px">menu_book</span>
+             class="nav-item {% if ap=='temas' %}active{% endif %}">
+            <div class="nav-icon">
+              <span class="material-symbols-outlined" style="font-size:17px;">menu_book</span>
             </div>
-            <span class="{% if ap == 'temas' %}font-bold text-sky-700 dark:text-sky-300{% else %}font-medium{% endif %}">Catálogo de Temas</span>
+            Catálogo de Temas
           </a>
 
-          <!-- Ejercicios -->
           <a href="{{ url_for('ejercicios.gestion_ejercicios') }}"
-            class="group flex items-center gap-3 px-2.5 py-2 rounded-xl text-sm transition-all
-              {% if ap == 'ejercicios' %}bg-amber-50 dark:bg-amber-900/30{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50{% endif %}">
-            <div class="flex items-center justify-center w-8 h-8 rounded-lg shrink-0 transition-all
-              {% if ap == 'ejercicios' %}bg-amber-500 shadow-sm{% else %}bg-amber-50 dark:bg-amber-900/20 group-hover:bg-amber-100{% endif %}">
-              <span class="material-symbols-outlined {% if ap == 'ejercicios' %}nav-icon-active text-white{% else %}text-amber-500{% endif %}" style="font-size:18px">calculate</span>
+             class="nav-item {% if ap=='ejercicios' %}active{% endif %}">
+            <div class="nav-icon">
+              <span class="material-symbols-outlined" style="font-size:17px;">calculate</span>
             </div>
-            <span class="{% if ap == 'ejercicios' %}font-bold text-amber-700 dark:text-amber-300{% else %}font-medium{% endif %}">Gestión de Ejercicios</span>
+            Gestión de Ejercicios
           </a>
 
-          <!-- Reportes -->
           <a href="{{ url_for('reportes.reporte_progreso') }}"
-            class="group flex items-center gap-3 px-2.5 py-2 rounded-xl text-sm transition-all
-              {% if ap == 'reportes' %}bg-emerald-50 dark:bg-emerald-900/30{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50{% endif %}">
-            <div class="flex items-center justify-center w-8 h-8 rounded-lg shrink-0 transition-all
-              {% if ap == 'reportes' %}bg-emerald-600 shadow-sm{% else %}bg-emerald-50 dark:bg-emerald-900/20 group-hover:bg-emerald-100{% endif %}">
-              <span class="material-symbols-outlined {% if ap == 'reportes' %}nav-icon-active text-white{% else %}text-emerald-500{% endif %}" style="font-size:18px">bar_chart</span>
+             class="nav-item {% if ap=='reportes' %}active{% endif %}">
+            <div class="nav-icon">
+              <span class="material-symbols-outlined" style="font-size:17px;">bar_chart</span>
             </div>
-            <span class="{% if ap == 'reportes' %}font-bold text-emerald-700 dark:text-emerald-300{% else %}font-medium{% endif %}">Reportes Detallados</span>
+            Reportes Detallados
           </a>
 
-          <!-- Evaluaciones -->
           <a href="{{ url_for('evaluaciones.gestion_evaluaciones') }}"
-            class="group flex items-center gap-3 px-2.5 py-2 rounded-xl text-sm transition-all
-              {% if ap == 'evaluaciones' %}bg-rose-50 dark:bg-rose-900/30{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50{% endif %}">
-            <div class="flex items-center justify-center w-8 h-8 rounded-lg shrink-0 transition-all
-              {% if ap == 'evaluaciones' %}bg-rose-600 shadow-sm{% else %}bg-rose-50 dark:bg-rose-900/20 group-hover:bg-rose-100{% endif %}">
-              <span class="material-symbols-outlined {% if ap == 'evaluaciones' %}nav-icon-active text-white{% else %}text-rose-500{% endif %}" style="font-size:18px">assignment</span>
+             class="nav-item {% if ap=='evaluaciones' %}active{% endif %}">
+            <div class="nav-icon">
+              <span class="material-symbols-outlined" style="font-size:17px;">assignment</span>
             </div>
-            <span class="{% if ap == 'evaluaciones' %}font-bold text-rose-700 dark:text-rose-300{% else %}font-medium{% endif %}">Evaluaciones</span>
+            Evaluaciones
           </a>
 
-          <div class="border-t border-gray-100 dark:border-gray-800 my-2"></div>
-          <p class="font-bold text-gray-400 uppercase tracking-widest px-2 mb-2" style="font-size:9px">Cuenta</p>
+        </div>
 
-          <!-- Perfil -->
+        <div style="height:1px;background:rgba(255,255,255,.07);margin:10px 4px;"></div>
+        <p style="font-size:9px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:rgba(148,163,184,.38);padding:0 10px;margin:0 0 6px;">Cuenta</p>
+
+        <div style="display:flex;flex-direction:column;gap:2px;">
           <a href="{{ url_for('docentes.perfil') }}"
-            class="group flex items-center gap-3 px-2.5 py-2 rounded-xl text-sm transition-all
-              {% if ap == 'perfil' %}bg-slate-100 dark:bg-slate-800/40{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50{% endif %}">
-            <div class="flex items-center justify-center w-8 h-8 rounded-lg shrink-0 transition-all
-              {% if ap == 'perfil' %}bg-slate-600 shadow-sm{% else %}bg-slate-100 dark:bg-slate-800/20 group-hover:bg-slate-200{% endif %}">
-              <span class="material-symbols-outlined {% if ap == 'perfil' %}nav-icon-active text-white{% else %}text-slate-500{% endif %}" style="font-size:18px">person</span>
+             class="nav-item {% if ap=='perfil' %}active{% endif %}">
+            <div class="nav-icon">
+              <span class="material-symbols-outlined" style="font-size:17px;">person</span>
             </div>
-            <span class="{% if ap == 'perfil' %}font-bold text-slate-700 dark:text-slate-300{% else %}font-medium{% endif %}">Mi Perfil</span>
+            Mi Perfil
           </a>
-
-        </nav>
-      </div>
+        </div>
+      </nav>
 
       <!-- Logout -->
-      <div class="p-3 border-t border-gray-100 dark:border-gray-800">
+      <div style="padding:10px;border-top:1px solid rgba(255,255,255,.07);position:relative;z-index:1;">
         <a href="{{ url_for('auth.logout') }}"
-          class="group flex items-center gap-3 px-2.5 py-2 rounded-xl text-sm font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-all">
-          <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-900/20 group-hover:bg-rose-100 shrink-0 transition-all">
-            <span class="material-symbols-outlined text-rose-500" style="font-size:18px">logout</span>
+           style="display:flex;align-items:center;gap:12px;padding:9px 10px;border-radius:12px;font-size:13px;font-weight:600;color:rgba(252,165,165,.75);text-decoration:none;transition:background .18s,color .18s;border-left:3px solid transparent;"
+           onmouseover="this.style.background='rgba(239,68,68,.1)';this.style.color='#FCA5A5'"
+           onmouseout="this.style.background='transparent';this.style.color='rgba(252,165,165,.75)'">
+          <div style="width:32px;height:32px;border-radius:8px;background:rgba(239,68,68,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <span class="material-symbols-outlined" style="font-size:17px;color:#FCA5A5;">logout</span>
           </div>
-          <span>Cerrar Sesión</span>
+          Cerrar Sesión
         </a>
       </div>
     </aside>
 
-    <!-- ======== CONTENIDO PRINCIPAL ======== -->
-    <div class="flex-1 flex flex-col min-w-0">
-      <header class="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 px-6 py-4 bg-white dark:bg-gray-900 shadow-sm">
-        <h1 class="text-xl font-black text-gray-900 dark:text-white leading-tight">
-          {{ titulo_pagina or 'Panel de Control' }}
-        </h1>
+    <!-- ═══════════════════ ÁREA PRINCIPAL ═══════════════════ -->
+    <div style="flex:1;display:flex;flex-direction:column;min-width:0;">
+
+      <!-- Top header -->
+      <header class="top-header" style="display:flex;align-items:center;justify-content:space-between;padding:14px 28px;flex-shrink:0;">
+        <div>
+          <h1 style="font-size:18px;font-weight:800;color:#F1F5F9;line-height:1.2;margin:0;">
+            {{ titulo_pagina or 'Panel de Control' }}
+          </h1>
+          {% if subtitulo_pagina is defined and subtitulo_pagina %}
+          <p style="font-size:12px;color:rgba(148,163,184,.65);margin:3px 0 0;">{{ subtitulo_pagina }}</p>
+          {% endif %}
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          {% block header_actions %}{% endblock %}
+          <div style="display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:6px 12px;">
+            <span class="material-symbols-outlined" style="font-size:14px;color:rgba(148,163,184,.55);">calendar_today</span>
+            <span style="font-size:12px;color:rgba(148,163,184,.65);" id="hdr-date"></span>
+          </div>
+        </div>
       </header>
 
-      <main class="flex-1 bg-background-light dark:bg-background-dark p-4 sm:p-6 lg:p-8">
-        <div class="w-full">
+      <!-- Contenido -->
+      <main style="flex:1;padding:24px 28px;overflow-y:auto;">
 
-          {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-              <div class="space-y-2 mb-5">
-                {% for category, message in messages %}
-                  <div class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium border
-                    {% if category == 'success' %}bg-emerald-50 text-emerald-800 border-emerald-100
-                    {% elif category == 'danger' or category == 'error' %}bg-rose-50 text-rose-800 border-rose-100
-                    {% elif category == 'warning' %}bg-amber-50 text-amber-800 border-amber-100
-                    {% else %}bg-blue-50 text-blue-800 border-blue-100{% endif %}">
-                    <span class="material-symbols-outlined shrink-0
-                      {% if category == 'success' %}text-emerald-500
-                      {% elif category == 'danger' or category == 'error' %}text-rose-500
-                      {% elif category == 'warning' %}text-amber-500
-                      {% else %}text-blue-500{% endif %}" style="font-size:18px">
-                      {% if category == 'success' %}check_circle
-                      {% elif category == 'danger' or category == 'error' %}error
-                      {% elif category == 'warning' %}warning
-                      {% else %}info{% endif %}
-                    </span>
-                    {{ message }}
-                  </div>
-                {% endfor %}
-              </div>
-            {% endif %}
-          {% endwith %}
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div style="margin-bottom:20px;display:flex;flex-direction:column;gap:8px;" class="anim-up">
+              {% for category, message in messages %}
+                <div class="flash-{% if category in ['danger','error'] %}danger{% elif category=='success' %}success{% elif category=='warning' %}warning{% else %}info{% endif %}"
+                     style="display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:12px;font-size:13px;font-weight:500;">
+                  <span class="material-symbols-outlined sym-fill" style="font-size:18px;flex-shrink:0;">
+                    {% if category=='success' %}check_circle{% elif category in ['danger','error'] %}error{% elif category=='warning' %}warning{% else %}info{% endif %}
+                  </span>
+                  {{ message }}
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
 
+        <div class="page-content">
           {% block contenido %}{% endblock %}
         </div>
       </main>
     </div>
+
   </div>
+
   {% block scripts %}{% endblock %}
 
-  {# ── CSRF: inyección automática en todos los formularios POST del panel ── #}
   <script>
+    // Fecha en el header
+    (function () {
+      var el = document.getElementById('hdr-date');
+      if (!el) return;
+      var d = new Date();
+      el.textContent = d.toLocaleDateString('es-PE', { weekday:'short', day:'numeric', month:'short' });
+    })();
+
+    // CSRF auto-inject en formularios POST
     document.addEventListener('DOMContentLoaded', function () {
-      var tokenMeta = document.querySelector('meta[name="csrf-token"]');
-      if (!tokenMeta) return;
-      document.querySelectorAll('form').forEach(function (form) {
-        if ((form.getAttribute('method') || '').toUpperCase() === 'POST' &&
-            !form.querySelector('input[name="csrf_token"]')) {
+      var meta = document.querySelector('meta[name="csrf-token"]');
+      if (!meta) return;
+      document.querySelectorAll('form').forEach(function (f) {
+        if ((f.getAttribute('method') || '').toUpperCase() === 'POST' &&
+            !f.querySelector('input[name="csrf_token"]')) {
           var inp = document.createElement('input');
-          inp.type  = 'hidden';
-          inp.name  = 'csrf_token';
-          inp.value = tokenMeta.content;
-          form.insertBefore(inp, form.firstChild);
+          inp.type = 'hidden'; inp.name = 'csrf_token'; inp.value = meta.content;
+          f.insertBefore(inp, f.firstChild);
         }
       });
     });
