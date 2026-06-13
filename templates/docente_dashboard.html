@@ -383,6 +383,53 @@
 </div>
 
 <!-- ═══════════════════════════════════════
+     ALERTAS DE DIFICULTAD (solo si hay datos)
+     ═══════════════════════════════════════ -->
+{% if alertas_dificultad %}
+<div class="bg-white dark:bg-gray-800 rounded-2xl p-5 border border-amber-200 dark:border-amber-700/50 shadow-sm mb-5">
+  <div class="flex items-center justify-between gap-3 mb-4">
+    <div class="flex items-center gap-2">
+      <span class="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center shrink-0">
+        <span class="material-symbols-outlined text-amber-600 dark:text-amber-400 text-base">notifications_active</span>
+      </span>
+      <div>
+        <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest leading-tight">Alertas de dificultad</p>
+        <p class="text-[10px] text-gray-300 dark:text-gray-500">Últimas 24 h · sin aciertos · mismo tema</p>
+      </div>
+    </div>
+    <span class="px-2.5 py-1 rounded-full text-xs font-black bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300">
+      {{ alertas_dificultad|length }} alerta{{ 's' if alertas_dificultad|length != 1 else '' }}
+    </span>
+  </div>
+
+  <div class="space-y-2">
+    {% for a in alertas_dificultad %}
+    <div class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl
+                bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-800/30">
+      <div class="flex items-center gap-3 min-w-0">
+        <span class="w-8 h-8 rounded-full bg-amber-200 dark:bg-amber-800/50 flex items-center justify-center shrink-0 text-sm font-black text-amber-700 dark:text-amber-300">
+          {{ loop.index }}
+        </span>
+        <div class="min-w-0">
+          <p class="text-[13px] font-semibold text-gray-700 dark:text-gray-200 truncate">{{ a.nombre }}</p>
+          <p class="text-[11px] text-gray-400 truncate">
+            {{ a.competencia }} &middot; {{ a.intentos }} intentos fallidos &middot; {{ a.ultima }}
+          </p>
+        </div>
+      </div>
+      <a href="{{ url_for('reportes.reporte_progreso', id_estudiante=a.id_estudiante, id_salon=a.id_salon) }}"
+         class="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-bold
+                bg-amber-600 hover:bg-amber-700 text-white transition-colors">
+        <span class="material-symbols-outlined text-xs">open_in_new</span>
+        Ver reporte
+      </a>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- ═══════════════════════════════════════
      FILA: Mis Salones + Rendimiento por Tema
      ═══════════════════════════════════════ -->
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">

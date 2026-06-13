@@ -109,6 +109,7 @@ def _metricas_dashboard(id_usuario: int):
             "avanzados": 0,
             "en_progreso": 0,
             "necesita_ayuda": 0,
+            "alertas_dificultad": [],
         }
 
     id_docente = row[0]
@@ -372,6 +373,60 @@ def _metricas_dashboard(id_usuario: int):
     except Exception:
         pass
 
+    # ==========================================================
+    # Alertas — estudiantes con 3+ fallos y 0 aciertos (24h)
+    # ==========================================================
+    alertas_dificultad = []
+    try:
+        cur.execute("""
+            SELECT
+                e.id_estudiante,
+                TRIM(u.apellidos) || ', ' || TRIM(u.nombre) AS nombre,
+                ej.id_competencia,
+                c.descripcion AS competencia,
+                es2.id_salon,
+                COUNT(*)  AS total_intentos,
+                MAX(r.fecha) AS ultima_actividad
+            FROM respuestas_estudiantes r
+            JOIN opciones_ejercicio op ON op.id_opcion  = r.id_opcion
+            JOIN ejercicios ej         ON ej.id_ejercicio = r.id_ejercicio
+            JOIN competencias c        ON c.id_competencia = ej.id_competencia
+            JOIN estudiante e          ON e.id_estudiante  = r.id_estudiante
+            JOIN usuarios u            ON u.id_usuario     = e.id_usuario
+            JOIN estudiante_salones es2 ON es2.id_estudiante = e.id_estudiante
+            JOIN docente_salones ds    ON ds.id_salon       = es2.id_salon
+            WHERE ds.id_docente = %s
+              AND r.modo = 'repaso'
+              AND r.fecha >= NOW() - INTERVAL '24 hours'
+              AND e.estado_estudiante = 'activo'
+            GROUP BY e.id_estudiante, u.nombre, u.apellidos,
+                     ej.id_competencia, c.descripcion, es2.id_salon
+            HAVING COUNT(*) >= 3
+               AND SUM(CASE WHEN op.es_correcta THEN 1 ELSE 0 END) = 0
+            ORDER BY MAX(r.fecha) DESC
+        """, (id_docente,))
+        for row_al in cur.fetchall() or []:
+            ultima_raw = row_al[6]
+            try:
+                fi = ultima_raw.isoformat()
+                p  = fi[:19].split("T")
+                d  = p[0].split("-")
+                ms = ["","Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"]
+                ultima_str = f"{d[2]} {ms[int(d[1])]} {d[0]} · {p[1][:5]}"
+            except Exception:
+                ultima_str = str(ultima_raw) if ultima_raw else ""
+            alertas_dificultad.append({
+                "id_estudiante":  row_al[0],
+                "nombre":         row_al[1],
+                "id_competencia": row_al[2],
+                "competencia":    row_al[3],
+                "id_salon":       row_al[4],
+                "intentos":       int(row_al[5] or 0),
+                "ultima":         ultima_str,
+            })
+    except Exception:
+        pass
+
     cur.close()
 
     return {
@@ -389,6 +444,8 @@ def _metricas_dashboard(id_usuario: int):
         # materiales
         "total_mat_revisiones": total_mat_revisiones,
         "alumno_mas_activo_mat": alumno_mas_activo_mat,
+        # alertas
+        "alertas_dificultad": alertas_dificultad,
     }
 
 
@@ -483,6 +540,8 @@ def dashboard():
         # materiales
         total_mat_revisiones=met["total_mat_revisiones"],
         alumno_mas_activo_mat=met["alumno_mas_activo_mat"],
+        # alertas
+        alertas_dificultad=met["alertas_dificultad"],
         active_page="dashboard",
     )
 
