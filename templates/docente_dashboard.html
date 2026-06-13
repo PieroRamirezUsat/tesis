@@ -526,6 +526,101 @@
 {% endif %}
 
 <!-- ═══════════════════════════════════════
+     W8 HEATMAP DE ACTIVIDAD (últimas 10 semanas)
+     ═══════════════════════════════════════ -->
+{% if heatmap_data %}
+<div class="bg-white dark:bg-gray-800 rounded-2xl p-5 border border-gray-100 dark:border-gray-700 shadow-sm mb-5">
+  <div class="flex items-center gap-2 mb-4">
+    <span class="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center shrink-0">
+      <span class="material-symbols-outlined text-indigo-600 dark:text-indigo-400 text-base">grid_view</span>
+    </span>
+    <div>
+      <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest leading-tight">Actividad del salón</p>
+      <p class="text-[10px] text-gray-300 dark:text-gray-500">Respuestas enviadas · últimas 10 semanas</p>
+    </div>
+  </div>
+
+  <!-- Días de semana header -->
+  <div class="overflow-x-auto">
+    <div style="display:grid; grid-template-columns: 28px repeat(10, 1fr); gap:3px; min-width:340px;">
+      <!-- etiquetas días -->
+      <div></div>
+      {% for w in range(10) %}<div></div>{% endfor %}
+
+      {% set dias_label = ['L','M','X','J','V','S','D'] %}
+      {% for dow in range(7) %}
+        <span class="text-[9px] text-gray-300 flex items-center justify-end pr-1 select-none"
+              style="height:14px;">{{ dias_label[dow] }}</span>
+        {% for w in range(10) %}
+          {% set cell_id = "hc_" ~ w ~ "_" ~ dow %}
+          <div id="{{ cell_id }}"
+               class="rounded-sm bg-gray-100 dark:bg-gray-700 transition-colors"
+               style="height:14px; aspect-ratio:1;"
+               title=""></div>
+        {% endfor %}
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Leyenda -->
+  <div class="flex items-center gap-2 mt-3 justify-end">
+    <span class="text-[10px] text-gray-300">Menos</span>
+    <div class="w-3 h-3 rounded-sm bg-gray-100 dark:bg-gray-700"></div>
+    <div class="w-3 h-3 rounded-sm bg-indigo-200 dark:bg-indigo-900/60"></div>
+    <div class="w-3 h-3 rounded-sm bg-indigo-400"></div>
+    <div class="w-3 h-3 rounded-sm bg-indigo-600"></div>
+    <span class="text-[10px] text-gray-300">Más</span>
+  </div>
+</div>
+
+<script>
+(function(){
+  const raw = {{ heatmap_data | tojson }};
+  if (!raw.length) return;
+
+  // Mapa fecha→total
+  const map = {};
+  raw.forEach(d => map[d.fecha] = d.total);
+  const max = Math.max(...raw.map(d => d.total), 1);
+
+  // Construir las 10 semanas completas hacia atrás desde hoy
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  // Retroceder al lunes de esta semana
+  const dowToday = (today.getDay() + 6) % 7; // 0=lun
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - dowToday - 9 * 7); // lunes de hace 10 semanas
+
+  const colors = [
+    'var(--tw-bg-empty,#f3f4f6)',   // 0
+    '#c7d2fe',  // indigo-200
+    '#818cf8',  // indigo-400
+    '#4f46e5',  // indigo-600
+  ];
+  const colorsDark = ['#374151','#312e81','#4338ca','#4f46e5'];
+
+  const isDark = document.documentElement.classList.contains('dark');
+
+  for (let w = 0; w < 10; w++) {
+    for (let dow = 0; dow < 7; dow++) {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + w * 7 + dow);
+      if (d > today) continue;
+      const key = d.toISOString().slice(0,10);
+      const val = map[key] || 0;
+      const ratio = val / max;
+      const tier = val === 0 ? 0 : ratio < 0.33 ? 1 : ratio < 0.66 ? 2 : 3;
+      const cell = document.getElementById('hc_' + w + '_' + dow);
+      if (!cell) continue;
+      cell.style.backgroundColor = isDark ? colorsDark[tier] : colors[tier];
+      cell.title = key + ': ' + val + ' respuestas';
+    }
+  }
+})();
+</script>
+{% endif %}
+
+<!-- ═══════════════════════════════════════
      FILA: Mis Salones + Rendimiento por Tema
      ═══════════════════════════════════════ -->
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
@@ -569,6 +664,51 @@
       </div>
       {% endfor %}
     </div>
+
+    <!-- W9: Comparación side-by-side (solo si hay 2+ salones) -->
+    {% if salones | length >= 2 %}
+    <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+      <p class="text-[10px] font-bold text-gray-300 uppercase tracking-widest mb-3">Comparación</p>
+      <div class="overflow-x-auto">
+        <table class="w-full text-[11px]">
+          <thead>
+            <tr class="text-gray-300 text-left">
+              <th class="pb-2 font-semibold">Salón</th>
+              <th class="pb-2 font-semibold text-center">Alumnos</th>
+              <th class="pb-2 font-semibold text-center">Progreso</th>
+              <th class="pb-2 font-semibold text-center">Nivel</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+            {% for sal in salones %}
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+              <td class="py-1.5 pr-2 font-semibold text-gray-700 dark:text-gray-200 truncate max-w-[90px]">
+                {{ sal.salon }}
+              </td>
+              <td class="py-1.5 text-center text-gray-500 tabular-nums">{{ sal.num_estudiantes }}</td>
+              <td class="py-1.5 text-center font-black tabular-nums
+                {% if sal.progreso_promedio >= 70 %}text-emerald-600
+                {% elif sal.progreso_promedio >= 40 %}text-amber-500
+                {% else %}text-red-500{% endif %}">
+                {{ sal.progreso_promedio }}%
+              </td>
+              <td class="py-1.5 text-center">
+                {% if sal.progreso_promedio >= 70 %}
+                  <span class="px-1.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold">Alto</span>
+                {% elif sal.progreso_promedio >= 40 %}
+                  <span class="px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-[10px] font-bold">Medio</span>
+                {% else %}
+                  <span class="px-1.5 py-0.5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-[10px] font-bold">Bajo</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+
     {% else %}
     <div class="flex flex-col items-center justify-center py-8">
       <span class="material-symbols-outlined text-4xl text-gray-200 dark:text-gray-600 mb-2">class</span>

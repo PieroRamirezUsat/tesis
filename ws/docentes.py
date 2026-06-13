@@ -424,6 +424,36 @@ def _metricas_dashboard(id_usuario: int):
         pass
 
     # ==========================================================
+    # 7b) Heatmap de actividad — últimas 10 semanas
+    #     Devuelve lista de {fecha_iso, total} por día
+    # ==========================================================
+    heatmap_data = []
+    try:
+        cur.execute(
+            """
+            SELECT
+                DATE(r.fecha AT TIME ZONE 'America/Lima') AS dia,
+                COUNT(*) AS total
+            FROM respuestas_estudiantes r
+            JOIN estudiante e          ON e.id_estudiante  = r.id_estudiante
+            JOIN estudiante_salones es ON es.id_estudiante = e.id_estudiante
+            JOIN docente_salones ds    ON ds.id_salon      = es.id_salon
+            WHERE ds.id_docente = %s
+              AND r.fecha >= NOW() - INTERVAL '70 days'
+              AND e.estado_estudiante = 'activo'
+            GROUP BY dia
+            ORDER BY dia
+            """,
+            (id_docente,),
+        )
+        heatmap_data = [
+            {"fecha": str(row_h[0]), "total": int(row_h[1])}
+            for row_h in cur.fetchall() or []
+        ]
+    except Exception:
+        pass
+
+    # ==========================================================
     # Alertas — estudiantes con 3+ fallos y 0 aciertos (24h)
     # ==========================================================
     alertas_dificultad = []
@@ -549,6 +579,9 @@ def _metricas_dashboard(id_usuario: int):
         "tendencia_dir": tendencia_dir,
         # inactividad
         "alertas_inactividad": alertas_inactividad,
+        # heatmap
+        "heatmap_data": heatmap_data,
+        # comparación de salones (ya está en salones, se pasa directamente)
     }
 
 
@@ -650,6 +683,8 @@ def dashboard():
         tendencia_dir=met["tendencia_dir"],
         # inactividad
         alertas_inactividad=met["alertas_inactividad"],
+        # heatmap
+        heatmap_data=met["heatmap_data"],
         active_page="dashboard",
     )
 
