@@ -109,6 +109,21 @@
           <p class="text-emerald-200 text-xs mt-1.5 font-medium">
             {{ avanzados }} alumno{{ 's' if avanzados != 1 else '' }} avanzado{{ 's' if avanzados != 1 else '' }}
           </p>
+          {# W1: Tendencia vs. semana anterior #}
+          {% if tendencia_dir != 'neutral' and tendencia_pct > 0 %}
+          <div class="flex items-center gap-1 mt-2">
+            {% if tendencia_dir == 'up' %}
+              <span class="material-symbols-outlined text-sm text-emerald-100">arrow_upward</span>
+              <span class="text-[11px] font-bold text-emerald-100">+{{ tendencia_pct }}% vs semana anterior</span>
+            {% elif tendencia_dir == 'down' %}
+              <span class="material-symbols-outlined text-sm text-white/70">arrow_downward</span>
+              <span class="text-[11px] font-bold text-white/70">-{{ tendencia_pct }}% vs semana anterior</span>
+            {% else %}
+              <span class="material-symbols-outlined text-sm text-emerald-100">fiber_new</span>
+              <span class="text-[11px] font-bold text-emerald-100">{{ tendencia_pct }}% acierto esta semana</span>
+            {% endif %}
+          </div>
+          {% endif %}
         </div>
         <span class="w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
           <span class="material-symbols-outlined text-xl text-white">trending_up</span>
@@ -130,6 +145,18 @@
           <p class="text-red-200 text-xs mt-1.5 font-medium">
             {{ necesita_ayuda }} requieren atención
           </p>
+          {# W1: la tendencia del acierto también habla de quienes necesitan ayuda #}
+          {% if tendencia_dir == 'down' and tendencia_pct > 0 %}
+          <div class="flex items-center gap-1 mt-2">
+            <span class="material-symbols-outlined text-sm text-red-200">trending_down</span>
+            <span class="text-[11px] font-bold text-red-200">Aciertos bajaron {{ tendencia_pct }}%</span>
+          </div>
+          {% elif tendencia_dir == 'up' and tendencia_pct > 0 %}
+          <div class="flex items-center gap-1 mt-2">
+            <span class="material-symbols-outlined text-sm text-red-100">trending_up</span>
+            <span class="text-[11px] font-bold text-red-100">Aciertos subieron {{ tendencia_pct }}%</span>
+          </div>
+          {% endif %}
         </div>
         <span class="w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
           <span class="material-symbols-outlined text-xl text-white">warning</span>

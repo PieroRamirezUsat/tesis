@@ -374,6 +374,50 @@ def _metricas_dashboard(id_usuario: int):
         pass
 
     # ==========================================================
+    # 7) Tendencia semana actual vs semana anterior
+    #    % de respuestas correctas esta semana vs. la anterior
+    # ==========================================================
+    tendencia_pct = 0
+    tendencia_dir = "neutral"
+    try:
+        cur.execute(
+            """
+            SELECT
+                COALESCE(SUM(CASE WHEN op.es_correcta AND r.fecha >= NOW() - INTERVAL '7 days'
+                                  THEN 1 ELSE 0 END), 0)                           AS correctas_esta,
+                COALESCE(COUNT(CASE WHEN r.fecha >= NOW() - INTERVAL '7 days'
+                                    THEN 1 END), 0)                                AS total_esta,
+                COALESCE(SUM(CASE WHEN op.es_correcta
+                                   AND r.fecha >= NOW() - INTERVAL '14 days'
+                                   AND r.fecha <  NOW() - INTERVAL '7 days'
+                                  THEN 1 ELSE 0 END), 0)                           AS correctas_prev,
+                COALESCE(COUNT(CASE WHEN r.fecha >= NOW() - INTERVAL '14 days'
+                                     AND r.fecha <  NOW() - INTERVAL '7 days'
+                                    THEN 1 END), 0)                                AS total_prev
+            FROM respuestas_estudiantes r
+            JOIN opciones_ejercicio op  ON op.id_opcion   = r.id_opcion
+            JOIN estudiante_salones es  ON es.id_estudiante = r.id_estudiante
+            JOIN docente_salones ds     ON ds.id_salon      = es.id_salon
+            WHERE ds.id_docente = %s
+            """,
+            (id_docente,),
+        )
+        row_tend = cur.fetchone()
+        if row_tend:
+            c_esta, t_esta, c_prev, t_prev = (int(row_tend[i] or 0) for i in range(4))
+            pct_esta = round(100 * c_esta / t_esta, 1) if t_esta > 0 else None
+            pct_prev = round(100 * c_prev / t_prev, 1) if t_prev > 0 else None
+            if pct_esta is not None and pct_prev is not None:
+                delta = round(pct_esta - pct_prev, 1)
+                tendencia_pct = abs(delta)
+                tendencia_dir = "up" if delta > 0 else ("down" if delta < 0 else "neutral")
+            elif pct_esta is not None:
+                tendencia_dir = "new"
+                tendencia_pct = round(pct_esta, 1)
+    except Exception:
+        pass
+
+    # ==========================================================
     # Alertas — estudiantes con 3+ fallos y 0 aciertos (24h)
     # ==========================================================
     alertas_dificultad = []
@@ -446,6 +490,9 @@ def _metricas_dashboard(id_usuario: int):
         "alumno_mas_activo_mat": alumno_mas_activo_mat,
         # alertas
         "alertas_dificultad": alertas_dificultad,
+        # tendencia
+        "tendencia_pct": tendencia_pct,
+        "tendencia_dir": tendencia_dir,
     }
 
 
@@ -542,6 +589,9 @@ def dashboard():
         alumno_mas_activo_mat=met["alumno_mas_activo_mat"],
         # alertas
         alertas_dificultad=met["alertas_dificultad"],
+        # tendencia
+        tendencia_pct=met["tendencia_pct"],
+        tendencia_dir=met["tendencia_dir"],
         active_page="dashboard",
     )
 

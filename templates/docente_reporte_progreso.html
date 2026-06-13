@@ -258,6 +258,42 @@
     <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Progreso por Competencia</p>
   </div>
 
+  {# W3: Resumen visual — barras horizontales para ver las 4 competencias de un vistazo #}
+  {% if progreso_competencias %}
+  {% set comp_meta = {
+    'cantidad':                       ('Cantidad',        '#818CF8', 'bg-indigo-500'),
+    'regularidad_equivalencia_cambio':('Regularidad',     '#34D399', 'bg-emerald-500'),
+    'forma_movimiento_localizacion':  ('Forma/Movimiento','#FB923C', 'bg-orange-500'),
+    'gestion_datos_incertidumbre':    ('Datos/Incert.',   '#C084FC', 'bg-purple-500')
+  } %}
+  <div class="space-y-3 mb-6 pb-5 border-b border-gray-100 dark:border-gray-700">
+    {% for area, porcentaje in progreso_competencias.items() %}
+      {% set meta = comp_meta.get(area, ('Competencia', '#818CF8', 'bg-indigo-500')) %}
+      <div>
+        <div class="flex items-center justify-between mb-1.5">
+          <span class="text-xs font-semibold text-gray-700 dark:text-gray-300">{{ meta[0] }}</span>
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-black tabular-nums
+              {% if porcentaje >= 70 %}text-emerald-600 dark:text-emerald-400
+              {% elif porcentaje >= 40 %}text-amber-600 dark:text-amber-400
+              {% else %}text-red-600 dark:text-red-400{% endif %}">{{ porcentaje }}%</span>
+            <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full
+              {% if porcentaje >= 70 %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300
+              {% elif porcentaje >= 40 %}bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300
+              {% else %}bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300{% endif %}">
+              {% if porcentaje >= 70 %}Avanzado{% elif porcentaje >= 40 %}En proceso{% else %}En inicio{% endif %}
+            </span>
+          </div>
+        </div>
+        <div class="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
+          <div class="h-3 rounded-full transition-all duration-700 ease-out {{ meta[2] }}"
+               style="width: {{ porcentaje }}%;"></div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
     {% if progreso_competencias %}
       {% for area, porcentaje in progreso_competencias.items() %}
