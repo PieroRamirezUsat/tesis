@@ -319,7 +319,12 @@ def _metricas_dashboard(id_usuario: int):
                 0
             ) AS progreso,
             e.id_estudiante,
-            MIN(es.id_salon) AS id_salon
+            MIN(es.id_salon) AS id_salon,
+            (SELECT s2.nombre FROM salones s2
+             JOIN estudiante_salones es2 ON es2.id_salon = s2.id_salon
+             WHERE es2.id_estudiante = e.id_estudiante
+               AND s2.id_salon IN (SELECT id_salon FROM docente_salones WHERE id_docente = %s)
+             LIMIT 1) AS salon_nombre
         FROM estudiante e
         JOIN usuarios u                ON u.id_usuario     = e.id_usuario
         JOIN estudiante_salones es     ON es.id_estudiante = e.id_estudiante
@@ -328,10 +333,11 @@ def _metricas_dashboard(id_usuario: int):
         GROUP BY e.id_estudiante, u.nombre, u.apellidos
         ORDER BY progreso ASC, u.apellidos
         """,
-        (id_docente,),
+        (id_docente, id_docente),
     )
     estudiantes_chart = [
-        {"nombre": r[0], "progreso": r[1], "id_estudiante": r[2], "id_salon": r[3]}
+        {"nombre": r[0], "progreso": r[1], "id_estudiante": r[2], "id_salon": r[3],
+         "salon_nombre": (r[4] or "Salón").strip()}
         for r in cur.fetchall()
     ]
 
@@ -471,6 +477,54 @@ def _metricas_dashboard(id_usuario: int):
     except Exception:
         pass
 
+    # ==========================================================
+    # 8) Estudiantes inactivos 7+ días (con actividad previa)
+    # ==========================================================
+    alertas_inactividad = []
+    try:
+        cur.execute(
+            """
+            SELECT
+                e.id_estudiante,
+                TRIM(u.apellidos) || ', ' || TRIM(u.nombre) AS nombre,
+                es2.id_salon,
+                MAX(r.fecha) AS ultima
+            FROM estudiante e
+            JOIN usuarios u              ON u.id_usuario      = e.id_usuario
+            JOIN estudiante_salones es2  ON es2.id_estudiante = e.id_estudiante
+            JOIN docente_salones ds      ON ds.id_salon       = es2.id_salon
+            LEFT JOIN respuestas_estudiantes r ON r.id_estudiante = e.id_estudiante
+            WHERE ds.id_docente = %s AND e.estado_estudiante = 'activo'
+            GROUP BY e.id_estudiante, u.nombre, u.apellidos, es2.id_salon
+            HAVING COUNT(r.id_respuesta) > 0
+               AND MAX(r.fecha) < NOW() - INTERVAL '7 days'
+            ORDER BY MAX(r.fecha) ASC
+            LIMIT 8
+            """,
+            (id_docente,),
+        )
+        ms = ["","Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"]
+        for row_in in cur.fetchall() or []:
+            ultima_raw = row_in[3]
+            try:
+                fi = ultima_raw.isoformat()
+                p  = fi[:10].split("-")
+                dias = (
+                    __import__("datetime").datetime.now(tz=ultima_raw.tzinfo)
+                    - ultima_raw
+                ).days
+                ultima_str = f"{p[2]} {ms[int(p[1])]} · hace {dias} días"
+            except Exception:
+                ultima_str = str(ultima_raw) if ultima_raw else ""
+            alertas_inactividad.append({
+                "id_estudiante": row_in[0],
+                "nombre":        row_in[1],
+                "id_salon":      row_in[2],
+                "ultima":        ultima_str,
+            })
+    except Exception:
+        pass
+
     cur.close()
 
     return {
@@ -493,6 +547,8 @@ def _metricas_dashboard(id_usuario: int):
         # tendencia
         "tendencia_pct": tendencia_pct,
         "tendencia_dir": tendencia_dir,
+        # inactividad
+        "alertas_inactividad": alertas_inactividad,
     }
 
 
@@ -592,6 +648,8 @@ def dashboard():
         # tendencia
         tendencia_pct=met["tendencia_pct"],
         tendencia_dir=met["tendencia_dir"],
+        # inactividad
+        alertas_inactividad=met["alertas_inactividad"],
         active_page="dashboard",
     )
 
