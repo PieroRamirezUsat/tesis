@@ -106,10 +106,13 @@ def _metricas_dashboard(id_usuario: int):
             "salones": [],
             "temas": [],
             "estudiantes_atencion": [],
+            "estudiantes_chart": [],
             "avanzados": 0,
             "en_progreso": 0,
             "necesita_ayuda": 0,
             "alertas_dificultad": [],
+            "total_mat_revisiones": 0,
+            "alumno_mas_activo_mat": "—",
         }
 
     id_docente = row[0]

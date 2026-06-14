@@ -330,6 +330,21 @@ def crear_material(id_competencia):
         flash("Tipo de material inválido.", "error")
         return redirect(url_for("temas.gestion_temas", id_competencia=id_competencia))
 
+    # Validación cruzada tipo ↔ URL (no basta con el JS del frontend)
+    if tipo == "video":
+        _host = (urlparse(url_mat).hostname or "").lower()
+        _HOSTS_VIDEO = {"youtube.com", "www.youtube.com", "youtu.be",
+                        "m.youtube.com", "vimeo.com", "www.vimeo.com"}
+        if _host not in _HOSTS_VIDEO:
+            flash("Para tipo 'video' solo se aceptan URLs de YouTube o Vimeo.", "error")
+            return redirect(url_for("temas.gestion_temas", id_competencia=id_competencia))
+
+    if tipo == "pdf":
+        _path = urlparse(url_mat).path.lower()
+        if not _path.endswith(".pdf"):
+            flash("Para tipo 'pdf' la URL debe apuntar a un archivo .pdf", "error")
+            return redirect(url_for("temas.gestion_temas", id_competencia=id_competencia))
+
     if nivel_material not in (1, 2, 3):
         flash("El nivel del material es obligatorio.", "error")
         return redirect(url_for("temas.gestion_temas", id_competencia=id_competencia))
@@ -404,6 +419,23 @@ def editar_material(id_material):
         cur.close()
         flash("Tipo de material inválido.", "error")
         return redirect(url_for("temas.gestion_temas", id_competencia=id_competencia))
+
+    # Validación cruzada tipo ↔ URL (igual que en crear_material)
+    if tipo == "video":
+        _host = (urlparse(url_mat).hostname or "").lower()
+        _HOSTS_VIDEO = {"youtube.com", "www.youtube.com", "youtu.be",
+                        "m.youtube.com", "vimeo.com", "www.vimeo.com"}
+        if _host not in _HOSTS_VIDEO:
+            cur.close()
+            flash("Para tipo 'video' solo se aceptan URLs de YouTube o Vimeo.", "error")
+            return redirect(url_for("temas.gestion_temas", id_competencia=id_competencia))
+
+    if tipo == "pdf":
+        _path = urlparse(url_mat).path.lower()
+        if not _path.endswith(".pdf"):
+            cur.close()
+            flash("Para tipo 'pdf' la URL debe apuntar a un archivo .pdf", "error")
+            return redirect(url_for("temas.gestion_temas", id_competencia=id_competencia))
 
     if nivel_material not in (1, 2, 3):
         cur.close()

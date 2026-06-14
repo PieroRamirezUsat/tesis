@@ -457,8 +457,10 @@ def reporte_progreso():
                     "tiene_desarrollo": row[4] is not None,
                     "id_respuesta":     row[4],
                 })
-        except Exception:
-            cur.execute("ROLLBACK")
+        except Exception as e_foco:
+            conn.rollback()
+            print(f"⚠️ reportes /progreso: error cargando ejercicios_foco: {e_foco}")
+            # ejercicios_foco queda [] — la sección se renderiza vacía sin romper el reporte
 
     # ======================================================
     # OE4) Diagnóstico inicial vs. Estado actual

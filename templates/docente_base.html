@@ -474,6 +474,26 @@
     main .border-slate-200   { border-color:rgba(148,163,184,.2)!important; }
 
     {% block extra_styles %}{% endblock %}
+
+    /* ── Estilos de impresión ── */
+    @media print {
+      .sidebar, nav, .bottom-bar, button,
+      [data-no-print], .btn-action { display: none !important; }
+      body { background: #fff !important; color: #111 !important; font-size: 12pt; }
+      .main-content { margin: 0 !important; padding: 0 !important; }
+      .card, [class*="rounded"] {
+        border: 1px solid #ccc !important;
+        box-shadow: none !important;
+        background: #fff !important;
+        color: #111 !important;
+        break-inside: avoid;
+      }
+      canvas { max-width: 100% !important; }
+      a { color: #111 !important; text-decoration: none !important; }
+      h1, h2, h3, p, span, td, th { color: #111 !important; }
+      .text-gray-400, .text-gray-500 { color: #555 !important; }
+      @page { margin: 1.5cm; }
+    }
   </style>
 </head>
 
@@ -610,6 +630,7 @@
       <!-- Logout -->
       <div style="padding:10px;border-top:1px solid rgba(255,255,255,.07);position:relative;z-index:1;">
         <a href="{{ url_for('auth.logout') }}"
+           onclick="mostrarModalLogout(event)"
            style="display:flex;align-items:center;gap:12px;padding:9px 10px;border-radius:12px;font-size:13px;font-weight:600;color:rgba(252,165,165,.75);text-decoration:none;transition:background .18s,color .18s;border-left:3px solid transparent;"
            onmouseover="this.style.background='rgba(239,68,68,.1)';this.style.color='#FCA5A5'"
            onmouseout="this.style.background='transparent';this.style.color='rgba(252,165,165,.75)'">
@@ -693,6 +714,49 @@
           f.insertBefore(inp, f.firstChild);
         }
       });
+    });
+  </script>
+
+  <!-- ═══════════ MODAL CONFIRMAR LOGOUT ═══════════ -->
+  <div id="modalLogout"
+       style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.6);align-items:center;justify-content:center;">
+    <div style="background:#1E293B;border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:36px 32px;width:min(380px,90vw);text-align:center;box-shadow:0 30px 60px rgba(0,0,0,.6);">
+      <div style="width:56px;height:56px;background:rgba(239,68,68,.15);border-radius:50%;margin:0 auto 18px;display:flex;align-items:center;justify-content:center;">
+        <span class="material-symbols-outlined" style="color:#F87171;font-size:28px;">logout</span>
+      </div>
+      <h3 style="color:#F1F5F9;font-size:19px;font-weight:700;margin:0 0 8px;">¿Cerrar sesión?</h3>
+      <p style="color:#94A3B8;font-size:14px;margin:0 0 28px;">Tendrás que volver a ingresar tus credenciales para acceder al panel.</p>
+      <div style="display:flex;gap:12px;justify-content:center;">
+        <button onclick="cerrarModalLogout()"
+                style="flex:1;padding:11px 0;border-radius:12px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);color:#CBD5E1;font-size:14px;font-weight:600;cursor:pointer;transition:background .15s;"
+                onmouseover="this.style.background='rgba(255,255,255,.13)'"
+                onmouseout="this.style.background='rgba(255,255,255,.07)'">
+          Cancelar
+        </button>
+        <a id="btnConfirmarLogout" href="{{ url_for('auth.logout') }}"
+           style="flex:1;padding:11px 0;border-radius:12px;background:#EF4444;color:#fff;font-size:14px;font-weight:700;text-decoration:none;display:flex;align-items:center;justify-content:center;transition:background .15s;"
+           onmouseover="this.style.background='#DC2626'"
+           onmouseout="this.style.background='#EF4444'">
+          S&#237;, salir
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function mostrarModalLogout(e) {
+      e.preventDefault();
+      var m = document.getElementById('modalLogout');
+      m.style.display = 'flex';
+      m.addEventListener('click', function(ev) {
+        if (ev.target === m) cerrarModalLogout();
+      }, { once: true });
+    }
+    function cerrarModalLogout() {
+      document.getElementById('modalLogout').style.display = 'none';
+    }
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') cerrarModalLogout();
     });
   </script>
 </body>
