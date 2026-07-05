@@ -588,7 +588,7 @@
         <!-- Tarjeta del docente -->
         <div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px 12px;">
           <img
-            src="{{ url_for('static', filename='fotos_perfil/user_' ~ session.get('user_id', 0) ~ '.jpg') }}"
+            src="{{ foto_usuario_sidebar() or url_for('static', filename='fotos_perfil/user_' ~ session.get('user_id', 0) ~ '.jpg') }}"
             onerror="this.onerror=null;this.src='https://ui-avatars.com/api/?name={{ session.get('user_name','U')|urlencode }}&background=4338CA&color=fff&size=64';"
             alt="Foto"
             style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid rgba(129,140,248,.5);flex-shrink:0;"

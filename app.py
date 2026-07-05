@@ -38,6 +38,22 @@ def create_app():
     # Cerrar conexión a la BD al final de cada request
     app.teardown_appcontext(close_db)
 
+    # Foto de perfil del usuario en sesión, disponible en todos los templates
+    # (docente_base.html la usa en el sidebar). Resuelve Cloudinary → local → avatar.
+    @app.context_processor
+    def inject_foto_sidebar():
+        from flask import session
+        from ws.utils import url_foto_usuario
+        def foto_usuario_sidebar():
+            uid = session.get("user_id")
+            if not uid:
+                return ""
+            try:
+                return url_foto_usuario(app.root_path, uid)
+            except Exception:
+                return ""
+        return {"foto_usuario_sidebar": foto_usuario_sidebar}
+
     # Registrar todos tus blueprints (auth, docentes, etc.)
     register_blueprints(app)
 
