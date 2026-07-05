@@ -473,6 +473,67 @@
     main .border-sky-200     { border-color:rgba(14,165,233,.3)!important;  }
     main .border-slate-200   { border-color:rgba(148,163,184,.2)!important; }
 
+    /* ══════════════════════════════════════════════════
+       RESPONSIVE — móvil y tablet
+       ══════════════════════════════════════════════════ */
+
+    /* Botón hamburguesa (oculto en desktop) */
+    .menu-btn {
+      display: none;
+      align-items: center; justify-content: center;
+      width: 40px; height: 40px; flex-shrink: 0;
+      border-radius: 10px; border: 1px solid rgba(129,140,248,.25);
+      background: rgba(99,102,241,.12); color: #A5B4FC; cursor: pointer;
+      transition: background .15s;
+    }
+    .menu-btn:hover { background: rgba(99,102,241,.22); }
+
+    /* Backdrop del drawer */
+    .sidebar-backdrop {
+      display: none;
+      position: fixed; inset: 0; z-index: 70;
+      background: rgba(2,6,23,.6);
+      backdrop-filter: blur(2px);
+      -webkit-backdrop-filter: blur(2px);
+      opacity: 0; transition: opacity .25s;
+    }
+    .sidebar-backdrop.show { opacity: 1; }
+
+    /* Modales: nunca más altos que la pantalla, con scroll interno.
+       Aplica a los modales de todas las páginas hijas. */
+    [id*="backdrop"] > div, #modalLogout > div {
+      max-height: min(92vh, 92dvh);
+      overflow-y: auto;
+    }
+
+    /* Contenedor de tabla generado por JS (tablas de páginas hijas) */
+    .tbl-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+    @media (max-width: 1023px) {
+      /* Sidebar → drawer off-canvas */
+      .sidebar {
+        position: fixed; top: 0; left: 0; bottom: 0; z-index: 80;
+        width: min(280px, 84vw) !important;
+        transform: translateX(-105%);
+        transition: transform .28s cubic-bezier(.4,0,.2,1);
+        box-shadow: 0 0 60px rgba(0,0,0,.55);
+      }
+      .sidebar.open { transform: translateX(0); }
+      .sidebar-backdrop.show { display: block; }
+      .menu-btn { display: inline-flex; }
+
+      /* Header y main más compactos */
+      .top-header { padding: 12px 16px !important; }
+      main { padding: 16px 14px !important; }
+    }
+
+    @media (max-width: 480px) {
+      /* En pantallas muy chicas la fecha del header estorba */
+      #hdr-date-box { display: none !important; }
+      .top-header h1 { font-size: 16px !important; }
+      main { padding: 14px 10px !important; }
+    }
+
     {% block extra_styles %}{% endblock %}
 
     /* ── Estilos de impresión ── */
@@ -501,7 +562,8 @@
   <div style="display:flex; min-height:100vh; overflow-x:hidden;">
 
     <!-- ═══════════════════ SIDEBAR ═══════════════════ -->
-    <aside class="sidebar" style="display:flex; flex-direction:column; width:256px; flex-shrink:0;">
+    <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="cerrarSidebar()"></div>
+    <aside class="sidebar" id="sidebarPanel" style="display:flex; flex-direction:column; width:256px; flex-shrink:0;">
 
       <!-- Símbolos matemáticos decorativos del fondo -->
       <span class="float-a" style="position:absolute;top:11%;left:5%;font-size:54px;color:rgba(129,140,248,.065);font-weight:900;pointer-events:none;user-select:none;z-index:0;line-height:1;">∑</span>
@@ -646,18 +708,23 @@
     <div style="flex:1;display:flex;flex-direction:column;min-width:0;">
 
       <!-- Top header -->
-      <header class="top-header" style="display:flex;align-items:center;justify-content:space-between;padding:14px 28px;flex-shrink:0;">
-        <div>
-          <h1 style="font-size:18px;font-weight:800;color:#F1F5F9;line-height:1.2;margin:0;">
-            {{ titulo_pagina or 'Panel de Control' }}
-          </h1>
-          {% if subtitulo_pagina is defined and subtitulo_pagina %}
-          <p style="font-size:12px;color:rgba(148,163,184,.65);margin:3px 0 0;">{{ subtitulo_pagina }}</p>
-          {% endif %}
+      <header class="top-header" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 28px;flex-shrink:0;">
+        <div style="display:flex;align-items:center;gap:12px;min-width:0;">
+          <button type="button" class="menu-btn" onclick="abrirSidebar()" aria-label="Abrir menú">
+            <span class="material-symbols-outlined" style="font-size:22px;">menu</span>
+          </button>
+          <div style="min-width:0;">
+            <h1 style="font-size:18px;font-weight:800;color:#F1F5F9;line-height:1.2;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+              {{ titulo_pagina or 'Panel de Control' }}
+            </h1>
+            {% if subtitulo_pagina is defined and subtitulo_pagina %}
+            <p style="font-size:12px;color:rgba(148,163,184,.65);margin:3px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ subtitulo_pagina }}</p>
+            {% endif %}
+          </div>
         </div>
-        <div style="display:flex;align-items:center;gap:10px;">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;">
           {% block header_actions %}{% endblock %}
-          <div style="display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:6px 12px;">
+          <div id="hdr-date-box" style="display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:6px 12px;">
             <span class="material-symbols-outlined" style="font-size:14px;color:rgba(148,163,184,.55);">calendar_today</span>
             <span style="font-size:12px;color:rgba(148,163,184,.65);" id="hdr-date"></span>
           </div>
@@ -713,6 +780,38 @@
           inp.type = 'hidden'; inp.name = 'csrf_token'; inp.value = meta.content;
           f.insertBefore(inp, f.firstChild);
         }
+      });
+    });
+
+    // ── Sidebar drawer (móvil/tablet) ──
+    function abrirSidebar() {
+      document.getElementById('sidebarPanel').classList.add('open');
+      var b = document.getElementById('sidebarBackdrop');
+      b.classList.add('show');
+      document.body.style.overflow = 'hidden';
+    }
+    function cerrarSidebar() {
+      document.getElementById('sidebarPanel').classList.remove('open');
+      document.getElementById('sidebarBackdrop').classList.remove('show');
+      document.body.style.overflow = '';
+    }
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') cerrarSidebar();
+    });
+
+    // ── Tablas: garantizar scroll horizontal en pantallas chicas ──
+    // Envuelve toda tabla del contenido que no esté ya dentro de un
+    // contenedor con overflow-x, para que en móvil se deslice en vez
+    // de desbordar la página.
+    document.addEventListener('DOMContentLoaded', function () {
+      document.querySelectorAll('main table').forEach(function (t) {
+        var p = t.parentElement;
+        var ov = p ? getComputedStyle(p).overflowX : '';
+        if (ov === 'auto' || ov === 'scroll' || (p && p.classList.contains('tbl-scroll'))) return;
+        var wrap = document.createElement('div');
+        wrap.className = 'tbl-scroll';
+        p.insertBefore(wrap, t);
+        wrap.appendChild(t);
       });
     });
   </script>
