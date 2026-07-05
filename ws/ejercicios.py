@@ -15,7 +15,8 @@ from db import get_db
 bp_ejercicios = Blueprint("ejercicios", __name__, url_prefix="/docente/ejercicios")
 
 UPLOAD_FOLDER = "static/ejercicios_ayuda"
-ALLOWED = {"png", "jpg", "jpeg"}
+# Cloudinary acepta todos estos y los convierte a JPG al subir (format="jpg")
+ALLOWED = {"png", "jpg", "jpeg", "webp", "jfif", "gif", "bmp", "avif"}
 
 
 def allowed_file(filename: str) -> bool:
@@ -206,6 +207,15 @@ def crear_ejercicio():
             id_ej = cur.fetchone()[0]
 
         # ---------- Guardar imagen si viene ----------
+        if archivo and archivo.filename and not allowed_file(archivo.filename):
+            # Antes se ignoraba en silencio y el docente no sabía por qué
+            # el ejercicio quedaba sin imagen.
+            flash(
+                f"La imagen '{archivo.filename}' tiene un formato no permitido "
+                f"(usa {', '.join(sorted(ALLOWED)).upper()}). "
+                "El ejercicio se guardó SIN imagen.",
+                "warning",
+            )
         if archivo and allowed_file(archivo.filename):
             from util_cloudinary import cloudinary_configurado, subir_imagen
             if cloudinary_configurado():
