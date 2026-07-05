@@ -124,7 +124,8 @@
     .two-col-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
 
     @media(max-width:768px) {
-      .hero-panel { display:none; }
+      /* !important: el hero trae display:flex inline y sin esto nunca se oculta */
+      .hero-panel { display:none !important; }
       .form-panel { min-height:100vh; }
     }
 
