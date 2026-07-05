@@ -444,10 +444,18 @@ def editar_estudiante(id_estudiante):
         flash("Nombre, apellidos y correo son obligatorios.", "error")
         return redirect(url_for("docentes.gestion_estudiantes"))
 
+    # Cambio de contraseña: solo si AMBOS campos vienen llenos y coinciden.
+    # Si no coinciden (o solo llegó uno — típico del autofill del navegador),
+    # NO se aborta el guardado: los demás datos (incluido el diagnóstico
+    # MINEDU) se guardan igual y solo se avisa que la contraseña no cambió.
     if contrasena or contrasena_confirm:
         if contrasena != contrasena_confirm:
-            flash("Las contraseñas no coinciden.", "error")
-            return redirect(url_for("docentes.gestion_estudiantes"))
+            contrasena = ""
+            flash(
+                "La contraseña NO se cambió (los campos no coinciden o falta "
+                "confirmarla). El resto de los datos sí se guardó.",
+                "warning",
+            )
 
     conn = get_db()
     cur = conn.cursor()
