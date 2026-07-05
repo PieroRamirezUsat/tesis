@@ -749,7 +749,17 @@ def perfil():
                 from util_cloudinary import cloudinary_configurado, subir_imagen
                 if cloudinary_configurado():
                     public_id = f"tutormath/fotos_perfil/user_{id_usuario}"
-                    subir_imagen(foto, public_id)
+                    url_versionada = subir_imagen(foto, public_id)
+                    # Guardar la URL con versión: sin ella el CDN/navegador
+                    # siguen mostrando la foto anterior cacheada.
+                    conn = get_db()
+                    cur = conn.cursor()
+                    cur.execute(
+                        "UPDATE usuarios SET foto_perfil = %s WHERE id_usuario = %s",
+                        (url_versionada, id_usuario),
+                    )
+                    conn.commit()
+                    cur.close()
                 else:
                     fs_path = _fs_path_foto_usuario(id_usuario)
                     foto.save(fs_path)

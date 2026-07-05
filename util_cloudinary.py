@@ -45,7 +45,10 @@ def subir_imagen(archivo, public_id: str) -> str:
         archivo,
         public_id     = public_id,
         overwrite     = True,
+        invalidate    = True,   # purga el CDN al reemplazar (evita fotos viejas cacheadas)
         resource_type = "image",
         format        = "jpg",
     )
+    # secure_url incluye la versión (…/v123456/…): úsala al mostrar para
+    # que navegadores y CDN no sirvan la imagen anterior.
     return resultado["secure_url"]

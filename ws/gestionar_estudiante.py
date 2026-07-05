@@ -721,7 +721,16 @@ def subir_foto_estudiante(id_estudiante):
         from util_cloudinary import cloudinary_configurado, subir_imagen
         if cloudinary_configurado():
             public_id = f"tutormath/fotos_perfil/user_{id_usuario}"
-            subir_imagen(foto, public_id)
+            url_versionada = subir_imagen(foto, public_id)
+            # URL con versión → el CDN/navegador no sirven la foto anterior
+            conn = get_db()
+            cur2 = conn.cursor()
+            cur2.execute(
+                "UPDATE usuarios SET foto_perfil = %s WHERE id_usuario = %s",
+                (url_versionada, id_usuario),
+            )
+            conn.commit()
+            cur2.close()
         else:
             foto.save(ruta_destino)
         flash("Foto del estudiante actualizada.", "success")

@@ -24,11 +24,27 @@ def url_foto_usuario(root_path: str, id_usuario: int) -> str:
     Devuelve la URL de la foto de perfil del usuario.
 
     Orden de búsqueda:
-      1. Cloudinary (si CLOUDINARY_URL está configurada — Railway/producción).
-         public_id = "tutormath/fotos_perfil/user_<id>"
-      2. Archivo local en static/fotos_perfil/user_<id>.jpg (desarrollo local).
-      3. Avatar por defecto.
+      1. usuarios.foto_perfil (URL de Cloudinary CON versión, guardada al subir).
+         La versión en la URL es lo que evita que el CDN y el navegador
+         sigan mostrando la foto anterior tras un reemplazo.
+      2. Cloudinary sin versión (fotos subidas antes de guardar la URL en BD).
+      3. Archivo local en static/fotos_perfil/user_<id>.jpg (desarrollo local).
+      4. Avatar por defecto.
     """
+    try:
+        from db import get_db
+        cur = get_db().cursor()
+        cur.execute(
+            "SELECT foto_perfil FROM usuarios WHERE id_usuario = %s",
+            (id_usuario,),
+        )
+        row = cur.fetchone()
+        cur.close()
+        if row and row[0]:
+            return row[0]
+    except Exception:
+        pass
+
     try:
         from util_cloudinary import cloudinary_configurado
         if cloudinary_configurado():
