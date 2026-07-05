@@ -323,7 +323,7 @@ def _metricas_dashboard(id_usuario: int):
             ) AS progreso,
             e.id_estudiante,
             MIN(es.id_salon) AS id_salon,
-            (SELECT s2.nombre FROM salones s2
+            (SELECT s2.nombre_salon FROM salones s2
              JOIN estudiante_salones es2 ON es2.id_salon = s2.id_salon
              WHERE es2.id_estudiante = e.id_estudiante
                AND s2.id_salon IN (SELECT id_salon FROM docente_salones WHERE id_docente = %s)
