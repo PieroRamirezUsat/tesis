@@ -525,6 +525,20 @@
       /* Header y main más compactos */
       .top-header { padding: 12px 16px !important; }
       main { padding: 16px 14px !important; }
+
+      /* Evitar que el contenido imponga un ancho mínimo mayor que la
+         pantalla: los encabezados de página envuelven y los hijos de
+         flex/grid pueden encogerse. OJO: overflow-wrap solo en títulos
+         de página — aplicarlo a todo p rompía los nombres letra por
+         letra dentro de las tablas. */
+      main .page-content > .flex { flex-wrap: wrap; gap: 10px; }
+      main .page-content .flex > *,
+      main .page-content .grid > * { min-width: 0; }
+      main .page-content h1,
+      main .page-content h2 { overflow-wrap: anywhere; }
+      main .page-content table td,
+      main .page-content table th,
+      main .page-content table p { overflow-wrap: normal; word-break: normal; }
     }
 
     @media (max-width: 480px) {
