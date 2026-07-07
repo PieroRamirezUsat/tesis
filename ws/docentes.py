@@ -1,4 +1,30 @@
 # ws/docentes.py
+# ═══════════════════════════════════════════════════════════════════════════
+#  📚 GUÍA DE ESTUDIO — DASHBOARD Y PERFIL DEL DOCENTE
+# ═══════════════════════════════════════════════════════════════════════════
+#  Dos rutas: /docente/dashboard y /docente/perfil.
+#
+#  El dashboard se arma en _metricas_dashboard(), que ejecuta una consulta
+#  SQL por cada tarjeta/panel del template docente_dashboard.html:
+#   0) id_docente desde la sesión (si no existe, devuelve todo en cero)
+#   1) Totales por banda: avanzado ≥70 % / en progreso 40-69 / ayuda <40.
+#      El % de cada alumno = promedio de sus 4 competencias, calculado
+#      desde nivel_estudiante_competencia: (min(nivel,6)−1)×20 → nivel 6=100%
+#   2) Salones con su progreso promedio
+#   3) Radar de competencias (promedio de puntajes por área)
+#   4) Estudiantes que requieren atención (<40 %) con su peor competencia
+#   5) Lista completa para el gráfico de distribución
+#   6) Resumen de materiales revisados
+#   7) Tendencia semanal + heatmap de actividad (70 días)
+#   8) Alertas: 3+ fallos sin aciertos en 24 h / inactivos 7+ días
+#
+#  🔧 Para agregar una tarjeta nueva al dashboard: agrega la consulta aquí,
+#  súmala al diccionario de retorno, pásala en render_template() y pinta el
+#  HTML en templates/docente_dashboard.html.
+#
+#  La foto de perfil se sube a Cloudinary y su URL CON VERSIÓN se guarda en
+#  usuarios.foto_perfil (así el navegador no muestra la foto vieja cacheada).
+# ═══════════════════════════════════════════════════════════════════════════
 from flask import (
     Blueprint,
     render_template,

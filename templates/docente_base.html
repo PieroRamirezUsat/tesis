@@ -1,4 +1,32 @@
 <!DOCTYPE html>
+<!-- ═══════════════════════════════════════════════════════════════════════
+  📚 GUÍA DE ESTUDIO — PLANTILLA BASE DE TODO EL PANEL DOCENTE
+  ═══════════════════════════════════════════════════════════════════════
+  TODAS las páginas del panel (dashboard, estudiantes, salones, temas,
+  ejercicios, reportes, evaluaciones, perfil) heredan de este archivo con
+  la etiqueta extends "docente_base.html" y rellenan el bloque "contenido".
+  (Ojo: no se puede escribir la sintaxis Jinja literal ni en comentarios
+  HTML — Jinja la ejecuta igual.)
+
+  Qué vive aquí (en orden):
+  · Tailwind por CDN + config de colores de marca (primary #4F46E5...).
+  · <style> con: animaciones (fadeUp/float), sidebar, botones (.btn-*),
+    tablas (.tbl), badges, y el bloque "DARK OVERRIDES" — reglas que
+    re-pintan clases claras de Tailwind (bg-white, text-gray-900...) al
+    tema oscuro SIN tener que editar cada template hijo.
+  · Bloque RESPONSIVE: en <1024px el sidebar se vuelve un drawer
+    deslizable (botón hamburguesa .menu-btn + backdrop); los modales
+    limitan su alto a 92vh con scroll interno; los títulos envuelven.
+  · HTML: sidebar (navegación, tarjeta del docente con su foto), header
+    superior (hamburguesa + título + fecha) y <main> con los flash
+    messages y el bloque "contenido" que rellena cada página hija.
+  · JS global: fecha del header, auto-inyección del token CSRF en todo
+    <form method="POST">, drawer del sidebar, auto-envoltura de tablas
+    en .tbl-scroll (scroll horizontal táctil), modal de confirmar logout.
+
+  🔧 Para agregar una sección nueva al menú: copia un <a class="nav-item">
+  del <nav>, apunta a tu url_for() y pasa active_page desde la vista.
+  ═══════════════════════════════════════════════════════════════════════ -->
 <html lang="es">
 <head>
   <meta charset="utf-8" />

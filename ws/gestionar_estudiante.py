@@ -1,3 +1,28 @@
+# ═══════════════════════════════════════════════════════════════════════════
+#  📚 GUÍA DE ESTUDIO — GESTIÓN DE ESTUDIANTES + DIAGNÓSTICO MINEDU ⭐
+# ═══════════════════════════════════════════════════════════════════════════
+#  Este módulo es el PUENTE entre el docente y el tutor adaptativo:
+#
+#  · Crear/asociar estudiante: alta de usuario+estudiante y matrícula en un
+#    salón del docente (tablas estudiante_salones / docente_salones).
+#
+#  · editar_estudiante() — LA RUTA MÁS IMPORTANTE: aquí el docente registra
+#    el DIAGNÓSTICO INICIAL (nota 0-100 por cada competencia MINEDU). Esa
+#    nota se convierte a nivel 1-7 con _score_to_nivel (misma tabla de
+#    brackets que models/scoring.py de la API — si cambias una, cambia la
+#    otra) y se escribe en nivel_estudiante_competencia (NEC). El tutor de
+#    la app parte de ese nivel. Sin diagnóstico, la app bloquea el tutor.
+#
+#  · Regla anti-pisado: si el alumno YA tiene respuestas registradas, el
+#    diagnóstico queda BLOQUEADO (solo se editan datos personales) para no
+#    aplastar su progreso real con una nota tardía.
+#
+#  · Cambio de contraseña del alumno: solo si ambos campos coinciden; si no,
+#    se guarda el resto igual y se avisa (el autofill del navegador llegó a
+#    llenar solo uno y abortaba todo el guardado — bug ya corregido).
+#
+#  · Foto del estudiante → Cloudinary; URL con versión en usuarios.foto_perfil.
+# ═══════════════════════════════════════════════════════════════════════════
 import os
 from flask import render_template, request, redirect, url_for, session, flash, current_app
 from werkzeug.security import generate_password_hash

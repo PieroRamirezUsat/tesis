@@ -1,3 +1,15 @@
+# ═══════════════════════════════════════════════════════════════════════════
+#  📚 GUÍA DE ESTUDIO — CONEXIÓN A LA BASE DE DATOS (WEB)
+# ═══════════════════════════════════════════════════════════════════════════
+#  A diferencia de la API (que crea una conexión por endpoint), aquí se usa
+#  el patrón de Flask: UNA conexión por request guardada en `g`, que se
+#  cierra sola al terminar (app.teardown_appcontext en app.py).
+#
+#  ⚠️ OJO: este proyecto usa psycopg v3 y las filas llegan como TUPLAS
+#  (row[0], row[1]...). La API usa psycopg2+RealDictCursor y las filas son
+#  DICCIONARIOS (row["columna"]). Si copias SQL de un proyecto al otro,
+#  adapta la forma de leer las filas.
+# ═══════════════════════════════════════════════════════════════════════════
 import psycopg
 from flask import g
 from config import Config

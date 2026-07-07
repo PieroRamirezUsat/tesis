@@ -1,3 +1,29 @@
+# ═══════════════════════════════════════════════════════════════════════════
+#  📚 GUÍA DE ESTUDIO — PUNTO DE ENTRADA DEL PORTAL WEB (DOCENTE)
+# ═══════════════════════════════════════════════════════════════════════════
+#  Este proyecto es el PORTAL DEL DOCENTE (login con sesión de Flask +
+#  cookies, NO con JWT — eso es de la API móvil). Comparte la base Postgres
+#  con la API, pero es un servidor independiente.
+#
+#  Patrón usado: "application factory" — create_app() arma la aplicación:
+#  · CSRFProtect: todo formulario POST necesita el token csrf (los templates
+#    del panel lo inyectan por JS desde el <meta> de docente_base.html).
+#  · limiter: máx. 5 intentos de login por minuto (anti fuerza bruta).
+#  · context_processor foto_usuario_sidebar(): pone la foto del docente
+#    (Cloudinary → local → avatar) disponible en TODOS los templates.
+#  · register_blueprints(app) (ws/__init__.py) conecta todas las secciones:
+#      ws/auth.py                 → /login /register /logout /forgot-password
+#      ws/docentes.py             → /docente/dashboard y /docente/perfil
+#      ws/gestionar_estudiante.py → alumnos + DIAGNÓSTICO MINEDU ⭐
+#      ws/salones.py, ws/temas.py, ws/ejercicios.py, ws/reportes.py,
+#      ws/evaluaciones.py         → cada sección del menú lateral
+#  · La ruta "/" es la landing pública con el botón de descarga del APK
+#    (URL en la variable APK_DOWNLOAD_URL de Railway).
+#
+#  Los templates viven en templates/ y TODOS los del panel heredan de
+#  docente_base.html (sidebar + estilos + responsive). Despliegue: gunicorn
+#  app:app (Procfile), Root Directory vacío en Railway.
+# ═══════════════════════════════════════════════════════════════════════════
 from flask import Flask, jsonify, redirect, url_for, render_template, request, flash
 from config import Config
 from db import get_db, close_db
