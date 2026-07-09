@@ -281,6 +281,33 @@
           <p class="text-[11px] text-gray-400">El tutor sube de nivel cuando el alumno acierta y baja cuando falla.</p>
         </div>
 
+        <!-- Material de refuerzo vinculado (2° fallo del alumno) -->
+        <div class="space-y-1 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/15 border border-emerald-100 dark:border-emerald-800/40">
+          <label class="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide flex items-center gap-1">
+            📚 Material de refuerzo del ejercicio (opcional)
+          </label>
+          <p class="text-[11px] text-gray-400">
+            Cuando el alumno falle <strong>2 veces</strong>, la app le mostrará
+            este video o página que explica cómo resolver ejercicios como este.
+          </p>
+          <!-- Materiales ya vinculados (solo al editar) -->
+          <div id="lista-materiales-ej" class="space-y-1"></div>
+          <input type="text" name="material_titulo" id="material-titulo" maxlength="150"
+            class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/60 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+            placeholder="Título — Ej: Video: cómo resolver ecuaciones cuadráticas" />
+          <div class="flex gap-2">
+            <select name="material_tipo" id="material-tipo"
+              class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/60 px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400">
+              <option value="video">Video</option>
+              <option value="link" selected>Página web</option>
+              <option value="pdf">PDF</option>
+            </select>
+            <input type="text" name="material_url" id="material-url" maxlength="255"
+              class="flex-1 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/60 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+              placeholder="https://… (cópiala completa del navegador)" />
+          </div>
+        </div>
+
         <!-- Imagen -->
         <div class="space-y-1">
           <label class="text-xs font-bold text-gray-500 uppercase tracking-wide">Imagen de apoyo (opcional)</label>
@@ -363,7 +390,52 @@
     document.getElementById("rapido-nivel-logro").value = "";
     document.querySelectorAll("input[name^='opcion_']").forEach(i => i.value = "");
     document.querySelectorAll("input[name='opcion_correcta']").forEach(r => r.checked = false);
+    limpiarMaterialForm();
   });
+
+  // ── Material de refuerzo vinculado ─────────────────────────────────────
+  function limpiarMaterialForm() {
+    document.getElementById("material-titulo").value = "";
+    document.getElementById("material-url").value = "";
+    document.getElementById("material-tipo").value = "link";
+    document.getElementById("lista-materiales-ej").innerHTML = "";
+  }
+
+  const urlEliminarMatBase = "{{ url_for('ejercicios.eliminar_material_ejercicio', id_material=0) }}";
+  const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || "";
+
+  function pintarMateriales(materiales) {
+    const cont = document.getElementById("lista-materiales-ej");
+    cont.innerHTML = "";
+    (materiales || []).forEach(m => {
+      const fila = document.createElement("div");
+      fila.className = "flex items-center gap-2 text-xs bg-white dark:bg-gray-800 border border-emerald-100 dark:border-emerald-800/40 rounded-lg px-2 py-1.5";
+      const tipo = document.createElement("span");
+      tipo.className = "uppercase font-bold text-emerald-600 dark:text-emerald-400";
+      tipo.textContent = m.tipo;
+      const link = document.createElement("a");
+      link.href = m.url; link.target = "_blank"; link.rel = "noopener";
+      link.className = "flex-1 truncate text-gray-600 dark:text-gray-300 hover:text-indigo-500";
+      link.title = m.url; link.textContent = m.titulo;
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "text-red-400 hover:text-red-600 font-bold px-1";
+      btn.textContent = "✕";
+      btn.title = "Quitar este material del ejercicio";
+      btn.addEventListener("click", () => {
+        if (!confirm("¿Quitar este material de refuerzo del ejercicio?")) return;
+        fetch(urlEliminarMatBase.replace("0", m.id_material), {
+          method: "POST",
+          headers: { "X-CSRFToken": csrfToken },
+        })
+          .then(r => r.json())
+          .then(res => { if (res.ok) fila.remove(); else alert(res.error || "No se pudo eliminar."); })
+          .catch(() => alert("Error al comunicarse con el servidor."));
+      });
+      fila.append(tipo, link, btn);
+      cont.appendChild(fila);
+    });
+  }
 
   const urlDetalleBase = "{{ url_for('ejercicios.detalle_ejercicio_json', id_ejercicio=0) }}";
   document.querySelectorAll("[data-accion='editar-ejercicio']").forEach(btn => {
@@ -386,6 +458,10 @@
           document.querySelectorAll("input[name='opcion_correcta']").forEach(r => {
             r.checked = data.respuesta_correcta && r.value === data.respuesta_correcta;
           });
+          // materiales de refuerzo ya vinculados a este ejercicio
+          document.getElementById("material-titulo").value = "";
+          document.getElementById("material-url").value = "";
+          pintarMateriales(data.materiales);
           document.getElementById("form-ejercicio-rapido")?.scrollIntoView({ behavior: "smooth", block: "start" });
         })
         .catch(() => alert("Error al comunicarse con el servidor."));

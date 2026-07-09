@@ -276,6 +276,38 @@ def crear_ejercicio():
                     )
                 # Si no hay texto y no existía, no insertamos nada
 
+        # ---------- MATERIAL DE REFUERZO VINCULADO (opcional) ----------
+        # Es el material que la app muestra "sí o sí" al segundo fallo de
+        # ESTE ejercicio (capa 1 del tutor: material_estudio.id_ejercicio).
+        mat_titulo = (request.form.get("material_titulo") or "").strip()
+        mat_url    = (request.form.get("material_url") or "").strip()
+        mat_tipo   = (request.form.get("material_tipo") or "link").strip().lower()
+        if mat_titulo or mat_url:
+            from ws.utils import validar_url_material
+            ok_url, res_url = validar_url_material(mat_url)
+            if not mat_titulo:
+                flash("El material de refuerzo no se guardó: falta el título.", "warning")
+            elif len(mat_titulo) > 150:
+                flash("El material de refuerzo no se guardó: título máximo 150 caracteres.", "warning")
+            elif not ok_url:
+                flash(f"El material de refuerzo no se guardó: {res_url}", "warning")
+            elif mat_tipo not in ("video", "link", "pdf"):
+                flash("El material de refuerzo no se guardó: tipo inválido.", "warning")
+            else:
+                # Banda del material según dificultad del ejercicio
+                # (mismo criterio que el resto del catálogo: ≤3→1, 4-5→2, ≥6→3)
+                nl = nivel_logro or 3
+                banda = 1 if nl <= 3 else (2 if nl <= 5 else 3)
+                cur.execute(
+                    """
+                    INSERT INTO material_estudio
+                        (titulo, tipo, url, id_competencia, nivel, id_ejercicio)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                    """,
+                    (mat_titulo, mat_tipo, res_url, id_competencia, banda, id_ej),
+                )
+                flash("Material de refuerzo vinculado al ejercicio.", "success")
+
         # ---------- COMMIT ----------
         conn.commit()
 
@@ -376,6 +408,31 @@ def eliminar_seleccion():
 
 
 # ===================== DETALLE JSON (para EDITAR) =====================
+@bp_ejercicios.route("/material/<int:id_material>/eliminar", methods=["POST"])
+def eliminar_material_ejercicio(id_material):
+    """
+    Elimina un material de refuerzo vinculado a un ejercicio (lo llama el
+    botón 🗑 del editor por fetch). Solo borra materiales que SÍ están
+    vinculados a un ejercicio — los genéricos del catálogo se gestionan
+    desde el Catálogo de Temas.
+    """
+    if "user_id" not in session or session.get("user_rol") != "docente":
+        return jsonify({"ok": False, "error": "No autorizado"}), 401
+
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(
+        "DELETE FROM material_estudio WHERE id_material = %s AND id_ejercicio IS NOT NULL",
+        (id_material,),
+    )
+    borrados = cur.rowcount
+    conn.commit()
+    cur.close()
+    if borrados:
+        return jsonify({"ok": True})
+    return jsonify({"ok": False, "error": "Material no encontrado o no vinculado"}), 404
+
+
 @bp_ejercicios.route("/detalle/<int:id_ejercicio>")
 def detalle_ejercicio_json(id_ejercicio):
     if "user_id" not in session or session.get("user_rol") != "docente":
@@ -416,6 +473,21 @@ def detalle_ejercicio_json(id_ejercicio):
         (id_ejercicio,),
     )
     filas_opt = cur.fetchall()
+
+    # Materiales de refuerzo vinculados a este ejercicio (capa 1 del tutor)
+    cur.execute(
+        """
+        SELECT id_material, titulo, tipo, url
+        FROM material_estudio
+        WHERE id_ejercicio = %s
+        ORDER BY id_material
+        """,
+        (id_ejercicio,),
+    )
+    materiales = [
+        {"id_material": m[0], "titulo": m[1], "tipo": m[2], "url": m[3]}
+        for m in cur.fetchall()
+    ]
     cur.close()
 
     opciones = {fila[0]: fila[1] for fila in filas_opt}
@@ -429,6 +501,7 @@ def detalle_ejercicio_json(id_ejercicio):
         "nivel_logro":       ej[5],
         "palabras_clave":    ej[6],
         "opciones":          opciones,
+        "materiales":        materiales,
     }
 
     return jsonify(data)
