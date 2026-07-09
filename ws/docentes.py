@@ -771,6 +771,11 @@ def perfil():
         # 3. Procesar foto (si viene archivo)
         foto = request.files.get("foto")
         if foto and foto.filename:
+            from ws.utils import validar_imagen
+            ok_img, motivo = validar_imagen(foto)
+            if not ok_img:
+                flash(f"La foto no se guardó: {motivo}", "warning")
+                return redirect(url_for("docentes.perfil"))
             try:
                 from util_cloudinary import cloudinary_configurado, subir_imagen
                 if cloudinary_configurado():

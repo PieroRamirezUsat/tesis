@@ -24,13 +24,26 @@
       </select>
     </div>
     <div class="flex flex-col gap-1">
-      <label class="text-[11px] font-bold text-gray-400 uppercase tracking-widest" for="select-estudiante">Estudiante</label>
-      <select id="select-estudiante"
-        class="h-10 px-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/60 text-sm text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-400 min-w-[220px]">
-        {% for e in estudiantes %}
-          <option value="{{ e.id_estudiante }}" {% if estudiante_seleccionado == e.id_estudiante %}selected{% endif %}>{{ e.nombre }}</option>
-        {% endfor %}
-      </select>
+      <label class="text-[11px] font-bold text-gray-400 uppercase tracking-widest" for="buscar-estudiante">Estudiante</label>
+      <!-- Combobox con búsqueda: con 31 alumnos, un select simple obliga a
+           recorrer uno por uno; aquí se escribe el nombre y se filtra. -->
+      <div class="relative" id="combo-estudiante">
+        <input type="text" id="buscar-estudiante" autocomplete="off"
+          placeholder="Escribe el nombre del alumno..."
+          value="{% for e in estudiantes %}{% if estudiante_seleccionado == e.id_estudiante %}{{ e.nombre }}{% endif %}{% endfor %}"
+          class="h-10 pl-3 pr-9 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/60 text-sm text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-400 min-w-[240px] w-full" />
+        <span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" style="font-size:20px">search</span>
+        <div id="lista-estudiantes"
+          class="hidden absolute z-30 mt-1 w-full max-h-64 overflow-y-auto rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-xl">
+          {% for e in estudiantes %}
+          <button type="button" data-id="{{ e.id_estudiante }}"
+            class="opcion-estudiante w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 {% if estudiante_seleccionado == e.id_estudiante %}font-bold text-indigo-600 dark:text-indigo-400{% endif %}">
+            {{ e.nombre }}
+          </button>
+          {% endfor %}
+          <p id="sin-coincidencias" class="hidden px-3 py-2 text-sm text-gray-400">Sin coincidencias…</p>
+        </div>
+      </div>
     </div>
     <div class="flex gap-2 ml-auto flex-wrap">
       <a href="{{ url_for('reportes.exportar_pdf', id_salon=salon_seleccionado, id_estudiante=estudiante_seleccionado) }}"
@@ -850,17 +863,61 @@
   }
 
   const selectSalon = document.getElementById("select-salon");
-  const selectEst   = document.getElementById("select-estudiante");
 
-  function recargar() {
+  function recargar(idEstudiante) {
     const params = new URLSearchParams();
-    if (selectSalon.value) params.set("id_salon",      selectSalon.value);
-    if (selectEst.value)   params.set("id_estudiante", selectEst.value);
+    if (selectSalon.value) params.set("id_salon", selectSalon.value);
+    if (idEstudiante)      params.set("id_estudiante", idEstudiante);
     window.location.href = "{{ url_for('reportes.reporte_progreso') }}?" + params.toString();
   }
 
-  selectSalon?.addEventListener("change", recargar);
-  selectEst?.addEventListener("change",   recargar);
+  selectSalon?.addEventListener("change", function () { recargar(null); });
+
+  // ── Combobox de estudiante con búsqueda ──────────────────────────
+  (function () {
+    const input  = document.getElementById("buscar-estudiante");
+    const lista  = document.getElementById("lista-estudiantes");
+    const vacio  = document.getElementById("sin-coincidencias");
+    if (!input || !lista) return;
+    const opciones = Array.from(lista.querySelectorAll(".opcion-estudiante"));
+
+    // quita tildes y pasa a minúsculas para comparar ("Llicán" == "llican")
+    const norm = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
+    function filtrar() {
+      const q = norm(input.value.trim());
+      let visibles = 0;
+      opciones.forEach((op) => {
+        const coincide = !q || norm(op.textContent).includes(q);
+        op.style.display = coincide ? "" : "none";
+        if (coincide) visibles++;
+      });
+      vacio.classList.toggle("hidden", visibles > 0);
+      lista.classList.remove("hidden");
+    }
+
+    input.addEventListener("input", filtrar);
+    input.addEventListener("focus", function () {
+      input.select();          // al enfocar, se selecciona el texto para reemplazarlo al escribir
+      filtrar();
+    });
+    input.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") { // Enter elige la primera coincidencia visible
+        e.preventDefault();
+        const primera = opciones.find((op) => op.style.display !== "none");
+        if (primera) recargar(primera.dataset.id);
+      }
+      if (e.key === "Escape") lista.classList.add("hidden");
+    });
+    opciones.forEach((op) => {
+      op.addEventListener("click", function () { recargar(op.dataset.id); });
+    });
+    document.addEventListener("click", function (e) {
+      if (!document.getElementById("combo-estudiante").contains(e.target)) {
+        lista.classList.add("hidden");
+      }
+    });
+  })();
 
   {% if foco %}
   document.addEventListener("DOMContentLoaded", function () {

@@ -322,6 +322,16 @@ def crear_material(id_competencia):
         flash("Título, tipo y URL del material son obligatorios.", "error")
         return redirect(url_for("temas.gestion_temas", id_competencia=id_competencia))
 
+    # Límites de la BD: titulo VARCHAR(150), url VARCHAR(255). Sin este
+    # chequeo, un texto largo pegado por el docente termina en un error
+    # 500 de Postgres en vez de un aviso claro.
+    if len(titulo) > 150:
+        flash("El título es demasiado largo (máximo 150 caracteres).", "error")
+        return redirect(url_for("temas.gestion_temas", id_competencia=id_competencia))
+    if len(url_mat) > 255:
+        flash("La URL es demasiado larga (máximo 255 caracteres). Usa un enlace más corto.", "error")
+        return redirect(url_for("temas.gestion_temas", id_competencia=id_competencia))
+
     if not url_mat.startswith("https://"):
         flash("La URL debe comenzar con https://", "error")
         return redirect(url_for("temas.gestion_temas", id_competencia=id_competencia))
@@ -408,6 +418,16 @@ def editar_material(id_material):
     if not titulo or not tipo or not url_mat:
         cur.close()
         flash("Título, tipo y URL del material son obligatorios.", "error")
+        return redirect(url_for("temas.gestion_temas", id_competencia=id_competencia))
+
+    # Límites de la BD: titulo VARCHAR(150), url VARCHAR(255)
+    if len(titulo) > 150:
+        cur.close()
+        flash("El título es demasiado largo (máximo 150 caracteres).", "error")
+        return redirect(url_for("temas.gestion_temas", id_competencia=id_competencia))
+    if len(url_mat) > 255:
+        cur.close()
+        flash("La URL es demasiado larga (máximo 255 caracteres). Usa un enlace más corto.", "error")
         return redirect(url_for("temas.gestion_temas", id_competencia=id_competencia))
 
     if not url_mat.startswith("https://"):

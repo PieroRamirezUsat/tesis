@@ -46,7 +46,19 @@ def create_app():
     # Rate Limiter: se aplica por ruta con @limiter.limit(...)
     limiter.init_app(app)
 
+    # Límite global de subida: ninguna petición puede pesar más de 12 MB.
+    # Sin esto, un archivo gigante (video, ZIP...) ocupa el worker de
+    # gunicorn hasta agotar memoria. Las imágenes válidas pesan < 5 MB.
+    app.config["MAX_CONTENT_LENGTH"] = 12 * 1024 * 1024
+
     # ── Manejadores de error personalizados ──────────────────────────────────
+    @app.errorhandler(413)
+    def archivo_muy_grande(e):
+        """El navegador envió más de MAX_CONTENT_LENGTH → aviso amigable."""
+        flash("El archivo es demasiado grande (máximo 12 MB por envío). "
+              "Si es una imagen, redúcela e inténtalo de nuevo.", "danger")
+        return redirect(request.referrer or url_for("auth.login")), 302
+
     @app.errorhandler(CSRFError)
     def csrf_error(e):
         """Formulario expirado o token inválido → volver al origen con aviso."""

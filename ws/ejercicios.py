@@ -207,16 +207,15 @@ def crear_ejercicio():
             id_ej = cur.fetchone()[0]
 
         # ---------- Guardar imagen si viene ----------
-        if archivo and archivo.filename and not allowed_file(archivo.filename):
-            # Antes se ignoraba en silencio y el docente no sabía por qué
-            # el ejercicio quedaba sin imagen.
-            flash(
-                f"La imagen '{archivo.filename}' tiene un formato no permitido "
-                f"(usa {', '.join(sorted(ALLOWED)).upper()}). "
-                "El ejercicio se guardó SIN imagen.",
-                "warning",
-            )
-        if archivo and allowed_file(archivo.filename):
+        # Validación completa (extensión + tamaño + contenido real): un
+        # archivo renombrado o gigante no debe llegar a Cloudinary.
+        imagen_valida = False
+        if archivo and archivo.filename:
+            from ws.utils import validar_imagen
+            imagen_valida, motivo = validar_imagen(archivo)
+            if not imagen_valida:
+                flash(f"{motivo} El ejercicio se guardó SIN imagen.", "warning")
+        if imagen_valida:
             from util_cloudinary import cloudinary_configurado, subir_imagen
             if cloudinary_configurado():
                 # Modo nube: sube a Cloudinary, guarda URL permanente

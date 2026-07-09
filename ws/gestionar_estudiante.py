@@ -708,13 +708,10 @@ def subir_foto_estudiante(id_estudiante):
         return redirect(url_for("auth.login"))
 
     foto = request.files.get("foto_estudiante")
-    if not foto or not foto.filename:
-        flash("No se seleccionó ninguna imagen.", "warning")
-        return redirect(url_for("docentes.gestion_estudiantes"))
-
-    ext = os.path.splitext(secure_filename(foto.filename))[1].lower()
-    if ext not in {".jpg", ".jpeg", ".png"}:
-        flash("Solo se permiten imágenes JPG o PNG.", "danger")
+    from ws.utils import validar_imagen
+    ok_img, motivo = validar_imagen(foto)
+    if not ok_img:
+        flash(f"La foto no se guardó: {motivo}", "danger")
         return redirect(url_for("docentes.gestion_estudiantes"))
 
     conn = get_db()
