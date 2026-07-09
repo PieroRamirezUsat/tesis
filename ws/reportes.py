@@ -18,14 +18,24 @@ def _resolver_imagen(app, desarrollo_url: str) -> str | None:
       - None                 → no encontrada.
 
     Orden de búsqueda:
+      0. Si desarrollo_url ya es una URL http(s) (Cloudinary) → se usa tal cual.
       1. static/desarrollos_alumno/ del propio proyecto web.
       2. Carpeta DESARROLLOS_ALUMNO_PATH (acceso local, útil en Windows dev).
-      3. API_BASE_URL/desarrollos/imagen/<filename> (Railway / producción).
+      3. API_BASE_URL/desarrollos/imagen/<filename> (esquema antiguo en disco).
     """
     if not desarrollo_url:
         return None
 
-    filename = os.path.basename(desarrollo_url.replace("\\", "/"))
+    url = desarrollo_url.strip()
+
+    # ── URL absoluta (Cloudinary, producción): es la ubicación final ──
+    # No desarmarla con basename: el archivo NO existe en el disco de la
+    # API, vive en Cloudinary. La vista redirige a ella y los PDF la
+    # descargan directamente.
+    if url.startswith(("http://", "https://")):
+        return url
+
+    filename = os.path.basename(url.replace("\\", "/"))
     if not filename:
         return None
 
@@ -39,7 +49,10 @@ def _resolver_imagen(app, desarrollo_url: str) -> str | None:
             return ruta
 
     # ── Fallback: URL de la API (Railway u otro servidor) ─────────
-    api_base = app.config.get("API_BASE_URL", "").rstrip("/")
+    # .strip() defensivo: un espacio o salto de línea pegado en la variable
+    # API_BASE_URL de Railway termina dentro del header Location del
+    # redirect y Werkzeug responde 500.
+    api_base = (app.config.get("API_BASE_URL", "") or "").strip().rstrip("/")
     if api_base:
         return f"{api_base}/desarrollos/imagen/{filename}"
 
