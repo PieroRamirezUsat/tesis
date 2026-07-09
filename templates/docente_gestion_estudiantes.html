@@ -660,10 +660,14 @@
     limpiarAutocomplete();
 
     if (inputCompCantidad) {
-      inputCompCantidad.value    = btn.dataset.compCantidad    || "";
-      inputCompRegularidad.value = btn.dataset.compRegularidad || "";
-      inputCompForma.value       = btn.dataset.compForma       || "";
-      inputCompDatos.value       = btn.dataset.compDatos       || "";
+      // Sin diagnóstico: los campos van VACÍOS, no en 0. El listado manda 0
+      // por el COALESCE del SQL, pero si se guardara ese 0 la BD pasaría de
+      // NULL a 0 y el tutor de la app desbloquearía ejercicios sin que la
+      // profesora haya puesto las notas reales (0 cuenta como "ya evaluado").
+      inputCompCantidad.value    = sinDiag ? "" : (btn.dataset.compCantidad    || "");
+      inputCompRegularidad.value = sinDiag ? "" : (btn.dataset.compRegularidad || "");
+      inputCompForma.value       = sinDiag ? "" : (btn.dataset.compForma       || "");
+      inputCompDatos.value       = sinDiag ? "" : (btn.dataset.compDatos       || "");
       _compPares.forEach(([inp, bdg]) => actualizarBadge(inp, bdg));
       calcularProgresoGeneral();
     }
