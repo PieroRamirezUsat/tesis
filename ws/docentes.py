@@ -139,6 +139,12 @@ def _metricas_dashboard(id_usuario: int):
             "alertas_dificultad": [],
             "total_mat_revisiones": 0,
             "alumno_mas_activo_mat": "—",
+            # Debe tener TODAS las claves del return final (línea ~589):
+            # si falta una, el dashboard revienta con KeyError (500).
+            "tendencia_pct": 0,
+            "tendencia_dir": "neutral",
+            "alertas_inactividad": [],
+            "heatmap_data": [],
         }
 
     id_docente = row[0]

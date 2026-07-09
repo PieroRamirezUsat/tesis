@@ -276,13 +276,25 @@ def crear_ejercicio():
                     )
                 # Si no hay texto y no existía, no insertamos nada
 
-        # ---------- MATERIAL DE REFUERZO VINCULADO (opcional) ----------
+        # ---------- MATERIAL DE REFUERZO VINCULADO ----------
         # Es el material que la app muestra "sí o sí" al segundo fallo de
         # ESTE ejercicio (capa 1 del tutor: material_estudio.id_ejercicio).
+        # Regla: UN solo material por ejercicio — el tutor muestra uno solo,
+        # así que un segundo jamás se vería.
         mat_titulo = (request.form.get("material_titulo") or "").strip()
         mat_url    = (request.form.get("material_url") or "").strip()
         mat_tipo   = (request.form.get("material_tipo") or "link").strip().lower()
-        if mat_titulo or mat_url:
+
+        cur.execute(
+            "SELECT COUNT(*) FROM material_estudio WHERE id_ejercicio = %s",
+            (id_ej,),
+        )
+        ya_tiene_material = cur.fetchone()[0] > 0
+
+        if (mat_titulo or mat_url) and ya_tiene_material:
+            flash("Este ejercicio ya tiene su material de refuerzo. "
+                  "Quítalo con la ✕ antes de vincular otro.", "warning")
+        elif mat_titulo or mat_url:
             from ws.utils import validar_url_material
             ok_url, res_url = validar_url_material(mat_url)
             if not mat_titulo:
@@ -306,7 +318,15 @@ def crear_ejercicio():
                     """,
                     (mat_titulo, mat_tipo, res_url, id_competencia, banda, id_ej),
                 )
+                ya_tiene_material = True
                 flash("Material de refuerzo vinculado al ejercicio.", "success")
+
+        if not ya_tiene_material:
+            # El ejercicio se guarda igual (para no perder lo escrito), pero
+            # se avisa fuerte: sin material, el alumno no tiene refuerzo al 2° fallo.
+            flash("OJO: el ejercicio quedó SIN material de refuerzo. Edítalo y "
+                  "agrégale el video o página que enseña este tema — es lo que "
+                  "ve el alumno cuando falla 2 veces.", "warning")
 
         # ---------- COMMIT ----------
         conn.commit()
