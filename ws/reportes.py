@@ -180,8 +180,10 @@ def reporte_progreso():
     foto_url_estudiante = url_foto_usuario(current_app.root_path, id_usuario_est)
 
     # ======================================================
-    # 5+6) Progreso por competencia usando modelo adaptativo
-    #      y fórmula: ((nivel-1)/6)*70 + (puntaje/100)*30
+    # 5+6) Progreso por competencia desde el nivel adaptativo (NEC).
+    #      Fórmula unificada en los 3 proyectos (= nivel_to_progreso de la
+    #      API y (LEAST(nivel,6)-1)*20 del dashboard):
+    #        (min(nivel, 6) - 1) / 5 * 100 → nivel 6 y 7 = 100%
     # ======================================================
     cur.execute(
         """
@@ -384,6 +386,10 @@ def reporte_progreso():
         WHERE r.id_estudiante    = %s
           AND r.tiempo_respuesta IS NOT NULL
           AND r.tiempo_respuesta > 0
+          -- Mismo filtro que la API (/progreso/tiempo_por_nivel): descarta
+          -- tiempos corruptos (un bug viejo del cliente llegó a enviar el
+          -- epoch Unix como segundos) para que app y web muestren lo mismo.
+          AND r.tiempo_respuesta < 3600
         GROUP BY 1
         ORDER BY 1
         """,
@@ -850,6 +856,10 @@ def exportar_pdf():
         WHERE r.id_estudiante    = %s
           AND r.tiempo_respuesta IS NOT NULL
           AND r.tiempo_respuesta > 0
+          -- Mismo filtro que la API (/progreso/tiempo_por_nivel): descarta
+          -- tiempos corruptos (un bug viejo del cliente llegó a enviar el
+          -- epoch Unix como segundos) para que app y web muestren lo mismo.
+          AND r.tiempo_respuesta < 3600
         GROUP BY 1
         ORDER BY 1
         """,
