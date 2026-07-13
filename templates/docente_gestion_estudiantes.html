@@ -144,6 +144,10 @@
                   data-comp-regularidad="{{ est.comp_regularidad }}"
                   data-comp-forma="{{ est.comp_forma }}"
                   data-comp-datos="{{ est.comp_datos }}"
+                  data-letra-cantidad="{{ est.letra_cantidad }}"
+                  data-letra-regularidad="{{ est.letra_regularidad }}"
+                  data-letra-forma="{{ est.letra_forma }}"
+                  data-letra-datos="{{ est.letra_datos }}"
                   data-progreso-general="{{ est.progreso_general }}"
                   data-diag-bloqueado="{{ 'true' if est.diag_bloqueado else 'false' }}"
                   data-sin-diagnostico="{{ 'true' if est.sin_diagnostico else 'false' }}">
@@ -241,6 +245,10 @@
         data-comp-regularidad="{{ est.comp_regularidad }}"
         data-comp-forma="{{ est.comp_forma }}"
         data-comp-datos="{{ est.comp_datos }}"
+        data-letra-cantidad="{{ est.letra_cantidad }}"
+        data-letra-regularidad="{{ est.letra_regularidad }}"
+        data-letra-forma="{{ est.letra_forma }}"
+        data-letra-datos="{{ est.letra_datos }}"
         data-progreso-general="{{ est.progreso_general }}"
         data-diag-bloqueado="{{ 'true' if est.diag_bloqueado else 'false' }}"
         data-sin-diagnostico="true">
@@ -427,44 +435,76 @@
 
           <div class="flex items-center justify-between gap-2 py-2 border-t border-gray-100 dark:border-gray-800">
             <div>
-              <p class="text-sm font-bold text-gray-800 dark:text-gray-100">Nivel diagnóstico (0–100)</p>
-              <p class="text-xs text-gray-400">Datos del examen MINEDU por competencia.</p>
+              <p class="text-sm font-bold text-gray-800 dark:text-gray-100">Calificación diagnóstica MINEDU</p>
+              <p class="text-xs text-gray-400">Elige la calificación por competencia (escala de letras).</p>
             </div>
             <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold bg-purple-50 text-purple-700">
               <span class="w-1.5 h-1.5 rounded-full bg-purple-500 mr-1"></span>Diagnóstico
             </span>
           </div>
 
+          <!-- Leyenda de la escala literal MINEDU -->
+          <div class="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/60 rounded-lg px-3 py-2">
+            <span><b class="text-emerald-600">AD</b> Logro destacado (18–20)</span>
+            <span><b class="text-blue-600">A</b> Logrado (14–17)</span>
+            <span><b class="text-amber-600">B</b> En proceso (11–13)</span>
+            <span><b class="text-orange-600">C</b> En inicio (0–10)</span>
+          </div>
+
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div class="space-y-1">
               <label class="text-xs font-semibold text-gray-600 dark:text-gray-300">Resuelve problemas de cantidad</label>
-              <input type="number" name="comp_cantidad" id="form-comp-cantidad" min="0" max="100"
-                class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+              <select name="comp_cantidad" id="form-comp-cantidad"
+                class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+                <option value="">— Selecciona —</option>
+                <option value="AD">AD · Logro destacado</option>
+                <option value="A">A · Logrado</option>
+                <option value="B">B · En proceso</option>
+                <option value="C">C · En inicio</option>
+              </select>
               <div id="badge-comp-cantidad" class="hidden items-center gap-1.5 mt-0.5 text-[11px]"></div>
             </div>
             <div class="space-y-1">
               <label class="text-xs font-semibold text-gray-600 dark:text-gray-300">Regularidad, equivalencia y cambio</label>
-              <input type="number" name="comp_regularidad" id="form-comp-regularidad" min="0" max="100"
-                class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+              <select name="comp_regularidad" id="form-comp-regularidad"
+                class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+                <option value="">— Selecciona —</option>
+                <option value="AD">AD · Logro destacado</option>
+                <option value="A">A · Logrado</option>
+                <option value="B">B · En proceso</option>
+                <option value="C">C · En inicio</option>
+              </select>
               <div id="badge-comp-regularidad" class="hidden items-center gap-1.5 mt-0.5 text-[11px]"></div>
             </div>
             <div class="space-y-1">
               <label class="text-xs font-semibold text-gray-600 dark:text-gray-300">Gestión de datos e incertidumbre</label>
-              <input type="number" name="comp_datos" id="form-comp-datos" min="0" max="100"
-                class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+              <select name="comp_datos" id="form-comp-datos"
+                class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+                <option value="">— Selecciona —</option>
+                <option value="AD">AD · Logro destacado</option>
+                <option value="A">A · Logrado</option>
+                <option value="B">B · En proceso</option>
+                <option value="C">C · En inicio</option>
+              </select>
               <div id="badge-comp-datos" class="hidden items-center gap-1.5 mt-0.5 text-[11px]"></div>
             </div>
             <div class="space-y-1">
               <label class="text-xs font-semibold text-gray-600 dark:text-gray-300">Forma, movimiento y localización</label>
-              <input type="number" name="comp_forma" id="form-comp-forma" min="0" max="100"
-                class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+              <select name="comp_forma" id="form-comp-forma"
+                class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+                <option value="">— Selecciona —</option>
+                <option value="AD">AD · Logro destacado</option>
+                <option value="A">A · Logrado</option>
+                <option value="B">B · En proceso</option>
+                <option value="C">C · En inicio</option>
+              </select>
               <div id="badge-comp-forma" class="hidden items-center gap-1.5 mt-0.5 text-[11px]"></div>
             </div>
           </div>
 
           <div class="space-y-1">
-            <label class="text-xs font-semibold text-gray-600 dark:text-gray-300">Progreso general (promedio)</label>
-            <input type="number" id="form-progreso-general" readonly
+            <label class="text-xs font-semibold text-gray-600 dark:text-gray-300">Calificación general (promedio)</label>
+            <input type="text" id="form-progreso-general" readonly
               class="w-full rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/70 px-3 py-2 text-sm text-gray-500" />
           </div>
         </div>
@@ -527,41 +567,29 @@
   const badgeCompForma      = document.getElementById("badge-comp-forma");
   const badgeCompDatos      = document.getElementById("badge-comp-datos");
 
-  // ── Tablas de conversión (igual que la API REST) ──────────────────────────
-  const DIAG_BRACKETS = [[0,21,1],[22,35,2],[36,49,3],[50,64,4],[65,78,5],[79,92,6],[93,100,7]];
-  const DIAG_PCT    = {1:0,  2:20,  3:40,  4:60,  5:80,  6:100, 7:100};
-  const DIAG_NOMBRE = {1:"Iniciando",2:"Básico",3:"En progreso",4:"Intermedio",5:"Avanzado",6:"Experto",7:"Maestro"};
-  const DIAG_COLOR  = {
-    1:"bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400",
-    2:"bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400",
-    3:"bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-    4:"bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
-    5:"bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400",
-    6:"bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
-    7:"bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+  // ── Escala literal MINEDU (AD/A/B/C) — igual que ws/utils.py ───────────────
+  const LETRA_NOMBRE = { AD:"Logro destacado", A:"Logrado", B:"En proceso", C:"En inicio" };
+  const LETRA_VIG    = { AD:"18–20", A:"14–17", B:"11–13", C:"0–10" };
+  const LETRA_ORDEN  = { C:0, B:1, A:2, AD:3 };
+  const ORDEN_LETRA  = { 0:"C", 1:"B", 2:"A", 3:"AD" };
+  const LETRA_COLOR  = {
+    AD:"bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
+    A: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+    B: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
+    C: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300",
   };
-
-  function diagScoreToNivel(score) {
-    const s = Math.max(0, Math.min(100, score));
-    for (const [lo, hi, n] of DIAG_BRACKETS) { if (s >= lo && s <= hi) return n; }
-    return 7;
-  }
 
   function actualizarBadge(inputEl, badgeEl) {
     if (!badgeEl) return;
-    const v = inputEl.value.trim();
-    if (v === "") { badgeEl.classList.add("hidden"); badgeEl.classList.remove("flex"); return; }
-    const score  = Math.max(0, Math.min(100, parseInt(v, 10) || 0));
-    const nivel  = diagScoreToNivel(score);
-    const pct    = DIAG_PCT[nivel];
-    const nombre = DIAG_NOMBRE[nivel];
-    const color  = DIAG_COLOR[nivel];
+    const v = (inputEl.value || "").trim().toUpperCase();
+    if (!(v in LETRA_NOMBRE)) {
+      badgeEl.classList.add("hidden"); badgeEl.classList.remove("flex"); return;
+    }
     badgeEl.innerHTML =
-      `<span class="inline-flex items-center px-1.5 py-0.5 rounded-md font-black text-[10px] ${color}">N${nivel}</span>` +
-      `<span class="font-medium text-gray-500 dark:text-gray-400">${nombre}</span>` +
+      `<span class="inline-flex items-center px-1.5 py-0.5 rounded-md font-black text-[10px] ${LETRA_COLOR[v]}">${v}</span>` +
+      `<span class="font-medium text-gray-500 dark:text-gray-400">${LETRA_NOMBRE[v]}</span>` +
       `<span class="text-gray-300 dark:text-gray-600">·</span>` +
-      `<span class="font-black text-gray-700 dark:text-gray-200">${pct}%</span>` +
-      `<span class="text-gray-400 dark:text-gray-500">en app</span>`;
+      `<span class="text-gray-400 dark:text-gray-500">vigesimal ${LETRA_VIG[v]}</span>`;
     badgeEl.classList.remove("hidden");
     badgeEl.classList.add("flex");
   }
@@ -584,26 +612,20 @@
 
   function calcularProgresoGeneral() {
     if (!inputProgresoGeneral) return;
-    const progresos = [];
+    const ordenes = [];
     _compPares.forEach(([inp]) => {
-      const v = inp.value.trim();
-      if (v !== "") {
-        const score = Math.max(0, Math.min(100, parseInt(v, 10) || 0));
-        progresos.push(DIAG_PCT[diagScoreToNivel(score)]);
-      }
+      const v = (inp.value || "").trim().toUpperCase();
+      if (v in LETRA_ORDEN) ordenes.push(LETRA_ORDEN[v]);
     });
-    if (!progresos.length) { inputProgresoGeneral.value = ""; return; }
-    inputProgresoGeneral.value = Math.round(progresos.reduce((a, b) => a + b, 0) / progresos.length);
+    if (!ordenes.length) { inputProgresoGeneral.value = ""; return; }
+    const prom  = Math.round(ordenes.reduce((a, b) => a + b, 0) / ordenes.length);
+    const letra = ORDEN_LETRA[prom];
+    inputProgresoGeneral.value = `${letra} · ${LETRA_NOMBRE[letra]}`;
   }
 
   _compPares.forEach(([inp, bdg]) => {
     if (!inp) return;
-    inp.addEventListener("input", () => {
-      if (inp.value !== "") {
-        let n = parseInt(inp.value, 10);
-        if (isNaN(n)) n = 0;
-        inp.value = Math.max(0, Math.min(100, n));
-      }
+    inp.addEventListener("change", () => {
       actualizarBadge(inp, bdg);
       calcularProgresoGeneral();
     });
@@ -664,10 +686,10 @@
       // por el COALESCE del SQL, pero si se guardara ese 0 la BD pasaría de
       // NULL a 0 y el tutor de la app desbloquearía ejercicios sin que la
       // profesora haya puesto las notas reales (0 cuenta como "ya evaluado").
-      inputCompCantidad.value    = sinDiag ? "" : (btn.dataset.compCantidad    || "");
-      inputCompRegularidad.value = sinDiag ? "" : (btn.dataset.compRegularidad || "");
-      inputCompForma.value       = sinDiag ? "" : (btn.dataset.compForma       || "");
-      inputCompDatos.value       = sinDiag ? "" : (btn.dataset.compDatos       || "");
+      inputCompCantidad.value    = sinDiag ? "" : (btn.dataset.letraCantidad    || "");
+      inputCompRegularidad.value = sinDiag ? "" : (btn.dataset.letraRegularidad || "");
+      inputCompForma.value       = sinDiag ? "" : (btn.dataset.letraForma       || "");
+      inputCompDatos.value       = sinDiag ? "" : (btn.dataset.letraDatos       || "");
       _compPares.forEach(([inp, bdg]) => actualizarBadge(inp, bdg));
       calcularProgresoGeneral();
     }

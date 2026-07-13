@@ -348,20 +348,17 @@
             </div>
           </div>
 
-          {# ── Nivel MINEDU oficial ─────────────────────────────────────── #}
+          {# ── Calificación MINEDU (letra) ──────────────────────────────── #}
           {% if competencias_nec and area in competencias_nec %}
             {% set cnec = competencias_nec[area] %}
             <div class="flex items-center justify-between pt-1 border-t border-gray-100 dark:border-gray-700/60">
-              <span class="text-[10px] text-gray-400 dark:text-gray-500">
-                STI: <span class="font-semibold text-gray-500 dark:text-gray-400">{{ cnec.nombre_sti }}</span>
-              </span>
-              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full
-                {% if cnec.nivel_minedu == 'Destacado' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300
-                {% elif cnec.nivel_minedu == 'Logrado' %}bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300
-                {% elif cnec.nivel_minedu == 'En proceso' %}bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300
-                {% elif cnec.nivel_minedu == 'En inicio' %}bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300
-                {% else %}bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300{% endif %}">
-                {{ cnec.nivel_minedu }}
+              <span class="text-[10px] text-gray-400 dark:text-gray-500">{{ cnec.letra_nombre }}</span>
+              <span class="text-[11px] font-black px-2 py-0.5 rounded-full
+                {% if cnec.letra == 'AD' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300
+                {% elif cnec.letra == 'A' %}bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300
+                {% elif cnec.letra == 'B' %}bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300
+                {% else %}bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300{% endif %}">
+                {{ cnec.letra }}
               </span>
             </div>
           {% endif %}
@@ -399,6 +396,12 @@
           <th class="text-center py-2 px-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Variación</th>
         </tr>
       </thead>
+      {% macro chip_letra(letra) -%}
+        {% if letra == 'AD' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300
+        {% elif letra == 'A' %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300
+        {% elif letra == 'B' %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300
+        {% else %}bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300{% endif %}
+      {%- endmacro %}
       <tbody class="divide-y divide-gray-50 dark:divide-gray-700/50">
         {% for d in diagnostico_vs_actual %}
         <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
@@ -412,15 +415,8 @@
               <span class="text-gray-300 dark:text-gray-600 italic">Sin diagnóstico</span>
             {% else %}
               <div class="flex flex-col items-center gap-1">
-                <span class="text-base font-black tabular-nums text-gray-500 dark:text-gray-400">{{ d.score_diag | int }}</span>
-                <span class="text-[10px] px-2 py-0.5 rounded-full font-semibold
-                  {% if d.minedu_diag == 'Destacado' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300
-                  {% elif d.minedu_diag == 'Logrado' %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300
-                  {% elif d.minedu_diag == 'En proceso' %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300
-                  {% elif d.minedu_diag == 'En inicio' %}bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300
-                  {% else %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300{% endif %}">
-                  {{ d.minedu_diag }}
-                </span>
+                <span class="inline-flex items-center justify-center w-9 h-9 rounded-xl text-sm font-black {{ chip_letra(d.letra_diag) }}">{{ d.letra_diag }}</span>
+                <span class="text-[10px] text-gray-500 dark:text-gray-400">{{ d.nombre_letra_diag }}</span>
               </div>
             {% endif %}
           </td>
@@ -435,40 +431,26 @@
           {# Estado actual #}
           <td class="py-3 px-3 text-center">
             <div class="flex flex-col items-center gap-1">
-              <span class="text-base font-black tabular-nums
-                {% if d.minedu_actual == 'Destacado' %}text-emerald-600
-                {% elif d.minedu_actual == 'Logrado' %}text-blue-600
-                {% elif d.minedu_actual == 'En proceso' %}text-amber-500
-                {% elif d.minedu_actual == 'En inicio' %}text-orange-500
-                {% else %}text-red-500{% endif %}">
-                {{ d.score_actual | int }}
-              </span>
-              <span class="text-[10px] px-2 py-0.5 rounded-full font-semibold
-                {% if d.minedu_actual == 'Destacado' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300
-                {% elif d.minedu_actual == 'Logrado' %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300
-                {% elif d.minedu_actual == 'En proceso' %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300
-                {% elif d.minedu_actual == 'En inicio' %}bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300
-                {% else %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300{% endif %}">
-                {{ d.minedu_actual }}
-              </span>
+              <span class="inline-flex items-center justify-center w-9 h-9 rounded-xl text-sm font-black {{ chip_letra(d.letra_actual) }}">{{ d.letra_actual }}</span>
+              <span class="text-[10px] text-gray-500 dark:text-gray-400">{{ d.nombre_letra_actual }}</span>
             </div>
           </td>
 
-          {# Variación (delta) #}
+          {# Variación (transición de letra) #}
           <td class="py-3 px-3 text-center">
             {% if d.sin_diag %}
               <span class="text-gray-300 dark:text-gray-600">—</span>
-            {% elif d.delta_score == 0 %}
+            {% elif d.mantuvo %}
               <span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[11px] font-bold bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400">
-                <span class="material-symbols-outlined text-[13px]">remove</span>Sin cambio
+                <span class="material-symbols-outlined text-[13px]">remove</span>Se mantuvo
               </span>
             {% elif d.mejoro %}
               <span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
-                <span class="material-symbols-outlined text-[13px]">trending_up</span>+{{ d.delta_score | int }}
+                <span class="material-symbols-outlined text-[13px]">trending_up</span>{{ d.letra_diag }} → {{ d.letra_actual }}
               </span>
             {% else %}
               <span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[11px] font-bold bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-300">
-                <span class="material-symbols-outlined text-[13px]">trending_down</span>{{ d.delta_score | int }}
+                <span class="material-symbols-outlined text-[13px]">trending_down</span>{{ d.letra_diag }} → {{ d.letra_actual }}
               </span>
             {% endif %}
           </td>

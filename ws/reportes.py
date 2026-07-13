@@ -216,17 +216,22 @@ def reporte_progreso():
         5: "Avanzado",  6: "Experto",   7: "Maestro",
     }
 
+    from ws.utils import nivel_to_letra, letra_nombre
     progreso_competencias = {}
-    competencias_nec      = {}          # {area: {nivel, nombre_sti, nivel_minedu}}
+    competencias_nec      = {}          # {area: {nivel, letra, letra_nombre, ...}}
     for fila in cur.fetchall():
         area    = fila[0]
         nivel   = int(fila[1])
         puntaje = float(fila[2])
         progreso_competencias[area] = calcular_progreso(nivel, puntaje)
+        _letra = nivel_to_letra(nivel)
         competencias_nec[area] = {
             "nivel":        nivel,
             "nombre_sti":   _NOMBRE_NIVEL_STI.get(nivel, f"Nivel {nivel}"),
             "nivel_minedu": _MINEDU_NIVEL.get(nivel, "Previo al inicio"),
+            # Calificación literal MINEDU (lo que ve el docente)
+            "letra":        _letra,
+            "letra_nombre": letra_nombre(_letra),
         }
 
     progreso_general = (
@@ -535,13 +540,21 @@ def reporte_progreso():
         nivel_act   = int(row[3])
         score_act   = float(row[4])
 
+        from ws.utils import nivel_to_letra as _n2l, LETRA_ORDEN as _LORD, letra_nombre as _lnom
         sin_diag = score_diag is None
+        letra_actual = _n2l(nivel_act)
         if not sin_diag:
             nivel_diag   = _score_to_nivel_local(score_diag)
             delta_score  = round(score_act - score_diag, 1)
+            letra_diag   = _n2l(nivel_diag)
+            # Mejora en términos de LETRA (lo que le importa al docente):
+            # subió de C→B, B→A, etc.  0 = se mantuvo en la misma letra.
+            delta_letra  = _LORD.get(letra_actual, 0) - _LORD.get(letra_diag, 0)
         else:
             nivel_diag  = None
             delta_score = None
+            letra_diag  = None
+            delta_letra = None
 
         diagnostico_vs_actual.append({
             "area":          area,
@@ -550,12 +563,18 @@ def reporte_progreso():
             "nivel_diag":    nivel_diag,
             "nombre_diag":   _NOMBRE_NIVEL_STI.get(nivel_diag, "—") if nivel_diag else "—",
             "minedu_diag":   _MINEDU_NIVEL.get(nivel_diag, "—")     if nivel_diag else "—",
+            "letra_diag":    letra_diag or "—",
+            "nombre_letra_diag": _lnom(letra_diag) if letra_diag else "—",
             "score_actual":  round(score_act, 1),
             "nivel_actual":  nivel_act,
             "nombre_actual": _NOMBRE_NIVEL_STI.get(nivel_act, "—"),
             "minedu_actual": _MINEDU_NIVEL.get(nivel_act, "—"),
+            "letra_actual":  letra_actual,
+            "nombre_letra_actual": _lnom(letra_actual),
             "delta_score":   delta_score,
-            "mejoro":        (delta_score > 0)  if delta_score is not None else None,
+            "delta_letra":   delta_letra,
+            "mejoro":        (delta_letra > 0) if delta_letra is not None else None,
+            "mantuvo":       (delta_letra == 0) if delta_letra is not None else None,
             "sin_diag":      sin_diag,
         })
 

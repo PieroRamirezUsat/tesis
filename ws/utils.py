@@ -96,6 +96,73 @@ def calcular_progreso(nivel_actual: int, promedio_puntaje: float = 0) -> int:
     return max(0, min(100, int(round(pct))))
 
 
+# ═══════════════════════════════════════════════════════════════════════════
+#  🔤 ESCALA LITERAL MINEDU (secundaria) — la que usan los docentes
+# ═══════════════════════════════════════════════════════════════════════════
+#  El colegio califica con LETRAS, no con números:
+#    AD  Logro destacado   (vigesimal 18-20)
+#    A   Logrado           (14-17)
+#    B   En proceso        (11-13)
+#    C   En inicio         (0-10)
+#
+#  El motor adaptativo trabaja internamente con niveles 1-7 y score 0-100; las
+#  letras son solo la capa que ve/usa el docente. Mapeo nivel interno → letra:
+#    1,2 → C · 3,4 → B · 5,6 → A · 7 → AD
+#
+#  Diagnóstico: cuando el docente elige una letra, se guarda un "score semilla"
+#  (0-100) equivalente al punto medio vigesimal de esa letra, para que el tutor
+#  arranque en la dificultad correcta:
+#    C → 25 · B → 60 · A → 78 · AD → 95
+# ═══════════════════════════════════════════════════════════════════════════
+
+LETRA_NOMBRE = {
+    "AD": "Logro destacado",
+    "A":  "Logrado",
+    "B":  "En proceso",
+    "C":  "En inicio",
+}
+LETRA_VIGESIMAL = {"AD": "18-20", "A": "14-17", "B": "11-13", "C": "0-10"}
+LETRA_ORDEN     = {"C": 0, "B": 1, "A": 2, "AD": 3}   # para comparar mejoras
+_LETRA_SCORE_SEMILLA = {"C": 25, "B": 60, "A": 78, "AD": 95}
+
+
+def nivel_to_letra(nivel_actual: int) -> str:
+    """Nivel interno 1-7 → letra MINEDU (AD/A/B/C)."""
+    n = int(nivel_actual or 1)
+    if n >= 7:
+        return "AD"
+    if n >= 5:
+        return "A"
+    if n >= 3:
+        return "B"
+    return "C"
+
+
+def letra_to_score(letra: str):
+    """Letra MINEDU → score semilla 0-100 (para el diagnóstico). None si inválida."""
+    return _LETRA_SCORE_SEMILLA.get((letra or "").strip().upper())
+
+
+def letra_nombre(letra: str) -> str:
+    return LETRA_NOMBRE.get((letra or "").strip().upper(), "—")
+
+
+def score_to_letra(score) -> str:
+    """Score 0-100 → letra MINEDU (pasando por el nivel 1-7)."""
+    s = max(0.0, min(100.0, float(score or 0)))
+    nivel = _score_to_nivel(s)
+    return nivel_to_letra(nivel)
+
+
+def _score_to_nivel(score) -> int:
+    """Tabla score→nivel compartida con la API (SCORE_BRACKETS)."""
+    s = max(0.0, min(100.0, float(score or 0)))
+    for lo, hi, n in [(0,21,1),(22,35,2),(36,49,3),(50,64,4),(65,78,5),(79,92,6),(93,100,7)]:
+        if lo <= s <= hi:
+            return n
+    return 7
+
+
 def url_foto_usuario(root_path: str, id_usuario: int) -> str:
     """
     Devuelve la URL de la foto de perfil del usuario.

@@ -130,6 +130,7 @@ def gestion_estudiantes():
 
     rows = cur.fetchall()
 
+    from ws.utils import score_to_letra, letra_nombre
     estudiantes = [
         {
             "id_estudiante":    r[0],
@@ -148,6 +149,12 @@ def gestion_estudiantes():
             "sin_diagnostico":  bool(r[13]),
             "diag_bloqueado":   bool(r[14]),
             "nombre_completo":  f"{r[3]}, {r[2]}",
+            # Letras MINEDU (lo que ve el docente) — derivadas del score guardado.
+            # Si no hay diagnóstico, quedan vacías para no mostrar "C" falso.
+            "letra_cantidad":    "" if bool(r[13]) else score_to_letra(r[8]),
+            "letra_regularidad": "" if bool(r[13]) else score_to_letra(r[9]),
+            "letra_forma":       "" if bool(r[13]) else score_to_letra(r[10]),
+            "letra_datos":       "" if bool(r[13]) else score_to_letra(r[11]),
         }
         for r in rows
     ]
@@ -449,21 +456,31 @@ def editar_estudiante(id_estudiante):
     contrasena = request.form.get("contrasena", "")
     contrasena_confirm = request.form.get("contrasena_confirm", "")
 
-    # Niveles diagnósticos por competencia (0..100)
-    def _parse_int(name):
+    # Diagnóstico por competencia. El docente ahora elige una LETRA MINEDU
+    # (AD/A/B/C); se guarda el "score semilla" 0-100 equivalente para que el
+    # motor adaptativo arranque en la dificultad correcta. Se mantiene el
+    # fallback numérico por compatibilidad (formularios/scripts antiguos).
+    from ws.utils import letra_to_score
+
+    def _parse_diag(name):
         val = request.form.get(name, "").strip()
         if not val:
             return None
+        # 1) ¿es una letra MINEDU?
+        semilla = letra_to_score(val)
+        if semilla is not None:
+            return semilla
+        # 2) fallback: número 0-100
         try:
             n = int(val)
             return max(0, min(100, n))
         except ValueError:
             return None
 
-    comp_cantidad = _parse_int("comp_cantidad")
-    comp_regularidad = _parse_int("comp_regularidad")
-    comp_forma = _parse_int("comp_forma")
-    comp_datos = _parse_int("comp_datos")
+    comp_cantidad = _parse_diag("comp_cantidad")
+    comp_regularidad = _parse_diag("comp_regularidad")
+    comp_forma = _parse_diag("comp_forma")
+    comp_datos = _parse_diag("comp_datos")
 
     if not nombre or not apellidos or not correo:
         flash("Nombre, apellidos y correo son obligatorios.", "error")
