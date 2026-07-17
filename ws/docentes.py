@@ -37,6 +37,7 @@ from flask import (
 )
 from db import get_db
 import os
+from werkzeug.security import generate_password_hash
 from ws.utils import url_foto_usuario
 
 bp_docentes = Blueprint("docentes", __name__, url_prefix="/docente")
@@ -740,10 +741,16 @@ def perfil():
         nombre = request.form.get("nombre", "").strip()
         apellidos = request.form.get("apellidos", "").strip()
         especialidad = request.form.get("especialidad", "").strip()
+        nueva_contrasena = request.form.get("nueva_contrasena", "")
+        confirmar_contrasena = request.form.get("confirmar_contrasena", "")
 
         # 2. Validaciones básicas
         if not nombre or not apellidos:
             flash("Nombre y apellidos son obligatorios.", "danger")
+        elif nueva_contrasena and nueva_contrasena != confirmar_contrasena:
+            flash("Las contraseñas no coinciden.", "danger")
+        elif nueva_contrasena and len(nueva_contrasena) < 6:
+            flash("La contraseña debe tener al menos 6 caracteres.", "danger")
         else:
             conn = get_db()
             cur = conn.cursor()
@@ -765,6 +772,14 @@ def perfil():
                 """,
                 (especialidad if especialidad else "Álgebra", id_usuario),
             )
+            # Contraseña: el campo del formulario existía en el HTML pero
+            # nunca se leía en el servidor — se guardaba "Perfil actualizado"
+            # sin tocar la contraseña real. Solo se actualiza si se llenó.
+            if nueva_contrasena:
+                cur.execute(
+                    "UPDATE usuarios SET contrasena = %s WHERE id_usuario = %s",
+                    (generate_password_hash(nueva_contrasena), id_usuario),
+                )
             conn.commit()
             cur.close()
 
@@ -772,7 +787,10 @@ def perfil():
             session["user_nombre"] = nombre
             session["user_apellidos"] = apellidos
 
-            flash("Perfil actualizado correctamente.", "success")
+            if nueva_contrasena:
+                flash("Perfil y contraseña actualizados correctamente.", "success")
+            else:
+                flash("Perfil actualizado correctamente.", "success")
 
         # 3. Procesar foto (si viene archivo)
         foto = request.files.get("foto")
