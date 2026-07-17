@@ -301,11 +301,20 @@
 
 </div>
 
-<!-- ================= MODAL NUEVO / EDITAR ESTUDIANTE ================= -->
+<!-- ================= MODAL NUEVO / EDITAR ESTUDIANTE =================
+     Responsive: en pantallas angostas (<640px) el modal ocupa TODA la
+     pantalla (hoja completa, sin flotar) para que nada quede cortado;
+     en desktop (sm:) mantiene el diseño flotante centrado de siempre. -->
+<style>
+  /* Inputs <16px provocan zoom automático al enfocar en móviles */
+  @media (max-width: 640px) {
+    #modal-estudiante input, #modal-estudiante select { font-size: 16px; }
+  }
+</style>
 <div id="modal-estudiante-backdrop"
-  class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden flex items-center justify-center z-40 p-4">
+  class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden flex items-stretch sm:items-center justify-center z-40 p-0 sm:p-4">
   <div id="modal-estudiante"
-    class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-2xl w-full mx-auto relative overflow-hidden">
+    class="bg-white dark:bg-gray-900 shadow-2xl w-full h-full rounded-none sm:h-auto sm:rounded-2xl sm:max-w-2xl sm:mx-auto relative overflow-hidden flex flex-col">
 
     <!-- Header con color -->
     <div class="bg-gradient-to-r from-blue-500 to-indigo-600 px-6 py-4 flex items-center justify-between">
@@ -316,7 +325,7 @@
       </button>
     </div>
 
-    <div class="p-6 max-h-[80vh] overflow-y-auto">
+    <div class="p-6 flex-1 min-h-0 overflow-y-auto sm:flex-none sm:max-h-[80vh]">
       <form id="form-estudiante" method="post" action="{{ url_for('docentes.crear_estudiante') }}" class="space-y-4">
         <input type="hidden" name="id_estudiante" id="form-id-estudiante" />
         <input type="hidden" name="id_usuario" id="form-id-usuario" />
@@ -509,7 +518,9 @@
           </div>
         </div>
 
-        <div class="flex justify-end gap-3 pt-2">
+        <!-- Botonera FIJA al pie del área scrolleable: Guardar siempre
+             visible sin tener que bajar hasta el final del formulario -->
+        <div class="sticky bottom-0 -mx-6 -mb-6 mt-2 px-6 py-3 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-3">
           <button type="button" id="btn-cerrar-modal-inner"
             class="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-900 hover:bg-gray-50">
             Cancelar
@@ -648,6 +659,7 @@
     bloqueUsuarioExistente.classList.remove("hidden");
     bloqueNiveles.classList.add("hidden");
     backdrop.classList.remove("hidden");
+    formSucio = false;   // el llenado inicial no cuenta como cambio
   }
 
   const bannerBloqueado   = document.getElementById("banner-diag-bloqueado");
@@ -707,9 +719,21 @@
     bloqueNiveles.classList.remove("hidden");
     form.action = "{{ url_for('docentes.editar_estudiante', id_estudiante=0) }}".replace("0", idEst);
     backdrop.classList.remove("hidden");
+    formSucio = false;   // el llenado inicial no cuenta como cambio
   }
 
+  // Cambios sin guardar: si la docente escribió/seleccionó algo, cerrar
+  // pide confirmación (antes un clic fuera del modal descartaba TODO).
+  let formSucio = false;
+  form.addEventListener("input",  () => { formSucio = true; });
+  form.addEventListener("change", () => { formSucio = true; });
+
   function cerrarModal() {
+    if (formSucio &&
+        !confirm("Hay cambios sin guardar. ¿Deseas descartarlos?")) {
+      return;
+    }
+    formSucio = false;
     backdrop.classList.add("hidden");
     bannerBloqueado.classList.add("hidden");  bannerBloqueado.classList.remove("flex");
     bannerSinDiag.classList.add("hidden");    bannerSinDiag.classList.remove("flex");
@@ -719,7 +743,9 @@
   document.getElementById("btn-abrir-modal-nuevo")?.addEventListener("click", abrirModalNuevo);
   document.getElementById("btn-cerrar-modal")?.addEventListener("click", cerrarModal);
   document.getElementById("btn-cerrar-modal-inner")?.addEventListener("click", cerrarModal);
-  backdrop.addEventListener("click", (e) => { if (e.target === backdrop) cerrarModal(); });
+  // El clic en el fondo YA NO cierra el modal: con 4 notas + datos llenados,
+  // un toque accidental fuera del cuadro hacía perder todo el trabajo.
+  // Solo cierran la ✕ y "Cancelar" (con confirmación si hay cambios).
   document.querySelectorAll("[data-accion='editar-estudiante']").forEach((btn) => {
     btn.addEventListener("click", () => abrirModalEditar(btn));
   });
