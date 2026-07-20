@@ -866,8 +866,10 @@
     // quita tildes y pasa a minúsculas para comparar ("Llicán" == "llican")
     const norm = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
-    function filtrar() {
-      const q = norm(input.value.trim());
+    function filtrar(queryForzada) {
+      // queryForzada permite mostrar TODOS los alumnos (query vacía) sin
+      // depender de lo que haya escrito el input en ese momento.
+      const q = queryForzada !== undefined ? queryForzada : norm(input.value.trim());
       let visibles = 0;
       opciones.forEach((op) => {
         const coincide = !q || norm(op.textContent).includes(q);
@@ -878,10 +880,13 @@
       lista.classList.remove("hidden");
     }
 
-    input.addEventListener("input", filtrar);
+    input.addEventListener("input", () => filtrar());
     input.addEventListener("focus", function () {
-      input.select();          // al enfocar, se selecciona el texto para reemplazarlo al escribir
-      filtrar();
+      input.select();   // selecciona el texto para reemplazarlo al escribir
+      // Al hacer foco, mostrar SIEMPRE la lista COMPLETA (no filtrar con el
+      // nombre del alumno ya seleccionado, que dejaba ver solo 1 coincidencia
+      // y daba la impresión de que no existía un desplegable con todos).
+      filtrar("");
     });
     input.addEventListener("keydown", function (e) {
       if (e.key === "Enter") { // Enter elige la primera coincidencia visible

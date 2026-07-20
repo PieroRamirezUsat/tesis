@@ -375,17 +375,29 @@
     main .border-b,
     main .border-t { border-color: rgba(129,140,248,.1) !important; }
 
-    /* ── Modales (fixed, fuera del main) ── */
-    [id*="backdrop"] > div {
-      background: rgba(10,15,35,.96) !important;
-      border: 1px solid rgba(129,140,248,.22) !important;
+    /* ── Modales (fixed, fuera del main) ──
+       LEGIBILIDAD ANTE TODO: el fondo del modal es SÓLIDO (sin alfa) y el
+       backdrop oscurece + desenfoca fuerte la página. Antes los paneles
+       quedaban traslúcidos y el contenido de atrás se leía ENCIMA del
+       formulario (reporte del docente: "efecto transparente ilegible"). */
+    [id*="backdrop"] {
+      background: rgba(2, 6, 23, .78) !important;
+      -webkit-backdrop-filter: blur(7px);
+      backdrop-filter: blur(7px);
+    }
+    [id*="backdrop"] > div,
+    [id*="backdrop"] > form {
+      background: #0D1329 !important;   /* SÓLIDO — nada se transparenta */
+      border: 1px solid rgba(129,140,248,.28) !important;
       color: #F1F5F9;
+      box-shadow: 0 24px 64px rgba(0,0,0,.55) !important;
     }
     #modal-estudiante {
-      background: rgba(10,15,35,.96) !important;
-      border: 1px solid rgba(129,140,248,.22) !important;
+      background: #0D1329 !important;
+      border: 1px solid rgba(129,140,248,.28) !important;
     }
-    [id*="backdrop"] .bg-white { background: rgba(255,255,255,.05) !important; }
+    /* Secciones internas: tinte SÓLIDO sobre el panel (no alfa sobre la página) */
+    [id*="backdrop"] .bg-white { background: #161D3A !important; }
     [id*="backdrop"] .border-gray-100,
     [id*="backdrop"] .border-gray-200 { border-color: rgba(129,140,248,.15) !important; }
     [id*="backdrop"] .text-gray-900 { color: #F1F5F9 !important; }
@@ -412,13 +424,24 @@
     [id*="backdrop"] .hover\:bg-blue-50:hover,
     [id*="backdrop"] .hover\:bg-blue-50\/30:hover { background: rgba(59,130,246,.08) !important; }
     [id*="backdrop"] .hover\:bg-gray-50:hover { background: rgba(99,102,241,.06) !important; }
-    /* Dropdown autocomplete */
+    /* Dropdown autocomplete (dentro de un modal) */
     #dropdown-usuarios {
       background: rgba(10,15,35,.97) !important;
       border-color: rgba(129,140,248,.2) !important;
     }
     #dropdown-usuarios button:hover { background: rgba(99,102,241,.12) !important; }
     #dropdown-usuarios .border-gray-50 { border-color: rgba(129,140,248,.08) !important; }
+
+    /* Popovers/dropdowns FLOTANTES fuera de un modal (ej. buscador de
+       estudiante en Reportes): igual que main .bg-white, quedaban al 65%
+       de opacidad y el contenido de la página se leía a través de la
+       lista. Deben ser SÓLIDOS siempre, floten donde floten. */
+    #lista-estudiantes {
+      background: #161D3A !important;
+      border-color: rgba(129,140,248,.25) !important;
+      box-shadow: 0 16px 40px rgba(0,0,0,.5) !important;
+    }
+    #lista-estudiantes .opcion-estudiante:hover { background: rgba(99,102,241,.15) !important; }
     /* Banner colores en modales */
     [id*="backdrop"] .bg-amber-50  { background: rgba(245,158,11,.12) !important; }
     [id*="backdrop"] .bg-orange-50 { background: rgba(249,115,22,.12) !important; }
