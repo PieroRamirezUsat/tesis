@@ -4,6 +4,18 @@
   <meta charset="utf-8"/>
   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
   <title>TutorMath – Aprende Álgebra de forma Inteligente</title>
+  <meta name="description" content="TutorMath se adapta a tu nivel, te guía paso a paso y registra tu avance en las 4 competencias MINEDU de álgebra."/>
+
+  <!-- Favicon: marca TutorMath (cuadrado degradado indigo→violeta + símbolo Σ) como SVG en línea, sin depender de un archivo aparte -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%234F46E5'/%3E%3Cstop offset='1' stop-color='%237C3AED'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='url(%23g)'/%3E%3Ctext x='32' y='44' font-family='Georgia,serif' font-size='34' font-weight='700' fill='white' text-anchor='middle'%3E%CE%A3%3C/text%3E%3C/svg%3E"/>
+
+  <!-- Open Graph / vista previa al compartir el enlace por WhatsApp o correo -->
+  <meta property="og:type" content="website"/>
+  <meta property="og:title" content="TutorMath – Aprende Álgebra de forma Inteligente"/>
+  <meta property="og:description" content="Tutor adaptativo de álgebra alineado a las 4 competencias MINEDU. Gratis para Android, con panel de seguimiento para docentes."/>
+  <meta property="og:image" content="{{ url_for('static', filename='logo_colegio.png', _external=True) }}"/>
+  <meta property="og:url" content="{{ url_for('index', _external=True) }}"/>
+  <meta name="twitter:card" content="summary"/>
 
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 
