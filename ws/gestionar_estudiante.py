@@ -275,6 +275,18 @@ def crear_estudiante():
     contrasena = request.form.get("contrasena", "")
     contrasena_confirm = request.form.get("contrasena_confirm", "")
 
+    # El alumno es menor de edad: registrar su avance académico exige que
+    # la I.E./el apoderado haya autorizado ese tratamiento de datos. El
+    # checkbox es obligatorio en el HTML, pero se valida también aquí por
+    # si alguien manda el POST sin pasar por el formulario.
+    if request.form.get("consentimiento_datos") != "1":
+        flash(
+            "Debes confirmar que cuentas con autorización para registrar "
+            "los datos académicos de este alumno.",
+            "error",
+        )
+        return redirect(url_for("docentes.gestion_estudiantes"))
+
     conn = get_db()
     cur = conn.cursor()
 
