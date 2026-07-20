@@ -65,6 +65,26 @@ bp_reportes = Blueprint(
 )
 
 
+def _estudiante_pertenece_al_docente(cur, id_estudiante: int, id_usuario_docente: int) -> bool:
+    """
+    True si el estudiante está en algún salón asignado al docente logueado.
+    Único punto de verdad para no filtrar datos (o fotos) de otro salón
+    con solo cambiar el id en la URL.
+    """
+    cur.execute(
+        """
+        SELECT 1
+        FROM estudiante_salones es
+        JOIN docente_salones ds ON ds.id_salon = es.id_salon
+        JOIN docente d          ON d.id_docente = ds.id_docente
+        WHERE es.id_estudiante = %s AND d.id_usuario = %s
+        LIMIT 1
+        """,
+        (id_estudiante, id_usuario_docente),
+    )
+    return cur.fetchone() is not None
+
+
 @bp_reportes.route("/progreso", methods=["GET"])
 def reporte_progreso():
     """
@@ -117,9 +137,11 @@ def reporte_progreso():
             historial=[],
         )
 
-    # 2) Salón seleccionado
+    # 2) Salón seleccionado — validamos que sea uno de LOS SALONES DEL DOCENTE
+    #    (si no, cualquiera podía ver el salón de otro docente cambiando el id en la URL)
+    ids_validos_salon = {s["id_salon"] for s in salones}
     id_salon_sel = request.args.get("id_salon", type=int)
-    if not id_salon_sel:
+    if not id_salon_sel or id_salon_sel not in ids_validos_salon:
         id_salon_sel = salones[0]["id_salon"]
 
     # 3) Estudiantes del salón
@@ -634,13 +656,20 @@ def ver_imagen_respuesta(id_respuesta):
 
     conn = get_db()
     cur = conn.cursor()
+    # El JOIN exige que la respuesta sea de un alumno de ESTE docente — antes
+    # cualquier docente logueado podía abrir la foto de cualquier alumno del
+    # colegio solo adivinando el id_respuesta.
     cur.execute(
         """
-        SELECT desarrollo_url, respuesta_imagen
-        FROM respuestas_estudiantes
-        WHERE id_respuesta = %s
+        SELECT r.desarrollo_url, r.respuesta_imagen
+        FROM respuestas_estudiantes r
+        JOIN estudiante_salones es ON es.id_estudiante = r.id_estudiante
+        JOIN docente_salones ds    ON ds.id_salon = es.id_salon
+        JOIN docente d             ON d.id_docente = ds.id_docente
+        WHERE r.id_respuesta = %s AND d.id_usuario = %s
+        LIMIT 1
         """,
-        (id_respuesta,),
+        (id_respuesta, session["user_id"]),
     )
     row = cur.fetchone()
     cur.close()
@@ -702,8 +731,10 @@ def exportar_pdf():
     )
     salones = [{"id_salon": r[0], "nombre": r[1]} for r in cur.fetchall()]
 
+    # Validamos que sea uno de LOS SALONES DEL DOCENTE, no cualquier id de la URL
+    ids_validos_salon = {s["id_salon"] for s in salones}
     id_salon_sel = request.args.get("id_salon", type=int)
-    if not id_salon_sel and salones:
+    if (not id_salon_sel or id_salon_sel not in ids_validos_salon) and salones:
         id_salon_sel = salones[0]["id_salon"]
 
     cur.execute(
@@ -1410,6 +1441,13 @@ def exportar_desarrollos_pdf():
 
     conn = get_db()
     cur  = conn.cursor()
+
+    # El estudiante debe pertenecer a un salón de ESTE docente — si no,
+    # cualquiera podía descargar las fotos de otro salón cambiando el id.
+    if not _estudiante_pertenece_al_docente(cur, id_est_sel, session["user_id"]):
+        cur.close()
+        flash("No tienes acceso a ese estudiante.", "error")
+        return redirect(url_for("reportes.reporte_progreso"))
 
     # Datos del estudiante y salón
     cur.execute(
