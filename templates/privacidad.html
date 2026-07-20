@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Política de Privacidad — TutorMath</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,500,0,0" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; }
+    body { font-family: 'Inter', system-ui, sans-serif; background: #0F172A; }
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0,'wght' 500,'GRAD' 0,'opsz' 24; vertical-align: middle; }
+    .prose-p { color: #CBD5E1; font-size: 14.5px; line-height: 1.7; }
+    .prose-p strong { color: #F1F5F9; }
+    .prose-p a { color: #A5B4FC; font-weight: 600; }
+  </style>
+</head>
+<body class="min-h-screen">
+
+  <nav class="border-b border-indigo-900/40 bg-slate-900/80 backdrop-blur-sm">
+    <div class="max-w-3xl mx-auto px-5 h-16 flex items-center justify-between">
+      <a href="{{ url_for('index') }}" class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center">
+          <span class="material-symbols-outlined text-white" style="font-size:17px">school</span>
+        </div>
+        <span class="font-black text-white text-sm">TutorMath</span>
+      </a>
+      <a href="{{ url_for('auth.login') }}" class="text-xs font-semibold text-indigo-300 hover:text-indigo-200">Ingresar</a>
+    </div>
+  </nav>
+
+  <main class="max-w-3xl mx-auto px-5 py-14">
+    <p class="text-xs font-bold uppercase tracking-widest text-indigo-400 mb-2">Datos personales</p>
+    <h1 class="text-3xl font-black text-white mb-1">Política de Privacidad</h1>
+    <p class="text-sm text-slate-400 mb-10">Última actualización: julio de 2026 · Proyecto de tesis "Sistema Tutor Inteligente de Álgebra"</p>
+
+    <div class="space-y-9">
+
+      <section>
+        <h2 class="text-base font-bold text-white mb-2 flex items-center gap-2">
+          <span class="material-symbols-outlined text-indigo-400" style="font-size:19px">database</span>
+          Qué datos guardamos
+        </h2>
+        <p class="prose-p">
+          Para el alumno: <strong>nombre, apellidos, correo, grado/salón</strong>, las <strong>respuestas y el avance</strong>
+          en las 4 competencias MINEDU, y una <strong>foto del desarrollo</strong> de cada ejercicio (la fotografía del
+          cuaderno) cuando el ejercicio la requiere. Para el docente: nombre, apellidos, correo y especialidad.
+          No se solicita DNI, fecha de nacimiento ni dirección de ningún alumno.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="text-base font-bold text-white mb-2 flex items-center gap-2">
+          <span class="material-symbols-outlined text-indigo-400" style="font-size:19px">target</span>
+          Para qué se usan
+        </h2>
+        <p class="prose-p">
+          Únicamente para el seguimiento pedagógico: que el tutor adaptativo asigne ejercicios del nivel correcto y que
+          el docente vea el progreso de su propio salón. También se usan, de forma agregada, para la investigación
+          académica de la tesis. No se venden ni se comparten con terceros con fines comerciales.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="text-base font-bold text-white mb-2 flex items-center gap-2">
+          <span class="material-symbols-outlined text-indigo-400" style="font-size:19px">visibility</span>
+          Quién los puede ver
+        </h2>
+        <p class="prose-p">
+          Solo el <strong>docente del salón</strong> al que pertenece el alumno puede ver sus datos y su avance —
+          nunca el de otro salón. El equipo del proyecto de tesis puede acceder con fines de mantenimiento e
+          investigación, siempre bajo el mismo compromiso de confidencialidad.
+        </p>
+      </section>
+
+      <section class="p-4 rounded-xl bg-amber-500/10 border border-amber-500/25">
+        <h2 class="text-base font-bold text-amber-300 mb-2 flex items-center gap-2">
+          <span class="material-symbols-outlined" style="font-size:19px">shield_person</span>
+          Alumnos menores de edad
+        </h2>
+        <p class="prose-p text-amber-100/90">
+          La mayoría de los alumnos son menores de edad. Su registro en el sistema requiere que la institución
+          educativa cuente con la autorización del padre, madre o apoderado para tratar sus datos académicos — el
+          docente confirma esto al registrar a cada alumno. El padre, madre o apoderado puede solicitar el acceso o
+          la eliminación de esos datos escribiendo a la institución educativa o directamente al correo de contacto
+          de este proyecto.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="text-base font-bold text-white mb-2 flex items-center gap-2">
+          <span class="material-symbols-outlined text-indigo-400" style="font-size:19px">schedule</span>
+          Cuánto tiempo se conservan
+        </h2>
+        <p class="prose-p">
+          Mientras dure el uso del sistema en la institución educativa. Un alumno o su apoderado puede pedir en
+          cualquier momento que sus datos sean eliminados; el docente puede dar de baja una cuenta desde el panel,
+          y una eliminación completa puede solicitarse por el correo de contacto.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="text-base font-bold text-white mb-2 flex items-center gap-2">
+          <span class="material-symbols-outlined text-indigo-400" style="font-size:19px">key</span>
+          Tus derechos (acceso, rectificación, cancelación, oposición)
+        </h2>
+        <p class="prose-p">
+          Como titular del dato (o como apoderado de un alumno menor de edad) puedes pedir en cualquier momento:
+          saber qué datos tenemos guardados, corregirlos si están mal, eliminarlos, u oponerte a que se sigan usando.
+          Escríbenos y lo resolvemos directamente.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="text-base font-bold text-white mb-2 flex items-center gap-2">
+          <span class="material-symbols-outlined text-indigo-400" style="font-size:19px">lock</span>
+          Cómo protegemos tus datos
+        </h2>
+        <p class="prose-p">
+          Las contraseñas se guardan cifradas, nunca en texto plano. El acceso al panel del docente exige iniciar
+          sesión, y cada docente solo puede ver los salones que tiene asignados. Las conexiones al sistema van
+          cifradas (HTTPS).
+        </p>
+      </section>
+
+      <section>
+        <h2 class="text-base font-bold text-white mb-2 flex items-center gap-2">
+          <span class="material-symbols-outlined text-indigo-400" style="font-size:19px">mail</span>
+          Contacto
+        </h2>
+        <p class="prose-p">
+          Para cualquier consulta sobre tus datos o los de un alumno a tu cargo, escribe a la institución educativa
+          o al responsable del proyecto de tesis a través del correo institucional.
+        </p>
+      </section>
+
+    </div>
+
+    <div class="mt-14 pt-6 border-t border-slate-800 flex items-center justify-between">
+      <a href="{{ url_for('index') }}" class="text-xs font-semibold text-slate-400 hover:text-indigo-300 flex items-center gap-1.5">
+        <span class="material-symbols-outlined" style="font-size:16px">arrow_back</span>
+        Volver al inicio
+      </a>
+      <p class="text-xs text-slate-500">© 2026 TutorMath</p>
+    </div>
+  </main>
+
+</body>
+</html>

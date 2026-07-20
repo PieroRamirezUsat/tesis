@@ -19,6 +19,13 @@ from email.message import EmailMessage
 bp_auth = Blueprint("auth", __name__)
 
 
+# ============== POLÍTICA DE PRIVACIDAD ==============
+@bp_auth.route("/privacidad")
+def privacidad():
+    """Página pública: qué datos se guardan y cómo pedir su eliminación."""
+    return render_template("privacidad.html")
+
+
 # ============== LOGIN ==============
 @bp_auth.route("/login", methods=["GET", "POST"])
 @limiter.limit("5 per minute", methods=["POST"])   # ← máx. 5 intentos/min por IP
