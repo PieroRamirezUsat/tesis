@@ -11,7 +11,6 @@ from db import get_db
 from config import Config
 from werkzeug.security import generate_password_hash, check_password_hash
 from extensions import limiter
-import secrets
 import smtplib
 import ssl
 from email.message import EmailMessage
@@ -209,12 +208,13 @@ def forgot_password():
             return render_template("forgot_password.html")
 
         id_usuario, nombre, apellidos, correo_db = user
+        cur.close()
 
-        # Generar nueva contraseña temporal (texto plano solo para el correo)
-        nueva_contra_plana = secrets.token_urlsafe(8)
+        # Enlace de un solo uso, firmado y con expiración — no se toca la BD
+        # hasta que el docente realmente elija su nueva contraseña en el link.
+        token = _serializador_reset().dumps(id_usuario)
+        enlace = url_for("auth.reset_password", token=token, _external=True)
 
-        # 🔐 Construir el correo ANTES de tocar la BD.
-        #    Si el envío falla, la contraseña del usuario NO cambia.
         msg = EmailMessage()
         msg["Subject"] = "Recuperación de contraseña - TutorMath"
         msg["From"] = Config.MAIL_DEFAULT_SENDER
@@ -224,20 +224,18 @@ def forgot_password():
             f"""
 Hola {nombre} {apellidos},
 
-Se ha generado una nueva contraseña temporal para tu cuenta en TutorMath:
+Recibimos una solicitud para restablecer tu contraseña en TutorMath. Abre este enlace para elegir una nueva (válido por {RESET_TOKEN_MAX_AGE // 60} minutos):
 
-    {nueva_contra_plana}
+    {enlace}
 
-Te recomendamos iniciar sesión y cambiarla lo antes posible en tu perfil.
+Si no fuiste tú quien lo pidió, puedes ignorar este correo: tu contraseña actual sigue funcionando.
 
 Saludos,
 Sistema Tutor Adaptativo de Álgebra
 """
         )
 
-        # Intentar enviar primero; solo si el correo sale bien actualizamos la BD
         if not Config.MAIL_USERNAME or not Config.MAIL_PASSWORD:
-            cur.close()
             flash(
                 "El sistema de correo no está configurado. Contacta al administrador.",
                 "danger",
@@ -253,7 +251,6 @@ Sistema Tutor Adaptativo de Álgebra
                 server.send_message(msg)
         except Exception as e:
             print("Error enviando correo de recuperación:", e)
-            cur.close()
             flash(
                 "No se pudo enviar el correo de recuperación. "
                 "Verifica tu dirección o intenta más tarde.",
@@ -261,20 +258,64 @@ Sistema Tutor Adaptativo de Álgebra
             )
             return render_template("forgot_password.html")
 
-        # El correo salió OK → ahora sí actualizamos la contraseña
-        hash_contra = generate_password_hash(nueva_contra_plana)
-        cur.execute(
-            "UPDATE usuarios SET contrasena = %s WHERE id_usuario = %s",
-            (hash_contra, id_usuario),
-        )
-        conn.commit()
-        cur.close()
-
         flash(
-            "Se ha enviado una nueva contraseña a tu correo electrónico.",
+            "Te enviamos un enlace para restablecer tu contraseña. Revisa tu correo.",
             "success",
         )
         return redirect(url_for("auth.login"))
 
     # GET
     return render_template("forgot_password.html")
+
+
+# ============== RESTABLECER CONTRASEÑA (enlace del correo) ==============
+RESET_TOKEN_MAX_AGE = 30 * 60  # 30 minutos
+
+
+def _serializador_reset():
+    from itsdangerous import URLSafeTimedSerializer
+    return URLSafeTimedSerializer(Config.SECRET_KEY, salt="reset-password")
+
+
+@bp_auth.route("/reset-password/<token>", methods=["GET", "POST"])
+def reset_password(token):
+    from itsdangerous import BadSignature, SignatureExpired
+
+    try:
+        id_usuario = _serializador_reset().loads(token, max_age=RESET_TOKEN_MAX_AGE)
+    except SignatureExpired:
+        flash("El enlace ya expiró. Solicita uno nuevo.", "danger")
+        return redirect(url_for("auth.forgot_password"))
+    except BadSignature:
+        flash("El enlace no es válido.", "danger")
+        return redirect(url_for("auth.forgot_password"))
+
+    if request.method == "POST":
+        nueva = request.form.get("nueva_contrasena", "")
+        confirmar = request.form.get("confirmar_contrasena", "")
+
+        if len(nueva) < 6:
+            flash("La contraseña debe tener al menos 6 caracteres.", "danger")
+            return render_template("reset_password.html", token=token)
+        if nueva != confirmar:
+            flash("Las contraseñas no coinciden.", "danger")
+            return render_template("reset_password.html", token=token)
+
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute(
+            "UPDATE usuarios SET contrasena = %s WHERE id_usuario = %s AND estado_usuario = 'activo'",
+            (generate_password_hash(nueva), id_usuario),
+        )
+        actualizado = cur.rowcount
+        conn.commit()
+        cur.close()
+
+        if not actualizado:
+            flash("No se pudo actualizar la contraseña. Intenta de nuevo.", "danger")
+            return redirect(url_for("auth.forgot_password"))
+
+        flash("Contraseña actualizada. Ya puedes iniciar sesión.", "success")
+        return redirect(url_for("auth.login"))
+
+    return render_template("reset_password.html", token=token)
