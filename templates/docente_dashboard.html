@@ -50,7 +50,7 @@
         <div class="flex items-center justify-between mb-2">
           <p class="text-indigo-200 text-[10px] font-bold uppercase tracking-widest">Distribución del grupo</p>
           {% if total_estudiantes > 0 %}
-          <p class="text-indigo-300 text-[10px] font-semibold">{{ porc_avanzado }}% · {{ (100 - porc_avanzado - porc_necesita_ayuda) | abs }}% · {{ porc_necesita_ayuda }}%</p>
+          <p class="text-indigo-300 text-[10px] font-semibold">{{ porc_avanzado }}% · {{ porc_en_progreso }}% · {{ porc_necesita_ayuda }}%{% if sin_diagnostico > 0 %} · {{ porc_sin_diagnostico }}% sin nota{% endif %}</p>
           {% endif %}
         </div>
         <div class="flex rounded-full overflow-hidden h-3 bg-white/10 gap-px">
@@ -65,6 +65,9 @@
           <div class="bg-red-400 h-full"
                style="width:{{ porc_necesita_ayuda }}%;"
                title="{{ necesita_ayuda }} necesitan ayuda"></div>
+          <div class="bg-slate-400/70 h-full"
+               style="width:{{ porc_sin_diagnostico }}%;"
+               title="{{ sin_diagnostico }} sin diagnóstico (bloqueados hasta registrar sus notas)"></div>
           {% else %}
           <div class="bg-white/20 h-full w-full"></div>
           {% endif %}
@@ -88,6 +91,14 @@
           <span class="text-xs text-white font-bold">{{ necesita_ayuda }}</span>
           <span class="text-xs text-indigo-200">necesitan ayuda</span>
         </div>
+        {% if sin_diagnostico > 0 %}
+        <div class="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-lg"
+             title="Bloqueados en la app hasta que registres sus notas AD/A/B/C">
+          <span class="w-2.5 h-2.5 rounded-full bg-slate-400 shrink-0"></span>
+          <span class="text-xs text-white font-bold">{{ sin_diagnostico }}</span>
+          <span class="text-xs text-indigo-200">sin diagnóstico</span>
+        </div>
+        {% endif %}
       </div>
     </div>
   </div>
@@ -145,6 +156,11 @@
           <p class="text-red-200 text-xs mt-1.5 font-medium">
             {{ necesita_ayuda }} requieren atención
           </p>
+          {% if sin_diagnostico > 0 %}
+          <p class="text-white/90 text-[11px] mt-1 font-semibold">
+            📝 {{ sin_diagnostico }} aún sin diagnóstico (no pueden practicar)
+          </p>
+          {% endif %}
           {# W1: la tendencia del acierto también habla de quienes necesitan ayuda #}
           {% if tendencia_dir == 'down' and tendencia_pct > 0 %}
           <div class="flex items-center gap-1 mt-2">
@@ -299,6 +315,15 @@
             <span class="text-[11px] font-bold text-red-700 dark:text-red-300 flex-1">Necesita ayuda</span>
             <span class="text-[11px] font-black text-red-600 bg-red-100 dark:bg-red-900/40 px-1.5 rounded-full">{{ necesita_ayuda }}</span>
           </button>
+          {% if sin_diagnostico > 0 %}
+          <div class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg
+                      bg-slate-100 dark:bg-slate-800/40 w-full text-left"
+               title="Bloqueados en la app hasta que registres sus notas AD/A/B/C">
+            <span class="w-2 h-2 rounded-full bg-slate-400 shrink-0"></span>
+            <span class="text-[11px] font-bold text-slate-600 dark:text-slate-300 flex-1">Sin diagnóstico</span>
+            <span class="text-[11px] font-black text-slate-600 bg-slate-200 dark:bg-slate-700/60 px-1.5 rounded-full">{{ sin_diagnostico }}</span>
+          </div>
+          {% endif %}
           <button onclick="filtrarBanda(null)" id="btn-todos"
             class="text-[10px] text-gray-300 hover:text-indigo-500 transition-colors underline underline-offset-2 cursor-pointer text-center mt-0.5">
             Ver todos
@@ -790,6 +815,33 @@
   </div>
 
   <div class="p-5">
+    {# ── Aviso PRIORITARIO: alumnos sin diagnóstico ─────────────────────
+       Un salón recién matriculado NO está "excelente": está ESPERANDO a
+       que la docente registre las notas AD/A/B/C. Sin este aviso, el
+       mensaje verde de abajo daba a entender que no había nada que hacer. #}
+    {% if sin_diagnostico > 0 %}
+    <div class="flex items-start gap-3 p-4 mb-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/40">
+      <span class="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-800/40 flex items-center justify-center shrink-0">
+        <span class="material-symbols-outlined text-amber-500 text-xl">pending_actions</span>
+      </span>
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-bold text-amber-700 dark:text-amber-400">
+          {{ sin_diagnostico }} alumno{{ 's' if sin_diagnostico != 1 else '' }} aún sin diagnóstico inicial
+        </p>
+        <p class="text-xs text-amber-600 dark:text-amber-500/90 mt-0.5">
+          No pueden usar la aplicación todavía: la app los mantiene bloqueados hasta que
+          registres sus calificaciones <b>AD / A / B / C</b> en cada competencia.
+        </p>
+        <a href="{{ url_for('docentes.gestion_estudiantes') }}"
+           class="inline-flex items-center gap-1.5 mt-2.5 px-3.5 py-2 rounded-lg
+                  bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition-colors">
+          <span class="material-symbols-outlined text-sm">edit_note</span>
+          Registrar diagnósticos ahora
+        </a>
+      </div>
+    </div>
+    {% endif %}
+
     {% if estudiantes_atencion %}
     <div class="overflow-y-auto" style="max-height:480px;">
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -842,14 +894,17 @@
     </div>
     </div>
 
-    {% else %}
+    {% elif sin_diagnostico == 0 %}
+    {# El "todo bien" SOLO cuando todos tienen diagnóstico y nadie está en
+       riesgo — con alumnos sin nota este mensaje era engañoso (parecía que
+       no había nada pendiente cuando faltaba registrar TODO el salón). #}
     <div class="flex items-center gap-3 p-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/30">
       <span class="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-800/40 flex items-center justify-center shrink-0">
         <span class="material-symbols-outlined text-emerald-500 text-xl">check_circle</span>
       </span>
       <div>
         <p class="text-sm font-bold text-emerald-700 dark:text-emerald-400">Excelente progreso general</p>
-        <p class="text-xs text-emerald-500 mt-0.5">Todos los estudiantes están avanzando satisfactoriamente.</p>
+        <p class="text-xs text-emerald-500 mt-0.5">Todos los estudiantes evaluados están avanzando satisfactoriamente.</p>
       </div>
     </div>
     {% endif %}
@@ -896,10 +951,10 @@
     new Chart(document.getElementById('chartEstudiantes'), {
       type: 'doughnut',
       data: {
-        labels: ['Avanzado ≥70%', 'En progreso 40–69%', 'Necesita ayuda <40%'],
+        labels: ['Avanzado ≥70%', 'En progreso 40–69%', 'Necesita ayuda <40%', 'Sin diagnóstico'],
         datasets: [{
-          data: [{{ avanzados }}, {{ en_progreso }}, {{ necesita_ayuda }}],
-          backgroundColor: ['#34d399', '#fb923c', '#f87171'],
+          data: [{{ avanzados }}, {{ en_progreso }}, {{ necesita_ayuda }}, {{ sin_diagnostico }}],
+          backgroundColor: ['#34d399', '#fb923c', '#f87171', '#94a3b8'],
           borderWidth: 2,
           borderColor: 'rgba(15,23,42,.85)',
           hoverOffset: 6,

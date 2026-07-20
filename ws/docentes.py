@@ -130,6 +130,8 @@ def _metricas_dashboard(id_usuario: int):
             "porc_avanzado": 0,
             "porc_en_progreso": 0,
             "porc_necesita_ayuda": 0,
+            "sin_diagnostico": 0,
+            "porc_sin_diagnostico": 0,
             "salones": [],
             "temas": [],
             "estudiantes_atencion": [],
@@ -159,12 +161,23 @@ def _metricas_dashboard(id_usuario: int):
         """
         SELECT
             COUNT(*)                                                           AS total,
-            SUM(CASE WHEN progreso >= 70              THEN 1 ELSE 0 END)      AS avanzados,
-            SUM(CASE WHEN progreso >= 40 AND progreso < 70 THEN 1 ELSE 0 END) AS en_progreso,
-            SUM(CASE WHEN progreso < 40               THEN 1 ELSE 0 END)      AS necesita_ayuda
+            SUM(CASE WHEN NOT sin_diag AND progreso >= 70 THEN 1 ELSE 0 END)  AS avanzados,
+            SUM(CASE WHEN NOT sin_diag AND progreso >= 40 AND progreso < 70
+                     THEN 1 ELSE 0 END)                                       AS en_progreso,
+            SUM(CASE WHEN NOT sin_diag AND progreso < 40 THEN 1 ELSE 0 END)   AS necesita_ayuda,
+            SUM(CASE WHEN sin_diag THEN 1 ELSE 0 END)                         AS sin_diagnostico
         FROM (
             SELECT
                 e.id_estudiante,
+                -- Un alumno sin diagnóstico NO es "necesita ayuda": está
+                -- BLOQUEADO (la app no le deja practicar hasta que la docente
+                -- registre sus letras AD/A/B/C). Se cuenta aparte para que el
+                -- dashboard le diga a la docente qué tiene pendiente en vez de
+                -- pintar todo el salón recién matriculado de rojo.
+                (e.cantidad IS NULL
+                 AND e.regularidad_equivalencia_cambio IS NULL
+                 AND e.forma_movimiento_localizacion   IS NULL
+                 AND e.gestion_datos_incertidumbre     IS NULL) AS sin_diag,
                 COALESCE(
                     (SELECT ROUND(AVG((LEAST(nec.nivel_actual, 6) - 1) * 20.0))::int
                      FROM nivel_estudiante_competencia nec
@@ -185,17 +198,21 @@ def _metricas_dashboard(id_usuario: int):
     avanzados         = int(band_row[1] or 0)
     en_progreso       = int(band_row[2] or 0)
     necesita_ayuda    = int(band_row[3] or 0)
+    sin_diagnostico   = int(band_row[4] or 0)
 
     if total_estudiantes > 0:
-        porc_avanzado      = round(avanzados      * 100 / total_estudiantes)
-        porc_en_progreso   = round(en_progreso    * 100 / total_estudiantes)
-        porc_necesita_ayuda= round(necesita_ayuda * 100 / total_estudiantes)
+        porc_avanzado       = round(avanzados       * 100 / total_estudiantes)
+        porc_en_progreso    = round(en_progreso     * 100 / total_estudiantes)
+        porc_necesita_ayuda = round(necesita_ayuda  * 100 / total_estudiantes)
+        porc_sin_diagnostico= round(sin_diagnostico * 100 / total_estudiantes)
     else:
         porc_avanzado = porc_en_progreso = porc_necesita_ayuda = 0
+        porc_sin_diagnostico = 0
 
-    porc_avanzado       = max(0, min(100, porc_avanzado))
-    porc_en_progreso    = max(0, min(100, porc_en_progreso))
-    porc_necesita_ayuda = max(0, min(100, porc_necesita_ayuda))
+    porc_avanzado        = max(0, min(100, porc_avanzado))
+    porc_en_progreso     = max(0, min(100, porc_en_progreso))
+    porc_necesita_ayuda  = max(0, min(100, porc_necesita_ayuda))
+    porc_sin_diagnostico = max(0, min(100, porc_sin_diagnostico))
 
     # ==========================================================
     # 2) Salones con mayor actividad
@@ -606,6 +623,8 @@ def _metricas_dashboard(id_usuario: int):
         "porc_avanzado":       porc_avanzado,
         "porc_en_progreso":    porc_en_progreso,
         "porc_necesita_ayuda": porc_necesita_ayuda,
+        "sin_diagnostico":     sin_diagnostico,
+        "porc_sin_diagnostico": porc_sin_diagnostico,
         "salones":             salones,
         "temas":               temas,
         "estudiantes_atencion": estudiantes_atencion,
@@ -704,6 +723,8 @@ def dashboard():
         porc_avanzado=met["porc_avanzado"],
         porc_en_progreso=met["porc_en_progreso"],
         porc_necesita_ayuda=met["porc_necesita_ayuda"],
+        sin_diagnostico=met["sin_diagnostico"],
+        porc_sin_diagnostico=met["porc_sin_diagnostico"],
         avanzados=met["avanzados"],
         en_progreso=met["en_progreso"],
         necesita_ayuda=met["necesita_ayuda"],
