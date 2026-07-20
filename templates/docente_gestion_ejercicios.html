@@ -325,17 +325,14 @@
           <!-- Previsualización: evita subir la imagen equivocada por error
                al trabajar rápido con varios ejercicios seguidos. -->
           <div id="preview-imagen-ejercicio" class="hidden mt-2 flex items-start gap-3 p-2.5 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50/60 dark:bg-amber-900/10">
-            <!-- Igual que las miniaturas de la tabla: al pasar el puntero
-                 se amplía, así se confirma el detalle sin tener que guardar. -->
-            <div class="img-thumb-wrapper relative shrink-0">
-              <img id="preview-imagen-ejercicio-src" src="" alt="Vista previa"
-                   class="w-20 h-20 rounded-lg object-cover border-2 border-amber-300 shadow-sm cursor-zoom-in" />
-              <div class="img-preview img-preview-left">
-                <div class="bg-white dark:bg-gray-900 rounded-2xl border-2 border-amber-300 shadow-2xl p-1.5 w-56">
-                  <img id="preview-imagen-ejercicio-zoom" src="" alt="Vista ampliada" class="w-full rounded-xl object-contain max-h-52" />
-                </div>
-              </div>
-            </div>
+            <!-- El zoom al pasar el puntero se calcula con JS y se muestra
+                 en un panel flotante FUERA de este formulario (ver script
+                 más abajo): esta tarjeta tiene overflow-hidden por sus
+                 bordes redondeados, así que un popup CSS normal (como el
+                 de la tabla) siempre terminaba recortado sin importar hacia
+                 qué lado apuntara. -->
+            <img id="preview-imagen-ejercicio-src" src="" alt="Vista previa"
+                 class="w-20 h-20 rounded-lg object-cover border-2 border-amber-300 shadow-sm shrink-0 cursor-zoom-in" />
             <div class="min-w-0 flex-1">
               <p id="preview-imagen-ejercicio-titulo" class="text-xs font-bold text-amber-700 dark:text-amber-400">Vista previa</p>
               <p id="preview-imagen-ejercicio-nombre" class="text-xs text-gray-500 dark:text-gray-400 truncate"></p>
@@ -372,15 +369,6 @@
     top: 50%;
     transform: translateY(-40%);
     z-index: 9999;
-  }
-  /* En columnas angostas pegadas al borde derecho (ej. el formulario
-     rápido de crear/editar ejercicio) el popup "hacia abajo" se corta
-     contra el borde de la ventana si el campo queda cerca del final del
-     formulario. Popping hacia la IZQUIERDA sí tiene espacio de sobra
-     (el resto de la página está a la izquierda de esa columna). */
-  .img-preview-left {
-    left: auto;
-    right: calc(100% + 8px);
   }
   .img-thumb-wrapper:hover .img-preview { display: block; }
 
@@ -433,7 +421,6 @@
   const inputImagen  = document.getElementById("input-imagen-ejercicio");
   const previewBox   = document.getElementById("preview-imagen-ejercicio");
   const previewImg   = document.getElementById("preview-imagen-ejercicio-src");
-  const previewZoom  = document.getElementById("preview-imagen-ejercicio-zoom");
   const previewTitulo= document.getElementById("preview-imagen-ejercicio-titulo");
   const previewNombre= document.getElementById("preview-imagen-ejercicio-nombre");
 
@@ -441,14 +428,13 @@
     if (inputImagen) inputImagen.value = "";
     previewBox?.classList.add("hidden");
     if (previewImg) previewImg.src = "";
-    if (previewZoom) previewZoom.src = "";
+    ocultarZoomFlotante();
   }
 
   function mostrarPreviewArchivoNuevo(file) {
     const lector = new FileReader();
     lector.onload = (ev) => {
-      previewImg.src  = ev.target.result;
-      previewZoom.src = ev.target.result;   // misma imagen, ampliada al pasar el puntero
+      previewImg.src = ev.target.result;
       previewTitulo.textContent = "Vista previa (aún no guardada)";
       previewNombre.textContent = `${file.name} · ${(file.size / 1024).toFixed(0)} KB`;
       previewBox.classList.remove("hidden");
@@ -457,8 +443,7 @@
   }
 
   function mostrarPreviewImagenActual(url) {
-    previewImg.src  = url;
-    previewZoom.src = url;
+    previewImg.src = url;
     previewTitulo.textContent = "Imagen actual del ejercicio";
     previewNombre.textContent = "Elige un archivo arriba para reemplazarla.";
     previewBox.classList.remove("hidden");
@@ -471,6 +456,58 @@
   });
 
   document.getElementById("btn-quitar-imagen-ejercicio")?.addEventListener("click", limpiarPreviewImagen);
+
+  // ── Zoom flotante (calculado con JS, no con CSS) ────────────────────────
+  // El formulario rápido vive dentro de una tarjeta con overflow-hidden
+  // (por sus bordes redondeados), así que CUALQUIER popup posicionado con
+  // CSS normal (a la derecha, izquierda o abajo) terminaba recortado —
+  // reportado con capturas en pantalla grande. La solución que funciona
+  // en cualquier tamaño de pantalla/dispositivo: el panel ampliado se
+  // agrega directo al <body> (fuera de toda tarjeta que recorte) y su
+  // posición se calcula en cada hover con las medidas REALES de la
+  // ventana, así nunca se sale de lo visible.
+  let zoomFlotante = null;
+
+  function ocultarZoomFlotante() {
+    zoomFlotante?.remove();
+    zoomFlotante = null;
+  }
+
+  function mostrarZoomFlotante(trigger) {
+    if (!previewImg.src) return;
+    ocultarZoomFlotante();
+
+    zoomFlotante = document.createElement("div");
+    zoomFlotante.style.cssText = "position:fixed; z-index:99999; pointer-events:none;";
+    zoomFlotante.innerHTML = `
+      <div style="background:#0D1329; border:2px solid #F59E0B; border-radius:16px;
+                  box-shadow:0 20px 50px rgba(0,0,0,.6); padding:6px; width:224px;">
+        <img src="${previewImg.src}" alt="Vista ampliada"
+             style="width:100%; max-height:210px; object-fit:contain; border-radius:10px; display:block;" />
+      </div>`;
+    document.body.appendChild(zoomFlotante);
+
+    // Posición: pegado a la miniatura, pero SIEMPRE dentro de la ventana
+    // visible (se recalcula con las medidas reales, no valores fijos).
+    const rectTrigger = trigger.getBoundingClientRect();
+    const rectPopup   = zoomFlotante.firstElementChild.getBoundingClientRect();
+    const margen = 10;
+
+    let left = rectTrigger.right + margen;
+    if (left + rectPopup.width > window.innerWidth - margen) {
+      left = rectTrigger.left - rectPopup.width - margen;   // no cabe a la derecha → a la izquierda
+    }
+    left = Math.max(margen, Math.min(left, window.innerWidth - rectPopup.width - margen));
+
+    let top = rectTrigger.top + (rectTrigger.height / 2) - (rectPopup.height / 2);
+    top = Math.max(margen, Math.min(top, window.innerHeight - rectPopup.height - margen));
+
+    zoomFlotante.style.left = `${left}px`;
+    zoomFlotante.style.top  = `${top}px`;
+  }
+
+  previewImg?.addEventListener("mouseenter", () => mostrarZoomFlotante(previewImg));
+  previewImg?.addEventListener("mouseleave", ocultarZoomFlotante);
 
   // ── Material de refuerzo vinculado (máximo 1 por ejercicio) ────────────
   // Si el ejercicio ya tiene su material se ocultan los inputs: el tutor
