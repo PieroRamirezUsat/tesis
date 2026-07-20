@@ -880,28 +880,42 @@
       lista.classList.remove("hidden");
     }
 
+    // Nombre del alumno actualmente seleccionado (para restaurarlo si el
+    // docente hace clic fuera sin elegir a nadie nuevo).
+    const nombreConfirmado = input.value;
+    let seSeleccionoAlguien = false;
+
     input.addEventListener("input", () => filtrar());
     input.addEventListener("focus", function () {
-      input.select();   // selecciona el texto para reemplazarlo al escribir
-      // Al hacer foco, mostrar SIEMPRE la lista COMPLETA (no filtrar con el
-      // nombre del alumno ya seleccionado, que dejaba ver solo 1 coincidencia
-      // y daba la impresión de que no existía un desplegable con todos).
-      filtrar("");
+      // Vacía el campo de una: antes solo se SELECCIONABA el texto (con
+      // input.select()), así que si el docente no empezaba a escribir de
+      // inmediato el nombre viejo seguía ahí estorbando y había que
+      // seleccionar todo + borrar a mano. Ahora al hacer clic ya está listo
+      // para escribir directamente.
+      input.value = "";
+      seSeleccionoAlguien = false;
+      filtrar("");   // muestra SIEMPRE la lista completa de alumnos
     });
     input.addEventListener("keydown", function (e) {
       if (e.key === "Enter") { // Enter elige la primera coincidencia visible
         e.preventDefault();
         const primera = opciones.find((op) => op.style.display !== "none");
-        if (primera) recargar(primera.dataset.id);
+        if (primera) { seSeleccionoAlguien = true; recargar(primera.dataset.id); }
       }
       if (e.key === "Escape") lista.classList.add("hidden");
     });
     opciones.forEach((op) => {
-      op.addEventListener("click", function () { recargar(op.dataset.id); });
+      op.addEventListener("click", function () {
+        seSeleccionoAlguien = true;
+        recargar(op.dataset.id);
+      });
     });
     document.addEventListener("click", function (e) {
       if (!document.getElementById("combo-estudiante").contains(e.target)) {
         lista.classList.add("hidden");
+        // Si cerró el buscador sin elegir a nadie, vuelve a mostrar el
+        // nombre del alumno que ya estaba abierto (no lo deja en blanco).
+        if (!seSeleccionoAlguien) input.value = nombreConfirmado;
       }
     });
   })();
