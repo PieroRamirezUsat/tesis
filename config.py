@@ -55,8 +55,10 @@ class Config:
 
     # ====================================================
     #  📱 URL de descarga del APK de la app móvil
-    #  Cámbiala por el enlace real de GitHub Releases u
-    #  otro servidor cuando subas el APK.
+    #  ⚠️ Apuntar SIEMPRE al alias fijo "TutorMath-latest.apk" del release
+    #  de GitHub (no a un nombre versionado tipo "TutorMath-v1.4.apk"):
+    #  cada APK nuevo sobrescribe ese mismo archivo, así esta variable
+    #  (configurada en Railway) no hay que volver a tocarla nunca.
     # ====================================================
     APK_DOWNLOAD_URL = os.environ.get(
         "APK_DOWNLOAD_URL",
