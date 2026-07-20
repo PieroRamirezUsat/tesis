@@ -37,7 +37,7 @@ from flask import (
 )
 from db import get_db
 import os
-from werkzeug.security import generate_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash
 from ws.utils import url_foto_usuario
 
 bp_docentes = Blueprint("docentes", __name__, url_prefix="/docente")
@@ -770,12 +770,27 @@ def perfil():
         nombre = request.form.get("nombre", "").strip()
         apellidos = request.form.get("apellidos", "").strip()
         especialidad = request.form.get("especialidad", "").strip()
+        contrasena_actual = request.form.get("contrasena_actual", "")
         nueva_contrasena = request.form.get("nueva_contrasena", "")
         confirmar_contrasena = request.form.get("confirmar_contrasena", "")
 
         # 2. Validaciones básicas
+        # Cambiar la contraseña exige la actual: si alguien deja la sesión
+        # abierta o roba la cookie, no puede secuestrar la cuenta sin saberla.
+        hash_actual = None
+        if nueva_contrasena:
+            cur_chk = get_db().cursor()
+            cur_chk.execute("SELECT contrasena FROM usuarios WHERE id_usuario = %s", (id_usuario,))
+            row_chk = cur_chk.fetchone()
+            cur_chk.close()
+            hash_actual = row_chk[0] if row_chk else None
+
         if not nombre or not apellidos:
             flash("Nombre y apellidos son obligatorios.", "danger")
+        elif nueva_contrasena and not contrasena_actual:
+            flash("Ingresa tu contraseña actual para poder cambiarla.", "danger")
+        elif nueva_contrasena and not check_password_hash(hash_actual or "", contrasena_actual):
+            flash("La contraseña actual no es correcta.", "danger")
         elif nueva_contrasena and nueva_contrasena != confirmar_contrasena:
             flash("Las contraseñas no coinciden.", "danger")
         elif nueva_contrasena and len(nueva_contrasena) < 6:
