@@ -325,8 +325,17 @@
           <!-- Previsualización: evita subir la imagen equivocada por error
                al trabajar rápido con varios ejercicios seguidos. -->
           <div id="preview-imagen-ejercicio" class="hidden mt-2 flex items-start gap-3 p-2.5 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50/60 dark:bg-amber-900/10">
-            <img id="preview-imagen-ejercicio-src" src="" alt="Vista previa"
-                 class="w-20 h-20 rounded-lg object-cover border-2 border-amber-300 shadow-sm shrink-0" />
+            <!-- Igual que las miniaturas de la tabla: al pasar el puntero
+                 se amplía, así se confirma el detalle sin tener que guardar. -->
+            <div class="img-thumb-wrapper relative shrink-0">
+              <img id="preview-imagen-ejercicio-src" src="" alt="Vista previa"
+                   class="w-20 h-20 rounded-lg object-cover border-2 border-amber-300 shadow-sm cursor-zoom-in" />
+              <div class="img-preview img-preview-abajo">
+                <div class="bg-white dark:bg-gray-900 rounded-2xl border-2 border-amber-300 shadow-2xl p-1.5 w-56">
+                  <img id="preview-imagen-ejercicio-zoom" src="" alt="Vista ampliada" class="w-full rounded-xl object-contain max-h-52" />
+                </div>
+              </div>
+            </div>
             <div class="min-w-0 flex-1">
               <p id="preview-imagen-ejercicio-titulo" class="text-xs font-bold text-amber-700 dark:text-amber-400">Vista previa</p>
               <p id="preview-imagen-ejercicio-nombre" class="text-xs text-gray-500 dark:text-gray-400 truncate"></p>
@@ -367,6 +376,13 @@
   .img-preview-left {
     left: auto;
     right: calc(100% + 8px);
+  }
+  /* Variante para columnas angostas (ej. el formulario rápido): el popup
+     de al lado se saldría de la pantalla, así que aparece hacia ABAJO. */
+  .img-preview-abajo {
+    left: 0;
+    top: calc(100% + 8px);
+    transform: none;
   }
   .img-thumb-wrapper:hover .img-preview { display: block; }
 
@@ -419,6 +435,7 @@
   const inputImagen  = document.getElementById("input-imagen-ejercicio");
   const previewBox   = document.getElementById("preview-imagen-ejercicio");
   const previewImg   = document.getElementById("preview-imagen-ejercicio-src");
+  const previewZoom  = document.getElementById("preview-imagen-ejercicio-zoom");
   const previewTitulo= document.getElementById("preview-imagen-ejercicio-titulo");
   const previewNombre= document.getElementById("preview-imagen-ejercicio-nombre");
 
@@ -426,12 +443,14 @@
     if (inputImagen) inputImagen.value = "";
     previewBox?.classList.add("hidden");
     if (previewImg) previewImg.src = "";
+    if (previewZoom) previewZoom.src = "";
   }
 
   function mostrarPreviewArchivoNuevo(file) {
     const lector = new FileReader();
     lector.onload = (ev) => {
-      previewImg.src = ev.target.result;
+      previewImg.src  = ev.target.result;
+      previewZoom.src = ev.target.result;   // misma imagen, ampliada al pasar el puntero
       previewTitulo.textContent = "Vista previa (aún no guardada)";
       previewNombre.textContent = `${file.name} · ${(file.size / 1024).toFixed(0)} KB`;
       previewBox.classList.remove("hidden");
@@ -440,7 +459,8 @@
   }
 
   function mostrarPreviewImagenActual(url) {
-    previewImg.src = url;
+    previewImg.src  = url;
+    previewZoom.src = url;
     previewTitulo.textContent = "Imagen actual del ejercicio";
     previewNombre.textContent = "Elige un archivo arriba para reemplazarla.";
     previewBox.classList.remove("hidden");
