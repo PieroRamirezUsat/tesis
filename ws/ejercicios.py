@@ -470,7 +470,8 @@ def detalle_ejercicio_json(id_ejercicio):
             respuesta_correcta,
             pista,
             nivel_logro,
-            palabras_clave
+            palabras_clave,
+            imagen_url
         FROM ejercicios
         WHERE id_ejercicio = %s
         """,
@@ -520,6 +521,7 @@ def detalle_ejercicio_json(id_ejercicio):
         "pista":             ej[4],
         "nivel_logro":       ej[5],
         "palabras_clave":    ej[6],
+        "imagen_url":        ej[7],
         "opciones":          opciones,
         "materiales":        materiales,
     }

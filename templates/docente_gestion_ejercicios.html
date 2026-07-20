@@ -315,12 +315,27 @@
         <!-- Imagen -->
         <div class="space-y-1">
           <label class="text-xs font-bold text-gray-500 uppercase tracking-wide">Imagen de apoyo (opcional)</label>
-          <input type="file" name="imagen_ejercicio" accept="image/*"
+          <input type="file" name="imagen_ejercicio" id="input-imagen-ejercicio" accept="image/*"
             class="block w-full text-sm text-gray-600 dark:text-gray-300
                    file:mr-3 file:py-1.5 file:px-3 file:rounded-lg
                    file:border-0 file:text-xs file:font-bold
                    file:bg-amber-50 file:text-amber-700
                    hover:file:bg-amber-100 transition-all" />
+
+          <!-- Previsualización: evita subir la imagen equivocada por error
+               al trabajar rápido con varios ejercicios seguidos. -->
+          <div id="preview-imagen-ejercicio" class="hidden mt-2 flex items-start gap-3 p-2.5 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50/60 dark:bg-amber-900/10">
+            <img id="preview-imagen-ejercicio-src" src="" alt="Vista previa"
+                 class="w-20 h-20 rounded-lg object-cover border-2 border-amber-300 shadow-sm shrink-0" />
+            <div class="min-w-0 flex-1">
+              <p id="preview-imagen-ejercicio-titulo" class="text-xs font-bold text-amber-700 dark:text-amber-400">Vista previa</p>
+              <p id="preview-imagen-ejercicio-nombre" class="text-xs text-gray-500 dark:text-gray-400 truncate"></p>
+            </div>
+            <button type="button" id="btn-quitar-imagen-ejercicio" title="Quitar imagen"
+              class="shrink-0 w-6 h-6 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 flex items-center justify-center hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors">
+              <span class="material-symbols-outlined text-[14px] text-gray-500 hover:text-red-500">close</span>
+            </button>
+          </div>
         </div>
 
         <div class="flex gap-2 pt-1">
@@ -395,7 +410,49 @@
     document.querySelectorAll("input[name^='opcion_']").forEach(i => i.value = "");
     document.querySelectorAll("input[name='opcion_correcta']").forEach(r => r.checked = false);
     limpiarMaterialForm();
+    limpiarPreviewImagen();
   });
+
+  // ── Previsualización de la imagen de apoyo ──────────────────────────────
+  // Sin esto, el docente subía "a ciegas": con varios ejercicios seguidos
+  // era fácil equivocarse de archivo. Muestra la imagen ANTES de guardar.
+  const inputImagen  = document.getElementById("input-imagen-ejercicio");
+  const previewBox   = document.getElementById("preview-imagen-ejercicio");
+  const previewImg   = document.getElementById("preview-imagen-ejercicio-src");
+  const previewTitulo= document.getElementById("preview-imagen-ejercicio-titulo");
+  const previewNombre= document.getElementById("preview-imagen-ejercicio-nombre");
+
+  function limpiarPreviewImagen() {
+    if (inputImagen) inputImagen.value = "";
+    previewBox?.classList.add("hidden");
+    if (previewImg) previewImg.src = "";
+  }
+
+  function mostrarPreviewArchivoNuevo(file) {
+    const lector = new FileReader();
+    lector.onload = (ev) => {
+      previewImg.src = ev.target.result;
+      previewTitulo.textContent = "Vista previa (aún no guardada)";
+      previewNombre.textContent = `${file.name} · ${(file.size / 1024).toFixed(0)} KB`;
+      previewBox.classList.remove("hidden");
+    };
+    lector.readAsDataURL(file);
+  }
+
+  function mostrarPreviewImagenActual(url) {
+    previewImg.src = url;
+    previewTitulo.textContent = "Imagen actual del ejercicio";
+    previewNombre.textContent = "Elige un archivo arriba para reemplazarla.";
+    previewBox.classList.remove("hidden");
+  }
+
+  inputImagen?.addEventListener("change", () => {
+    const file = inputImagen.files && inputImagen.files[0];
+    if (file) mostrarPreviewArchivoNuevo(file);
+    else limpiarPreviewImagen();
+  });
+
+  document.getElementById("btn-quitar-imagen-ejercicio")?.addEventListener("click", limpiarPreviewImagen);
 
   // ── Material de refuerzo vinculado (máximo 1 por ejercicio) ────────────
   // Si el ejercicio ya tiene su material se ocultan los inputs: el tutor
@@ -492,6 +549,11 @@
           document.getElementById("material-titulo").value = "";
           document.getElementById("material-url").value = "";
           pintarMateriales(data.materiales);
+          // Imagen: por seguridad del navegador no se puede precargar el
+          // input type="file", pero SÍ se puede mostrar la imagen que ya
+          // tiene guardada para que el docente sepa qué va a reemplazar.
+          limpiarPreviewImagen();
+          if (data.imagen_url) mostrarPreviewImagenActual(data.imagen_url);
           document.getElementById("form-ejercicio-rapido")?.scrollIntoView({ behavior: "smooth", block: "start" });
         })
         .catch(() => alert("Error al comunicarse con el servidor."));
