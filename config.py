@@ -9,6 +9,13 @@ class Config:
     #     un valor largo y aleatorio. El default solo sirve para desarrollo local.
     SECRET_KEY = os.environ.get("SECRET_KEY", "dev-only-change-in-production-tutormath2026")
 
+    # ── Cookie de sesión ────────────────────────────────────────────
+    # Railway sirve todo por HTTPS: forzamos Secure para que la cookie nunca
+    # viaje por HTTP, y SameSite=Lax como capa extra junto al CSRF que ya
+    # protege los POST. HttpOnly ya viene activado por defecto en Flask.
+    SESSION_COOKIE_SECURE = os.environ.get("FLASK_DEBUG", "false").lower() != "true"
+    SESSION_COOKIE_SAMESITE = "Lax"
+
     # ── Base de datos ───────────────────────────────────────────────
     # Railway y Render inyectan DATABASE_URL automáticamente.
     # En local usa el valor por defecto si no hay .env configurado.

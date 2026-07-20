@@ -76,6 +76,17 @@ def create_app():
     # Cerrar conexión a la BD al final de cada request
     app.teardown_appcontext(close_db)
 
+    # ── Cabeceras de seguridad básicas ────────────────────────────────────────
+    # Sin librería extra: evita que el panel del docente se pueda incrustar en
+    # un <iframe> ajeno (clickjacking) y que el navegador "adivine" el tipo de
+    # un archivo subido como si fuera ejecutable.
+    @app.after_request
+    def cabeceras_seguridad(response):
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        return response
+
     # Foto de perfil del usuario en sesión, disponible en todos los templates
     # (docente_base.html la usa en el sidebar). Resuelve Cloudinary → local → avatar.
     @app.context_processor
