@@ -313,6 +313,14 @@ def _metricas_dashboard(id_usuario: int):
             JOIN estudiante_salones es ON es.id_estudiante = e.id_estudiante
             JOIN docente_salones ds ON ds.id_salon = es.id_salon
             WHERE ds.id_docente = %s AND e.estado_estudiante = 'activo'
+              -- Sin diagnóstico el alumno está BLOQUEADO en la app (no puede
+              -- practicar): listarlo como "requiere atención" es falsa alarma.
+              -- Mismo criterio que /docentes/{id}/alertas de la API (4544cc7):
+              -- un salón recién matriculado ya NO llena esta lista.
+              AND NOT (e.cantidad IS NULL
+                       AND e.regularidad_equivalencia_cambio IS NULL
+                       AND e.forma_movimiento_localizacion   IS NULL
+                       AND e.gestion_datos_incertidumbre     IS NULL)
             GROUP BY e.id_estudiante, u.nombre, u.apellidos
         ) sub
         WHERE progreso_general < 40
