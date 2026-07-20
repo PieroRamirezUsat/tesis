@@ -330,7 +330,7 @@
             <div class="img-thumb-wrapper relative shrink-0">
               <img id="preview-imagen-ejercicio-src" src="" alt="Vista previa"
                    class="w-20 h-20 rounded-lg object-cover border-2 border-amber-300 shadow-sm cursor-zoom-in" />
-              <div class="img-preview img-preview-abajo">
+              <div class="img-preview img-preview-left">
                 <div class="bg-white dark:bg-gray-900 rounded-2xl border-2 border-amber-300 shadow-2xl p-1.5 w-56">
                   <img id="preview-imagen-ejercicio-zoom" src="" alt="Vista ampliada" class="w-full rounded-xl object-contain max-h-52" />
                 </div>
@@ -373,16 +373,14 @@
     transform: translateY(-40%);
     z-index: 9999;
   }
+  /* En columnas angostas pegadas al borde derecho (ej. el formulario
+     rápido de crear/editar ejercicio) el popup "hacia abajo" se corta
+     contra el borde de la ventana si el campo queda cerca del final del
+     formulario. Popping hacia la IZQUIERDA sí tiene espacio de sobra
+     (el resto de la página está a la izquierda de esa columna). */
   .img-preview-left {
     left: auto;
     right: calc(100% + 8px);
-  }
-  /* Variante para columnas angostas (ej. el formulario rápido): el popup
-     de al lado se saldría de la pantalla, así que aparece hacia ABAJO. */
-  .img-preview-abajo {
-    left: 0;
-    top: calc(100% + 8px);
-    transform: none;
   }
   .img-thumb-wrapper:hover .img-preview { display: block; }
 
