@@ -11,6 +11,10 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,500,0,0" rel="stylesheet"/>
   <style>
+    /* Paleta oscura para los controles nativos del navegador (autofill,
+       aviso de "contraseña filtrada"...) — más confiable que solo pelear
+       con :-webkit-autofill. */
+    html { color-scheme: dark; }
     *, *::before, *::after { box-sizing: border-box; margin: 0; }
     body { font-family: 'Inter', system-ui, sans-serif; background: #0F172A; min-height: 100vh; overflow-x: hidden; }
     .material-symbols-outlined { font-variation-settings: 'FILL' 0,'wght' 500,'GRAD' 0,'opsz' 24; vertical-align: middle; }

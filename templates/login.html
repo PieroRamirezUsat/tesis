@@ -28,6 +28,12 @@
   </script>
 
   <style>
+    /* Le dice al navegador que TODO control nativo de esta página (incluido
+       el resaltado de autofill y el aviso de "contraseña filtrada" de
+       Chrome, que el truco de box-shadow no siempre alcanza a tapar) debe
+       usar paleta oscura — es la forma correcta y moderna de resolver esto,
+       más confiable que solo pelear con :-webkit-autofill. */
+    html { color-scheme: dark; }
     * { font-family: 'Inter', system-ui, sans-serif; }
     .material-symbols-outlined { font-variation-settings: 'FILL' 0,'wght' 500,'GRAD' 0,'opsz' 24; }
 

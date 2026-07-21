@@ -59,6 +59,10 @@
   </script>
 
   <style>
+    /* Paleta oscura para los controles nativos del navegador (autofill,
+       aviso de "contraseña filtrada"...) — más confiable que solo pelear
+       con :-webkit-autofill. */
+    html { color-scheme: dark; }
     /* ── Reset & base ── */
     *, *::before, *::after { box-sizing: border-box; }
     body {
