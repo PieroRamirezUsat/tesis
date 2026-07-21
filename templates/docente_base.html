@@ -303,15 +303,27 @@
     main .bg-gray-100 { background: rgba(255,255,255,.06) !important; }
     main .bg-gray-200 { background: rgba(255,255,255,.08) !important; }
 
+    /* border-gray-200/300 y sus equivalentes en "slate" (Tailwind tiene dos
+       paletas grises casi idénticas y las plantillas usan ambas sin avisar):
+       sin esto, cada <input>/<th> con border-gray-200 quedaba con un borde
+       gris claro de tema día encima del panel oscuro. */
+    main [class~="border-gray-200"],
+    main [class~="border-slate-200"] { border-color: rgba(129,140,248,.18) !important; }
+    main [class~="border-gray-300"] { border-color: rgba(129,140,248,.24) !important; }
+
     /* Textos */
     main .text-gray-900 { color: #F1F5F9 !important; }
     main .text-gray-800 { color: #E2E8F0 !important; }
-    main .text-gray-700 { color: #CBD5E1 !important; }
-    main .text-gray-600 { color: #94A3B8 !important; }
+    main .text-gray-700, main .text-slate-700 { color: #CBD5E1 !important; }
+    main .text-gray-600, main .text-slate-600 { color: #94A3B8 !important; }
     main .text-gray-500 { color: rgba(148,163,184,.7) !important; }
-    main .text-gray-400 { color: rgba(148,163,184,.52) !important; }
+    main .text-gray-400, main .text-slate-400 { color: rgba(148,163,184,.52) !important; }
     main .text-gray-300 { color: rgba(148,163,184,.35) !important; }
-    main .text-gray-200 { color: rgba(148,163,184,.22) !important; }
+    main .text-gray-200, main .text-slate-200 { color: rgba(148,163,184,.22) !important; }
+
+    /* "slate" es la otra paleta gris de Tailwind — mismos valores que gray */
+    main .bg-slate-50  { background: rgba(255,255,255,.04) !important; }
+    main .bg-slate-200 { background: rgba(255,255,255,.08) !important; }
 
     /* Etiquetas de formularios */
     main label { color: rgba(203,213,225,.8); }
@@ -358,6 +370,21 @@
     main .hover\:bg-violet-50:hover   { background: rgba(124,58,237,.08) !important; }
     main .hover\:bg-orange-50:hover   { background: rgba(245,158,11,.08) !important; }
     main .hover\:bg-red-50:hover      { background: rgba(239,68,68,.07)  !important; }
+    main .hover\:bg-emerald-50:hover  { background: rgba(16,185,129,.08) !important; }
+    main .hover\:bg-amber-50:hover    { background: rgba(245,158,11,.08) !important; }
+    main .hover\:bg-sky-50:hover      { background: rgba(14,165,233,.08) !important; }
+    main .hover\:bg-rose-50:hover     { background: rgba(244,63,94,.08)  !important; }
+    main .hover\:bg-slate-200:hover   { background: rgba(99,102,241,.06) !important; }
+
+    /* Hover en badges de "-100" (versión más marcada del "-50" de arriba) */
+    main .hover\:bg-red-100:hover     { background: rgba(239,68,68,.12)  !important; }
+    main .hover\:bg-rose-100:hover    { background: rgba(244,63,94,.12)  !important; }
+    main .hover\:bg-blue-100:hover    { background: rgba(59,130,246,.12) !important; }
+    main .hover\:bg-violet-100:hover  { background: rgba(124,58,237,.12) !important; }
+    main .hover\:bg-indigo-100:hover  { background: rgba(99,102,241,.12) !important; }
+    main .hover\:bg-amber-100:hover   { background: rgba(245,158,11,.12) !important; }
+    main .hover\:bg-emerald-100:hover { background: rgba(16,185,129,.12) !important; }
+    main .hover\:bg-sky-100:hover     { background: rgba(14,165,233,.12) !important; }
 
     /* Badges con fondo claro */
     main .bg-indigo-50  { background: rgba(99,102,241,.18) !important; }
