@@ -82,6 +82,20 @@
       background: rgba(255,255,255,.10);
     }
     .field::placeholder { color: rgba(255,255,255,.3); }
+    /* Chrome pinta su propio fondo claro al autocompletar un campo guardado,
+       y el texto (pensado para fondo oscuro) queda casi invisible encima.
+       El truco del inset shadow gigante es la única forma de imponer un
+       fondo propio: "background" normal no alcanza a pisar el de Chrome. */
+    .field:-webkit-autofill,
+    .field:-webkit-autofill:hover,
+    .field:-webkit-autofill:focus,
+    .field:-webkit-autofill:active {
+      -webkit-text-fill-color: #f1f5f9 !important;
+      -webkit-box-shadow: 0 0 0px 1000px #1a1740 inset !important;
+      box-shadow: 0 0 0px 1000px #1a1740 inset !important;
+      caret-color: #f1f5f9;
+      transition: background-color 9999s ease-in-out 0s;
+    }
 
     /* Right panel bg */
     .right-bg {

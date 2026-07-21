@@ -339,6 +339,20 @@
     }
     main input::placeholder,
     main textarea::placeholder { color: rgba(148,163,184,.45) !important; }
+
+    /* Chrome pinta su propio fondo claro al autocompletar un campo guardado
+       (contraseña nueva, correo del alumno...), dejando el texto claro casi
+       invisible encima. Mismo fix que en login/registro. */
+    main input:-webkit-autofill,
+    main input:-webkit-autofill:hover,
+    main input:-webkit-autofill:focus,
+    main input:-webkit-autofill:active {
+      -webkit-text-fill-color: #F1F5F9 !important;
+      -webkit-box-shadow: 0 0 0px 1000px #161B33 inset !important;
+      box-shadow: 0 0 0px 1000px #161B33 inset !important;
+      caret-color: #F1F5F9;
+      transition: background-color 9999s ease-in-out 0s;
+    }
     main input:focus:not([type=checkbox]):not([type=radio]),
     main select:focus,
     main textarea:focus {
