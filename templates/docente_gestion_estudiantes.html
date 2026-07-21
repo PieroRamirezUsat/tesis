@@ -518,16 +518,6 @@
           </div>
         </div>
 
-        <!-- Consentimiento de datos (solo al crear: es un menor de edad) -->
-        <div class="flex items-start gap-2.5 p-3 rounded-xl bg-amber-50 dark:bg-amber-900/15 border border-amber-200 dark:border-amber-800" id="bloque-consentimiento">
-          <input type="checkbox" name="consentimiento_datos" id="form-consentimiento" value="1"
-            class="mt-0.5 w-4 h-4 rounded border-amber-300 text-amber-600 focus:ring-amber-400 shrink-0" />
-          <label for="form-consentimiento" class="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
-            Confirmo que la institución educativa cuenta con autorización del padre, madre o apoderado
-            para registrar el avance académico de este alumno en TutorMath.
-          </label>
-        </div>
-
         <!-- Botonera FIJA al pie del área scrolleable: Guardar siempre
              visible sin tener que bajar hasta el final del formulario -->
         <div class="sticky bottom-0 -mx-6 -mb-6 mt-2 px-6 py-3 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-3">
@@ -576,8 +566,6 @@
   const bloquePassword = document.getElementById("bloque-password");
   const bloqueUsuarioExistente = document.getElementById("bloque-usuario-existente");
   const bloqueNiveles = document.getElementById("bloque-niveles");
-  const bloqueConsentimiento = document.getElementById("bloque-consentimiento");
-  const campoConsentimiento = document.getElementById("form-consentimiento");
 
   const inputCompCantidad   = document.getElementById("form-comp-cantidad");
   const inputCompRegularidad= document.getElementById("form-comp-regularidad");
@@ -670,9 +658,6 @@
     bloquePassword.classList.remove("hidden");
     bloqueUsuarioExistente.classList.remove("hidden");
     bloqueNiveles.classList.add("hidden");
-    bloqueConsentimiento.classList.remove("hidden");
-    campoConsentimiento.checked = false;
-    campoConsentimiento.required = true;
     backdrop.classList.remove("hidden");
     formSucio = false;   // el llenado inicial no cuenta como cambio
   }
@@ -732,8 +717,6 @@
     bloquePassword.classList.add("hidden");
     bloqueUsuarioExistente.classList.add("hidden");
     bloqueNiveles.classList.remove("hidden");
-    bloqueConsentimiento.classList.add("hidden");
-    campoConsentimiento.required = false;
     form.action = "{{ url_for('docentes.editar_estudiante', id_estudiante=0) }}".replace("0", idEst);
     backdrop.classList.remove("hidden");
     formSucio = false;   // el llenado inicial no cuenta como cambio
