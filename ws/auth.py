@@ -191,6 +191,22 @@ def forgot_password():
             flash("Debes ingresar un correo.", "danger")
             return render_template("forgot_password.html")
 
+        # Mismo mensaje SIEMPRE, exista o no la cuenta, falle o no el envío:
+        # antes esto distinguía "No se encontró un usuario con ese correo"
+        # de un envío exitoso, lo que dejaba enumerar qué correos de
+        # docentes están registrados (hallado en la auditoría de seguridad).
+        mensaje_generico = (
+            "Si ese correo está registrado, te enviamos un enlace para "
+            "restablecer tu contraseña. Revisa también tu carpeta de spam."
+        )
+
+        if not Config.MAIL_USERNAME or not Config.MAIL_PASSWORD:
+            # Falla de configuración global (no depende del correo pedido),
+            # así que no filtra nada mostrar el mismo mensaje igual.
+            print("ERROR forgot_password: MAIL_USERNAME/MAIL_PASSWORD no configurados")
+            flash(mensaje_generico, "success")
+            return redirect(url_for("auth.login"))
+
         conn = get_db()
         cur = conn.cursor()
         cur.execute(
@@ -203,27 +219,22 @@ def forgot_password():
             (correo,),
         )
         user = cur.fetchone()
-
-        if not user:
-            cur.close()
-            flash("No se encontró un usuario con ese correo.", "danger")
-            return render_template("forgot_password.html")
-
-        id_usuario, nombre, apellidos, correo_db = user
         cur.close()
 
-        # Enlace de un solo uso, firmado y con expiración — no se toca la BD
-        # hasta que el docente realmente elija su nueva contraseña en el link.
-        token = _serializador_reset().dumps(id_usuario)
-        enlace = url_for("auth.reset_password", token=token, _external=True)
+        if user:
+            id_usuario, nombre, apellidos, correo_db = user
 
-        msg = EmailMessage()
-        msg["Subject"] = "Recuperación de contraseña - TutorMath"
-        msg["From"] = Config.MAIL_DEFAULT_SENDER
-        msg["To"] = correo_db
+            # Enlace de un solo uso, firmado y con expiración — no se toca la
+            # BD hasta que el docente realmente elija su nueva contraseña.
+            token = _serializador_reset().dumps(id_usuario)
+            enlace = url_for("auth.reset_password", token=token, _external=True)
 
-        msg.set_content(
-            f"""
+            msg = EmailMessage()
+            msg["Subject"] = "Recuperación de contraseña - TutorMath"
+            msg["From"] = Config.MAIL_DEFAULT_SENDER
+            msg["To"] = correo_db
+            msg.set_content(
+                f"""
 Hola {nombre} {apellidos},
 
 Recibimos una solicitud para restablecer tu contraseña en TutorMath. Abre este enlace para elegir una nueva (válido por {RESET_TOKEN_MAX_AGE // 60} minutos):
@@ -235,35 +246,22 @@ Si no fuiste tú quien lo pidió, puedes ignorar este correo: tu contraseña act
 Saludos,
 Sistema Tutor Adaptativo de Álgebra
 """
-        )
-
-        if not Config.MAIL_USERNAME or not Config.MAIL_PASSWORD:
-            flash(
-                "El sistema de correo no está configurado. Contacta al administrador.",
-                "danger",
             )
-            return render_template("forgot_password.html")
 
-        context = ssl.create_default_context()
-        try:
-            with smtplib.SMTP_SSL(
-                Config.MAIL_SERVER, Config.MAIL_PORT, context=context
-            ) as server:
-                server.login(Config.MAIL_USERNAME, Config.MAIL_PASSWORD)
-                server.send_message(msg)
-        except Exception as e:
-            print("Error enviando correo de recuperación:", e)
-            flash(
-                "No se pudo enviar el correo de recuperación. "
-                "Verifica tu dirección o intenta más tarde.",
-                "danger",
-            )
-            return render_template("forgot_password.html")
+            context = ssl.create_default_context()
+            try:
+                with smtplib.SMTP_SSL(
+                    Config.MAIL_SERVER, Config.MAIL_PORT, context=context
+                ) as server:
+                    server.login(Config.MAIL_USERNAME, Config.MAIL_PASSWORD)
+                    server.send_message(msg)
+            except Exception as e:
+                # No se le muestra el detalle al usuario: un error de envío
+                # no debe verse distinto de "el correo no estaba registrado".
+                print("ERROR enviando correo de recuperación:", e)
+        # Si el correo no existe, no se hace nada más — mismo mensaje final.
 
-        flash(
-            "Te enviamos un enlace para restablecer tu contraseña. Revisa tu correo.",
-            "success",
-        )
+        flash(mensaje_generico, "success")
         return redirect(url_for("auth.login"))
 
     # GET

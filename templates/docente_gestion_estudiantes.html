@@ -826,21 +826,40 @@
   const hiddenUsrId  = document.getElementById("id-usuario-existente-val");
   const btnClearUsr  = document.getElementById("btn-clear-usuario");
 
+  // El nombre/apellidos/correo de un "usuario existente" vienen de la BD y
+  // pueden contener CUALQUIER texto -- cualquiera puede autoregistrarse
+  // como estudiante desde la app móvil con un nombre malicioso. Antes se
+  // interpolaban sin escapar dentro de un innerHTML: un nombre tipo
+  // `"><img src=x onerror=...>` ejecutaba JS en la sesión del docente
+  // (XSS almacenado). escapeHtml() convierte esos caracteres en entidades
+  // inertes antes de que lleguen al DOM.
+  function escapeHtml(valor) {
+    return String(valor ?? "").replace(/[&<>"']/g, (c) => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+    }[c]));
+  }
+
   function renderDropdown(lista) {
     if (!lista.length) {
       dropdownUsr.innerHTML = '<p class="px-4 py-3 text-sm text-gray-400">Sin resultados.</p>';
     } else {
-      dropdownUsr.innerHTML = lista.map(u => `
+      dropdownUsr.innerHTML = lista.map(u => {
+        const nombre = escapeHtml(u.nombre);
+        const apellidos = escapeHtml(u.apellidos);
+        const correo = escapeHtml(u.correo);
+        const grado = escapeHtml(u.grado || "");
+        return `
         <button type="button"
           class="w-full text-left px-4 py-2.5 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors border-b last:border-b-0 border-gray-50 dark:border-gray-800"
           data-id="${u.id_usuario}"
-          data-nombre="${u.nombre}"
-          data-apellidos="${u.apellidos}"
-          data-correo="${u.correo}"
-          data-grado="${u.grado || ''}">
-          <span class="font-semibold text-sm text-gray-800 dark:text-gray-100">${u.nombre} ${u.apellidos}</span>
-          <span class="ml-2 text-[11px] text-gray-400">${u.correo}</span>
-        </button>`).join('');
+          data-nombre="${nombre}"
+          data-apellidos="${apellidos}"
+          data-correo="${correo}"
+          data-grado="${grado}">
+          <span class="font-semibold text-sm text-gray-800 dark:text-gray-100">${nombre} ${apellidos}</span>
+          <span class="ml-2 text-[11px] text-gray-400">${correo}</span>
+        </button>`;
+      }).join('');
       dropdownUsr.querySelectorAll("button[data-id]").forEach(btn => {
         btn.addEventListener("mousedown", (e) => { e.preventDefault(); seleccionarUsuario(btn); });
       });
