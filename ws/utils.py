@@ -157,8 +157,14 @@ def score_to_letra(score) -> str:
 def _score_to_nivel(score) -> int:
     """Tabla score→nivel compartida con la API (SCORE_BRACKETS)."""
     s = max(0.0, min(100.0, float(score or 0)))
+    # Mismo bug que en la API (models/scoring.py): los tramos son enteros
+    # (0-21, 22-35...) pero el score real puede ser fraccionario. "lo <= s
+    # <= hi" dejaba un hueco de 1 punto entre tramos (21 y 22, 35 y 36...)
+    # que caia al `return 7` de emergencia -- un alumno con score 21.9 se
+    # reportaba como nivel 7 "Maestro" al docente. Los tramos son
+    # ascendentes y contiguos, asi que basta el primer techo no superado.
     for lo, hi, n in [(0,21,1),(22,35,2),(36,49,3),(50,64,4),(65,78,5),(79,92,6),(93,100,7)]:
-        if lo <= s <= hi:
+        if s <= hi:
             return n
     return 7
 
