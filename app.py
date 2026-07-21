@@ -25,6 +25,7 @@
 #  app:app (Procfile), Root Directory vacío en Railway.
 # ═══════════════════════════════════════════════════════════════════════════
 from flask import Flask, jsonify, redirect, url_for, render_template, request, flash
+from werkzeug.middleware.proxy_fix import ProxyFix
 from config import Config
 from db import get_db, close_db
 from ws import register_blueprints
@@ -36,6 +37,18 @@ csrf = CSRFProtect()
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
+
+    # ── Confiar en el proxy de Railway ──────────────────────────────────────
+    # Sin esto, request.remote_addr es la IP del propio proxy de Railway
+    # (Hikari), no la del cliente real -- y varía según por qué nodo de borde
+    # entra cada petición. Flask-Limiter usa remote_addr para el rate limit
+    # por IP (login, registro, forgot-password); con la IP "equivocada" y
+    # cambiante, el contador nunca junta las peticiones de un mismo cliente y
+    # el límite nunca se activa (confirmado en vivo: 15 intentos de login
+    # seguidos, cero 429). x_for=1 confía en UN salto de proxy — el de
+    # Railway — y toma la IP real del header X-Forwarded-For que ese proxy
+    # agrega.
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1)
 
     # ── Extensiones ──────────────────────────────────────────────────────────
     # CSRF: protege todos los formularios POST automáticamente.
