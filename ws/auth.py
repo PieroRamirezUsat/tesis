@@ -33,21 +33,23 @@ def login():
         correo = request.form.get("correo", "").strip()
         contrasena = request.form.get("contrasena", "").strip()
 
-        errores = {}
+        # login.html solo sabe mostrar flash messages (no un dict "errores"
+        # aparte) — antes esto se guardaba en "errores" y el template lo
+        # ignoraba por completo: un correo/contraseña malo no mostraba NADA,
+        # solo se quedaba en la misma pantalla sin explicación.
         if not correo:
-            errores["correo"] = "El correo es obligatorio."
+            flash("El correo es obligatorio.", "danger")
+            return render_template("login.html", correo=correo)
         if not contrasena:
-            errores["contrasena"] = "La contraseña es obligatoria."
-
-        if errores:
-            return render_template("login.html", errores=errores, correo=correo)
+            flash("La contraseña es obligatoria.", "danger")
+            return render_template("login.html", correo=correo)
 
         db = get_db()
         cur = db.cursor()
 
         try:
             cur.execute("""
-                SELECT 
+                SELECT
                     u.id_usuario,      -- 0
                     u.nombre,          -- 1
                     u.apellidos,       -- 2
@@ -64,8 +66,8 @@ def login():
 
             # No hay usuario o la contraseña no coincide con el hash
             if (not row) or (not row[6]) or (not check_password_hash(row[6], contrasena)):
-                errores["general"] = "Correo o contraseña incorrectos."
-                return render_template("login.html", errores=errores, correo=correo)
+                flash("Correo o contraseña incorrectos.", "danger")
+                return render_template("login.html", correo=correo)
 
             # Autenticación correcta: crear sesión
             session.clear()
@@ -83,8 +85,8 @@ def login():
 
         except Exception as e:
             print("ERROR LOGIN WEB:", e)
-            errores["general"] = "Ocurrió un error en el servidor."
-            return render_template("login.html", errores=errores, correo=correo)
+            flash("Ocurrió un error en el servidor. Intenta de nuevo.", "danger")
+            return render_template("login.html", correo=correo)
         finally:
             cur.close()
     else:
